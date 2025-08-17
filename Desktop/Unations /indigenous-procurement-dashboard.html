@@ -1,0 +1,1479 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indigenous Procurement Monitoring | Government of Canada</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --gov-red: #AF3C43;
+            --gov-dark: #26374A;
+            --gov-border: #E1E4E7;
+            --success: #1B6F00;
+            --warning: #FF9F40;
+            --danger: #D3080C;
+            --light-bg: #F8F8F8;
+        }
+
+        body {
+            font-family: 'Noto Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #FFFFFF;
+            color: #333333;
+            line-height: 1.6;
+        }
+
+        /* Header */
+        .header {
+            background: var(--gov-dark);
+            color: white;
+            padding: 1rem 0;
+            border-bottom: 4px solid var(--gov-red);
+        }
+
+        .header-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo h1 {
+            font-size: 1.25rem;
+            font-weight: 600;
+        }
+
+        .lang-toggle {
+            background: transparent;
+            border: 1px solid white;
+            color: white;
+            padding: 0.5rem 1rem;
+            cursor: pointer;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+
+        .lang-toggle:hover {
+            background: white;
+            color: var(--gov-dark);
+        }
+
+        /* Navigation Tabs */
+        .nav-tabs {
+            background: var(--light-bg);
+            border-bottom: 1px solid var(--gov-border);
+            padding: 0;
+        }
+
+        .nav-tabs-content {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 0 2rem;
+            display: flex;
+            gap: 2rem;
+        }
+
+        .nav-tab {
+            padding: 1rem 0;
+            border-bottom: 3px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-weight: 500;
+        }
+
+        .nav-tab:hover {
+            color: var(--gov-dark);
+        }
+
+        .nav-tab.active {
+            border-bottom-color: var(--gov-red);
+            color: var(--gov-dark);
+        }
+
+        /* Main Container */
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 2rem;
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        /* Alert Banner */
+        .alert-banner {
+            background: #FFF4DD;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin-bottom: 2rem;
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            border-radius: 4px;
+        }
+
+        .alert-icon {
+            width: 24px;
+            height: 24px;
+            flex-shrink: 0;
+        }
+
+        /* Summary Cards */
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .summary-card {
+            background: white;
+            border: 1px solid var(--gov-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .summary-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gov-dark);
+        }
+
+        .summary-card.success::before { background: var(--success); }
+        .summary-card.warning::before { background: var(--warning); }
+        .summary-card.danger::before { background: var(--danger); }
+
+        .summary-label {
+            font-size: 0.875rem;
+            color: #666;
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-value {
+            font-size: 2rem;
+            font-weight: 700;
+            color: var(--gov-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .summary-detail {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        /* Charts Section */
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+            gap: 2rem;
+            margin-bottom: 3rem;
+        }
+
+        .chart-container {
+            background: white;
+            border: 1px solid var(--gov-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .chart-header {
+            margin-bottom: 1.5rem;
+        }
+
+        .chart-title {
+            font-size: 1.125rem;
+            font-weight: 600;
+            color: var(--gov-dark);
+            margin-bottom: 0.5rem;
+        }
+
+        .chart-subtitle {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+        }
+
+        /* Department Table */
+        .table-section {
+            background: white;
+            border: 1px solid var(--gov-border);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+
+        .table-header {
+            background: var(--light-bg);
+            padding: 1.5rem;
+            border-bottom: 1px solid var(--gov-border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 1rem;
+        }
+
+        .table-title {
+            font-size: 1.25rem;
+            font-weight: 600;
+            color: var(--gov-dark);
+        }
+
+        .table-controls {
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+        }
+
+        .search-box {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--gov-border);
+            border-radius: 4px;
+            width: 250px;
+        }
+
+        .export-btn {
+            background: var(--gov-dark);
+            color: white;
+            border: none;
+            padding: 0.5rem 1.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            transition: background 0.2s;
+        }
+
+        .export-btn:hover {
+            background: #1C5276;
+        }
+
+        /* Table */
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        th {
+            background: var(--light-bg);
+            text-align: left;
+            padding: 1rem;
+            font-weight: 600;
+            font-size: 0.875rem;
+            color: var(--gov-dark);
+            border-bottom: 2px solid var(--gov-border);
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        td {
+            padding: 1rem;
+            border-bottom: 1px solid var(--gov-border);
+        }
+
+        tr:hover {
+            background: #FAFAFA;
+        }
+
+        /* Status Indicators */
+        .status-indicator {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.25rem 0.75rem;
+            border-radius: 20px;
+            font-size: 0.875rem;
+            font-weight: 500;
+        }
+
+        .status-indicator.verified {
+            background: #D7F3DB;
+            color: var(--success);
+        }
+
+        .status-indicator.pending {
+            background: #FFF4DD;
+            color: #8C6500;
+        }
+
+        .status-indicator.alert {
+            background: #F3E9E8;
+            color: var(--danger);
+        }
+
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+
+        /* Progress Bar */
+        .progress-cell {
+            min-width: 200px;
+        }
+
+        .progress-bar {
+            background: #E5E5E5;
+            height: 8px;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-bottom: 0.25rem;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--success);
+            transition: width 0.3s ease;
+        }
+
+        .progress-fill.warning { background: var(--warning); }
+        .progress-fill.danger { background: var(--danger); }
+
+        .progress-text {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        /* Action Button */
+        .view-details {
+            background: transparent;
+            border: 1px solid var(--gov-dark);
+            color: var(--gov-dark);
+            padding: 0.375rem 1rem;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            transition: all 0.2s;
+        }
+
+        .view-details:hover {
+            background: var(--gov-dark);
+            color: white;
+        }
+
+        /* Verification Workflow */
+        .workflow-container {
+            background: white;
+            border: 1px solid var(--gov-border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .workflow-steps {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 3rem;
+            position: relative;
+        }
+
+        .workflow-steps::before {
+            content: '';
+            position: absolute;
+            top: 20px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--gov-border);
+            z-index: 0;
+        }
+
+        .workflow-step {
+            background: white;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+            flex: 1;
+        }
+
+        .step-circle {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: white;
+            border: 2px solid var(--gov-border);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 0.5rem;
+            font-weight: 600;
+        }
+
+        .workflow-step.active .step-circle {
+            background: var(--gov-dark);
+            color: white;
+            border-color: var(--gov-dark);
+        }
+
+        .workflow-step.completed .step-circle {
+            background: var(--success);
+            color: white;
+            border-color: var(--success);
+        }
+
+        .step-label {
+            font-size: 0.875rem;
+            color: #666;
+        }
+
+        /* Verification Details */
+        .verification-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+        }
+
+        .verification-section {
+            border: 1px solid var(--gov-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+        }
+
+        .verification-title {
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--gov-dark);
+        }
+
+        .verification-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.75rem 0;
+            border-bottom: 1px solid var(--gov-border);
+        }
+
+        .verification-item:last-child {
+            border-bottom: none;
+        }
+
+        /* Contract Listings */
+        .contract-filters {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            flex-wrap: wrap;
+        }
+
+        .filter-select {
+            padding: 0.5rem 1rem;
+            border: 1px solid var(--gov-border);
+            border-radius: 4px;
+            background: white;
+        }
+
+        .contract-card {
+            background: white;
+            border: 1px solid var(--gov-border);
+            border-radius: 8px;
+            padding: 1.5rem;
+            margin-bottom: 1rem;
+            transition: all 0.2s;
+        }
+
+        .contract-card:hover {
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .contract-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: start;
+            margin-bottom: 1rem;
+        }
+
+        .contract-number {
+            font-weight: 600;
+            color: var(--gov-dark);
+        }
+
+        .contract-value {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: var(--gov-dark);
+        }
+
+        .contract-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .contract-detail-item {
+            color: #666;
+        }
+
+        .contract-detail-item strong {
+            color: #333;
+            display: block;
+        }
+
+        /* API Documentation */
+        .api-section {
+            background: white;
+            border: 1px solid var(--gov-border);
+            border-radius: 8px;
+            padding: 2rem;
+            margin-bottom: 2rem;
+        }
+
+        .api-endpoint {
+            background: var(--light-bg);
+            border: 1px solid var(--gov-border);
+            border-radius: 4px;
+            padding: 1rem;
+            margin-bottom: 1rem;
+            font-family: 'Courier New', monospace;
+        }
+
+        .api-method {
+            display: inline-block;
+            padding: 0.25rem 0.5rem;
+            border-radius: 4px;
+            font-weight: 600;
+            margin-right: 0.5rem;
+        }
+
+        .api-method.get { background: #D7F3DB; color: var(--success); }
+        .api-method.post { background: #E3F2FD; color: #1976D2; }
+        .api-method.put { background: #FFF4DD; color: #8C6500; }
+
+        .code-block {
+            background: #2D2D2D;
+            color: #F8F8F2;
+            border-radius: 4px;
+            padding: 1rem;
+            overflow-x: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 0.875rem;
+            margin: 1rem 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                gap: 1rem;
+            }
+
+            .nav-tabs-content {
+                overflow-x: auto;
+                gap: 1rem;
+            }
+
+            .table-controls {
+                flex-direction: column;
+                width: 100%;
+            }
+
+            .search-box {
+                width: 100%;
+            }
+
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+
+            .workflow-steps {
+                flex-direction: column;
+                gap: 2rem;
+            }
+
+            .workflow-steps::before {
+                display: none;
+            }
+        }
+
+        /* Loading Animation */
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.5; }
+        }
+
+        .loading {
+            animation: pulse 2s infinite;
+        }
+
+        /* Skip to main content (Accessibility) */
+        .skip-link {
+            position: absolute;
+            top: -40px;
+            left: 0;
+            background: var(--gov-dark);
+            color: white;
+            padding: 0.5rem 1rem;
+            text-decoration: none;
+            border-radius: 0 0 4px 0;
+        }
+
+        .skip-link:focus {
+            top: 0;
+        }
+    </style>
+</head>
+<body>
+    <a href="#main" class="skip-link">Skip to main content</a>
+    
+    <header class="header">
+        <div class="header-content">
+            <div class="logo">
+                <svg width="40" height="40" viewBox="0 0 40 40" fill="none">
+                    <rect width="40" height="40" fill="white"/>
+                    <path d="M20 10 L30 20 L20 30 L10 20 Z" fill="#AF3C43"/>
+                </svg>
+                <h1>Indigenous Procurement Monitoring System</h1>
+            </div>
+            <button class="lang-toggle" aria-label="Changer la langue en français">Français</button>
+        </div>
+    </header>
+
+    <nav class="nav-tabs">
+        <div class="nav-tabs-content">
+            <div class="nav-tab active" data-tab="dashboard">Dashboard</div>
+            <div class="nav-tab" data-tab="verification">Verification</div>
+            <div class="nav-tab" data-tab="contracts">Contracts</div>
+            <div class="nav-tab" data-tab="trends">Trends</div>
+            <div class="nav-tab" data-tab="api">API</div>
+        </div>
+    </nav>
+
+    <main id="main" class="container">
+        <!-- Dashboard Tab -->
+        <div id="dashboard" class="tab-content active">
+            <div class="alert-banner" role="alert">
+                <svg class="alert-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <div>
+                    <strong>3 departments</strong> flagged for suspicious procurement patterns. Review required by Auditor General.
+                </div>
+            </div>
+
+            <div class="summary-grid">
+                <div class="summary-card success">
+                    <div class="summary-label">Overall Compliance Rate</div>
+                    <div class="summary-value">4.2%</div>
+                    <div class="summary-detail">Target: 5% by 2025</div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-label">Verified Indigenous Suppliers</div>
+                    <div class="summary-value">1,847</div>
+                    <div class="summary-detail">↑ 12% from last quarter</div>
+                </div>
+                
+                <div class="summary-card warning">
+                    <div class="summary-label">Departments Below Target</div>
+                    <div class="summary-value">72</div>
+                    <div class="summary-detail">of 96 departments</div>
+                </div>
+                
+                <div class="summary-card">
+                    <div class="summary-label">Total Contract Value</div>
+                    <div class="summary-value">$2.3B</div>
+                    <div class="summary-detail">FY 2024-2025</div>
+                </div>
+            </div>
+
+            <div class="table-section">
+                <div class="table-header">
+                    <h2 class="table-title">Department Procurement Status</h2>
+                    <div class="table-controls">
+                        <input type="search" class="search-box" placeholder="Search departments..." aria-label="Search departments">
+                        <button class="export-btn" aria-label="Export data to CSV">
+                            <svg width="20" height="20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                            </svg>
+                            Export Report
+                        </button>
+                    </div>
+                </div>
+                
+                <table role="table" aria-label="Department procurement compliance data">
+                    <thead>
+                        <tr>
+                            <th scope="col">Department</th>
+                            <th scope="col">Compliance Rate</th>
+                            <th scope="col">Verification Status</th>
+                            <th scope="col">Contract Value</th>
+                            <th scope="col">Last Audit</th>
+                            <th scope="col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Indigenous Services Canada</strong></td>
+                            <td>
+                                <div class="progress-cell">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill" style="width: 92%"></div>
+                                    </div>
+                                    <div class="progress-text">18.4% of procurement</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-indicator verified">
+                                    <span class="status-dot"></span>
+                                    Verified
+                                </span>
+                            </td>
+                            <td>$458M</td>
+                            <td>2024-10-15</td>
+                            <td><button class="view-details">View Details</button></td>
+                        </tr>
+                        
+                        <tr>
+                            <td><strong>Public Services and Procurement</strong></td>
+                            <td>
+                                <div class="progress-cell">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill warning" style="width: 68%"></div>
+                                    </div>
+                                    <div class="progress-text">3.4% of procurement</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-indicator pending">
+                                    <span class="status-dot"></span>
+                                    Under Review
+                                </span>
+                            </td>
+                            <td>$312M</td>
+                            <td>2024-11-02</td>
+                            <td><button class="view-details">View Details</button></td>
+                        </tr>
+                        
+                        <tr>
+                            <td><strong>National Defence</strong></td>
+                            <td>
+                                <div class="progress-cell">
+                                    <div class="progress-bar">
+                                        <div class="progress-fill danger" style="width: 24%"></div>
+                                    </div>
+                                    <div class="progress-text">1.2% of procurement</div>
+                                </div>
+                            </td>
+                            <td>
+                                <span class="status-indicator alert">
+                                    <span class="status-dot"></span>
+                                    Alert
+                                </span>
+                            </td>
+                            <td>$89M</td>
+                            <td>2024-09-20</td>
+                            <td><button class="view-details">View Details</button></td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Verification Tab -->
+        <div id="verification" class="tab-content">
+            <h2 style="margin-bottom: 2rem;">Supplier Verification Workflow</h2>
+            
+            <div class="workflow-container">
+                <div class="workflow-steps">
+                    <div class="workflow-step completed">
+                        <div class="step-circle">✓</div>
+                        <div class="step-label">Application</div>
+                    </div>
+                    <div class="workflow-step completed">
+                        <div class="step-circle">✓</div>
+                        <div class="step-label">Documentation</div>
+                    </div>
+                    <div class="workflow-step active">
+                        <div class="step-circle">3</div>
+                        <div class="step-label">Verification</div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-circle">4</div>
+                        <div class="step-label">Registry</div>
+                    </div>
+                    <div class="workflow-step">
+                        <div class="step-circle">5</div>
+                        <div class="step-label">Monitoring</div>
+                    </div>
+                </div>
+
+                <div class="verification-grid">
+                    <div class="verification-section">
+                        <h3 class="verification-title">Business Registration</h3>
+                        <div class="verification-item">
+                            <span>Business Number</span>
+                            <span class="status-indicator verified">
+                                <span class="status-dot"></span>
+                                Verified
+                            </span>
+                        </div>
+                        <div class="verification-item">
+                            <span>CCAB Certification</span>
+                            <span class="status-indicator verified">
+                                <span class="status-dot"></span>
+                                Valid
+                            </span>
+                        </div>
+                        <div class="verification-item">
+                            <span>Provincial Registry</span>
+                            <span class="status-indicator pending">
+                                <span class="status-dot"></span>
+                                Pending
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="verification-section">
+                        <h3 class="verification-title">Ownership Structure</h3>
+                        <div class="verification-item">
+                            <span>Indigenous Ownership</span>
+                            <strong>51%</strong>
+                        </div>
+                        <div class="verification-item">
+                            <span>Control Documents</span>
+                            <span class="status-indicator verified">
+                                <span class="status-dot"></span>
+                                Submitted
+                            </span>
+                        </div>
+                        <div class="verification-item">
+                            <span>Board Composition</span>
+                            <strong>6 of 9 Indigenous</strong>
+                        </div>
+                    </div>
+
+                    <div class="verification-section">
+                        <h3 class="verification-title">Compliance Checks</h3>
+                        <div class="verification-item">
+                            <span>Tax Compliance</span>
+                            <span class="status-indicator verified">
+                                <span class="status-dot"></span>
+                                Current
+                            </span>
+                        </div>
+                        <div class="verification-item">
+                            <span>Security Clearance</span>
+                            <span class="status-indicator pending">
+                                <span class="status-dot"></span>
+                                In Progress
+                            </span>
+                        </div>
+                        <div class="verification-item">
+                            <span>Reference Checks</span>
+                            <strong>2 of 3 Complete</strong>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="table-section">
+                <div class="table-header">
+                    <h3 class="table-title">Recent Verification Activities</h3>
+                </div>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Supplier Name</th>
+                            <th>Application Date</th>
+                            <th>Stage</th>
+                            <th>Reviewer</th>
+                            <th>Status</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td><strong>Northern Tech Solutions Inc.</strong></td>
+                            <td>2024-11-15</td>
+                            <td>Documentation Review</td>
+                            <td>M. Tremblay</td>
+                            <td>
+                                <span class="status-indicator pending">
+                                    <span class="status-dot"></span>
+                                    In Progress
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>Indigenous Construction Group</strong></td>
+                            <td>2024-11-10</td>
+                            <td>Final Approval</td>
+                            <td>J. Smith</td>
+                            <td>
+                                <span class="status-indicator verified">
+                                    <span class="status-dot"></span>
+                                    Approved
+                                </span>
+                            </td>
+                        </tr>
+                        <tr>
+                            <td><strong>First Nations Consulting</strong></td>
+                            <td>2024-11-08</td>
+                            <td>Compliance Check</td>
+                            <td>L. Cardinal</td>
+                            <td>
+                                <span class="status-indicator alert">
+                                    <span class="status-dot"></span>
+                                    Issues Found
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- Contracts Tab -->
+        <div id="contracts" class="tab-content">
+            <h2 style="margin-bottom: 2rem;">Individual Contract Listings</h2>
+            
+            <div class="contract-filters">
+                <select class="filter-select">
+                    <option>All Departments</option>
+                    <option>Indigenous Services Canada</option>
+                    <option>Public Services and Procurement</option>
+                    <option>National Defence</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Statuses</option>
+                    <option>Active</option>
+                    <option>Pending</option>
+                    <option>Completed</option>
+                </select>
+                <select class="filter-select">
+                    <option>All Values</option>
+                    <option>Under $25K</option>
+                    <option>$25K - $100K</option>
+                    <option>$100K - $1M</option>
+                    <option>Over $1M</option>
+                </select>
+                <input type="date" class="filter-select" placeholder="Start Date">
+                <input type="date" class="filter-select" placeholder="End Date">
+            </div>
+
+            <div class="contract-card">
+                <div class="contract-header">
+                    <div>
+                        <div class="contract-number">Contract #: 47K52-234567/001/SS</div>
+                        <h3 style="margin: 0.5rem 0;">IT Infrastructure Modernization Services</h3>
+                    </div>
+                    <div class="contract-value">$2,450,000</div>
+                </div>
+                <div class="contract-details">
+                    <div class="contract-detail-item">
+                        <strong>Supplier</strong>
+                        Northern Tech Solutions Inc.
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Department</strong>
+                        Indigenous Services Canada
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Period</strong>
+                        2024-04-01 to 2025-03-31
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Verification Status</strong>
+                        <span class="status-indicator verified">
+                            <span class="status-dot"></span>
+                            Verified
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contract-card">
+                <div class="contract-header">
+                    <div>
+                        <div class="contract-number">Contract #: E60PQ-180000/012/PQ</div>
+                        <h3 style="margin: 0.5rem 0;">Construction Management Services - Northern Housing</h3>
+                    </div>
+                    <div class="contract-value">$8,750,000</div>
+                </div>
+                <div class="contract-details">
+                    <div class="contract-detail-item">
+                        <strong>Supplier</strong>
+                        Indigenous Construction Group
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Department</strong>
+                        Public Services and Procurement
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Period</strong>
+                        2024-06-01 to 2026-05-31
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Verification Status</strong>
+                        <span class="status-indicator verified">
+                            <span class="status-dot"></span>
+                            Verified
+                        </span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="contract-card">
+                <div class="contract-header">
+                    <div>
+                        <div class="contract-number">Contract #: W8486-220003/001/BAP</div>
+                        <h3 style="margin: 0.5rem 0;">Strategic Advisory Services</h3>
+                    </div>
+                    <div class="contract-value">$125,000</div>
+                </div>
+                <div class="contract-details">
+                    <div class="contract-detail-item">
+                        <strong>Supplier</strong>
+                        First Nations Consulting
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Department</strong>
+                        National Defence
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Period</strong>
+                        2024-09-15 to 2024-12-15
+                    </div>
+                    <div class="contract-detail-item">
+                        <strong>Verification Status</strong>
+                        <span class="status-indicator alert">
+                            <span class="status-dot"></span>
+                            Under Review
+                        </span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Trends Tab -->
+        <div id="trends" class="tab-content">
+            <h2 style="margin-bottom: 2rem;">Historical Trends & Analytics</h2>
+            
+            <div class="charts-grid">
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Procurement Compliance Trend</h3>
+                        <p class="chart-subtitle">Overall federal compliance with 5% target</p>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="complianceChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Supplier Verification Status</h3>
+                        <p class="chart-subtitle">Distribution of verification stages</p>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="verificationChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Contract Value by Department</h3>
+                        <p class="chart-subtitle">Top 10 departments by Indigenous procurement value</p>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="departmentChart"></canvas>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <div class="chart-header">
+                        <h3 class="chart-title">Monthly Alert Patterns</h3>
+                        <p class="chart-subtitle">Suspicious activity flags by month</p>
+                    </div>
+                    <div class="chart-canvas">
+                        <canvas id="alertChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Tab -->
+        <div id="api" class="tab-content">
+            <h2 style="margin-bottom: 2rem;">API Integration Documentation</h2>
+            
+            <div class="api-section">
+                <h3>Authentication</h3>
+                <p>All API requests require authentication using OAuth 2.0. Include your access token in the Authorization header.</p>
+                <div class="code-block">
+Authorization: Bearer YOUR_ACCESS_TOKEN</div>
+            </div>
+
+            <div class="api-section">
+                <h3>Endpoints</h3>
+                
+                <div class="api-endpoint">
+                    <span class="api-method get">GET</span>
+                    <code>/api/v1/departments</code>
+                </div>
+                <p>Retrieve all department procurement data</p>
+                <div class="code-block">
+{
+  "departments": [
+    {
+      "id": "ISC",
+      "name": "Indigenous Services Canada",
+      "compliance_rate": 18.4,
+      "target": 5.0,
+      "total_contracts": 1247,
+      "indigenous_contracts": 229,
+      "total_value": 458000000,
+      "indigenous_value": 84272000,
+      "verification_status": "verified",
+      "last_audit": "2024-10-15"
+    }
+  ]
+}</div>
+
+                <div class="api-endpoint">
+                    <span class="api-method get">GET</span>
+                    <code>/api/v1/suppliers/{supplier_id}</code>
+                </div>
+                <p>Get detailed supplier verification information</p>
+                <div class="code-block">
+{
+  "supplier": {
+    "id": "S123456",
+    "name": "Northern Tech Solutions Inc.",
+    "business_number": "123456789RC0001",
+    "indigenous_ownership": 51,
+    "verification_status": "verified",
+    "certifications": ["CCAB", "ISO-9001"],
+    "active_contracts": 3,
+    "total_contract_value": 3750000
+  }
+}</div>
+
+                <div class="api-endpoint">
+                    <span class="api-method post">POST</span>
+                    <code>/api/v1/suppliers/verify</code>
+                </div>
+                <p>Submit a new supplier for verification</p>
+                <div class="code-block">
+// Request
+{
+  "business_name": "Example Indigenous Corp",
+  "business_number": "987654321RC0001",
+  "ownership_percentage": 75,
+  "supporting_documents": ["ownership.pdf", "ccab_cert.pdf"]
+}
+
+// Response
+{
+  "verification_id": "V789012",
+  "status": "pending",
+  "estimated_completion": "2024-12-15",
+  "next_steps": ["document_review", "ownership_validation"]
+}</div>
+
+                <div class="api-endpoint">
+                    <span class="api-method get">GET</span>
+                    <code>/api/v1/contracts</code>
+                </div>
+                <p>Query contract data with filters</p>
+                <div class="code-block">
+// Example: Get all contracts over $1M from verified suppliers
+GET /api/v1/contracts?min_value=1000000&verification_status=verified&limit=50
+
+{
+  "contracts": [
+    {
+      "contract_number": "47K52-234567/001/SS",
+      "title": "IT Infrastructure Modernization Services",
+      "supplier_id": "S123456",
+      "department_id": "ISC",
+      "value": 2450000,
+      "start_date": "2024-04-01",
+      "end_date": "2025-03-31"
+    }
+  ],
+  "total": 127,
+  "page": 1,
+  "pages": 3
+}</div>
+
+                <div class="api-endpoint">
+                    <span class="api-method put">PUT</span>
+                    <code>/api/v1/alerts/{alert_id}/review</code>
+                </div>
+                <p>Update alert status after review</p>
+                <div class="code-block">
+// Request
+{
+  "review_status": "resolved",
+  "reviewer_id": "R456789",
+  "notes": "Ownership documents validated. No issues found.",
+  "action_taken": "approved"
+}</div>
+            </div>
+
+            <div class="api-section">
+                <h3>Webhooks</h3>
+                <p>Subscribe to real-time events for monitoring changes</p>
+                <div class="code-block">
+// Webhook payload example
+{
+  "event": "supplier.verification.completed",
+  "timestamp": "2024-11-20T14:30:00Z",
+  "data": {
+    "supplier_id": "S123456",
+    "verification_status": "verified",
+    "reviewer": "M. Tremblay"
+  }
+}</div>
+            </div>
+
+            <div class="api-section">
+                <h3>Rate Limits</h3>
+                <ul style="margin-left: 2rem; line-height: 2;">
+                    <li>Standard tier: 1,000 requests per hour</li>
+                    <li>Premium tier: 10,000 requests per hour</li>
+                    <li>Bulk export endpoints: 10 requests per hour</li>
+                </ul>
+            </div>
+        </div>
+    </main>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+    <script>
+        // Tab switching
+        const tabs = document.querySelectorAll('.nav-tab');
+        const tabContents = document.querySelectorAll('.tab-content');
+
+        tabs.forEach(tab => {
+            tab.addEventListener('click', () => {
+                const targetTab = tab.dataset.tab;
+                
+                tabs.forEach(t => t.classList.remove('active'));
+                tabContents.forEach(tc => tc.classList.remove('active'));
+                
+                tab.classList.add('active');
+                document.getElementById(targetTab).classList.add('active');
+                
+                // Initialize charts when trends tab is opened
+                if (targetTab === 'trends') {
+                    initializeCharts();
+                }
+            });
+        });
+
+        // Search functionality
+        const searchBox = document.querySelector('.search-box');
+        if (searchBox) {
+            searchBox.addEventListener('input', (e) => {
+                const searchTerm = e.target.value.toLowerCase();
+                const rows = document.querySelectorAll('tbody tr');
+                
+                rows.forEach(row => {
+                    const dept = row.querySelector('td:first-child').textContent.toLowerCase();
+                    row.style.display = dept.includes(searchTerm) ? '' : 'none';
+                });
+            });
+        }
+
+        // Charts initialization
+        function initializeCharts() {
+            // Compliance Trend Chart
+            const complianceCtx = document.getElementById('complianceChart');
+            if (complianceCtx && !complianceCtx.chart) {
+                complianceCtx.chart = new Chart(complianceCtx, {
+                    type: 'line',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+                        datasets: [{
+                            label: 'Compliance Rate',
+                            data: [3.2, 3.4, 3.5, 3.7, 3.8, 3.9, 4.0, 4.1, 4.1, 4.2, 4.2],
+                            borderColor: '#26374A',
+                            backgroundColor: 'rgba(38, 55, 74, 0.1)',
+                            tension: 0.4
+                        }, {
+                            label: '5% Target',
+                            data: [5, 5, 5, 5, 5, 5, 5, 5, 5, 5, 5],
+                            borderColor: '#AF3C43',
+                            borderDash: [5, 5],
+                            pointRadius: 0
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                max: 6,
+                                ticks: {
+                                    callback: function(value) {
+                                        return value + '%';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Verification Status Chart
+            const verificationCtx = document.getElementById('verificationChart');
+            if (verificationCtx && !verificationCtx.chart) {
+                verificationCtx.chart = new Chart(verificationCtx, {
+                    type: 'doughnut',
+                    data: {
+                        labels: ['Verified', 'Under Review', 'Pending', 'Issues Found'],
+                        datasets: [{
+                            data: [1523, 187, 98, 39],
+                            backgroundColor: ['#1B6F00', '#FF9F40', '#E1E4E7', '#D3080C']
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                position: 'bottom'
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Department Chart
+            const departmentCtx = document.getElementById('departmentChart');
+            if (departmentCtx && !departmentCtx.chart) {
+                departmentCtx.chart = new Chart(departmentCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['ISC', 'PSPC', 'HC', 'ECCC', 'TC', 'DND', 'ESDC', 'NRCan', 'AAFC', 'DFO'],
+                        datasets: [{
+                            label: 'Contract Value ($M)',
+                            data: [458, 312, 156, 98, 89, 89, 78, 67, 56, 45],
+                            backgroundColor: '#26374A'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                ticks: {
+                                    callback: function(value) {
+                                        return '$' + value + 'M';
+                                    }
+                                }
+                            }
+                        }
+                    }
+                });
+            }
+
+            // Alert Patterns Chart
+            const alertCtx = document.getElementById('alertChart');
+            if (alertCtx && !alertCtx.chart) {
+                alertCtx.chart = new Chart(alertCtx, {
+                    type: 'bar',
+                    data: {
+                        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov'],
+                        datasets: [{
+                            label: 'Alerts',
+                            data: [2, 3, 1, 4, 2, 5, 3, 2, 6, 4, 3],
+                            backgroundColor: '#D3080C'
+                        }]
+                    },
+                    options: {
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: {
+                            legend: {
+                                display: false
+                            }
+                        },
+                        scales: {
+                            y: {
+                                beginAtZero: true,
+                                stepSize: 1
+                            }
+                        }
+                    }
+                });
+            }
+        }
+
+        // Simulate real-time updates
+        function updateData() {
+            const rows = document.querySelectorAll('tbody tr');
+            rows.forEach((row, index) => {
+                if (Math.random() > 0.7) {
+                    row.classList.add('loading');
+                    setTimeout(() => {
+                        row.classList.remove('loading');
+                    }, 1000);
+                }
+            });
+        }
+
+        // Update every 30 seconds
+        setInterval(updateData, 30000);
+
+        // Export functionality
+        document.querySelector('.export-btn')?.addEventListener('click', () => {
+            alert('Export functionality would generate CSV report for Auditor General');
+        });
+
+        // View details
+        document.querySelectorAll('.view-details').forEach(btn => {
+            btn.addEventListener('click', () => {
+                alert('Would open detailed department view with contract listings and supplier verification details');
+            });
+        });
+
+        // Language toggle
+        document.querySelector('.lang-toggle').addEventListener('click', () => {
+            alert('Would switch to French version');
+        });
+    </script>
+</body>
+</html>

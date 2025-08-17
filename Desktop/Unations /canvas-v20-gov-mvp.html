@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Canvas V20 - Indigenous Procurement Verification Platform</title>
+  <style>
+    :root {
+      --water-deep: #1B4D3E;
+      --water-flow: #2D6B5F;
+      --earth-warm: #B7853D;
+      --stone-grey: #3C4142;
+      --mist-white: #F7F8F7;
+      --climate-green: #22C55E;
+      --spirit-gold: #D4AF37;
+      --alert-red: #DC2626;
+      --protocol-purple: #7C3AED;
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      line-height: 1.6;
+      color: var(--stone-grey);
+      background: linear-gradient(to bottom, var(--mist-white) 0%, #E8F3F0 100%);
+      padding: 20px;
+    }
+    
+    .canvas-container {
+      max-width: 1600px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(27, 77, 62, 0.1);
+      overflow: hidden;
+    }
+    
+    .canvas-header {
+      background: linear-gradient(135deg, var(--water-deep) 0%, var(--water-flow) 100%);
+      color: white;
+      padding: 60px 40px;
+      text-align: center;
+      position: relative;
+    }
+    
+    .canvas-header h1 {
+      margin-bottom: 15px;
+      font-size: 48px;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+    
+    .canvas-header p {
+      font-size: 22px;
+      margin-bottom: 15px;
+      opacity: 0.95;
+      font-weight: 300;
+    }
+    
+    .mvp-tagline {
+      background: rgba(220, 38, 38, 0.2);
+      border: 2px solid var(--alert-red);
+      border-radius: 16px;
+      padding: 20px 32px;
+      margin-top: 25px;
+      font-size: 18px;
+      font-weight: 600;
+      backdrop-filter: blur(10px);
+    }
+    
+    .tam-highlight {
+      background: rgba(212, 175, 55, 0.2);
+      border: 2px solid var(--spirit-gold);
+      border-radius: 12px;
+      padding: 16px 24px;
+      margin-top: 15px;
+      font-size: 24px;
+      font-weight: 700;
+    }
+    
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 24px;
+      padding: 40px;
+    }
+    
+    .canvas-item {
+      border-radius: 12px;
+      padding: 28px;
+      background: white;
+      border: 1px solid rgba(27, 77, 62, 0.1);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .canvas-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: var(--water-deep);
+    }
+    
+    .canvas-item h2 {
+      color: var(--water-deep);
+      font-size: 20px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--earth-warm);
+      font-weight: 600;
+    }
+    
+    .canvas-item h3 {
+      color: var(--water-flow);
+      font-size: 16px;
+      margin: 16px 0 8px 0;
+      font-weight: 600;
+    }
+    
+    .canvas-item ul {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+    
+    .canvas-item li {
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+      color: var(--stone-grey);
+    }
+    
+    .canvas-item strong {
+      color: var(--water-deep);
+      font-weight: 600;
+    }
+    
+    .arrivecan-box {
+      background: linear-gradient(135deg, rgba(220, 38, 38, 0.08), rgba(183, 133, 61, 0.08));
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      border-left: 3px solid var(--alert-red);
+    }
+    
+    .compliance-box {
+      background: linear-gradient(135deg, rgba(34, 197, 94, 0.08), rgba(74, 139, 124, 0.08));
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      border-left: 3px solid var(--climate-green);
+    }
+    
+    .revenue-box {
+      background: linear-gradient(135deg, rgba(212, 175, 55, 0.08), rgba(183, 133, 61, 0.08));
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      border-left: 3px solid var(--spirit-gold);
+    }
+    
+    .network-box {
+      background: linear-gradient(135deg, rgba(124, 58, 237, 0.08), rgba(74, 139, 124, 0.08));
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      border-left: 3px solid var(--protocol-purple);
+    }
+    
+    .update-indicator {
+      background: linear-gradient(135deg, var(--spirit-gold), #F4D03F);
+      color: var(--stone-grey);
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      display: inline-block;
+      margin-bottom: 12px;
+    }
+    
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--mist-white);
+      border-radius: 20px;
+      font-size: 12px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      color: var(--stone-grey);
+      font-weight: 600;
+      border: 1px solid rgba(139, 90, 60, 0.2);
+    }
+    
+    .tag.arrivecan {
+      background: rgba(220, 38, 38, 0.15);
+      border-color: var(--alert-red);
+      color: var(--water-deep);
+    }
+    
+    .tag.compliance {
+      background: rgba(34, 197, 94, 0.15);
+      border-color: var(--climate-green);
+      color: var(--water-deep);
+    }
+    
+    .tag.revenue {
+      background: rgba(212, 175, 55, 0.15);
+      border-color: var(--spirit-gold);
+      color: var(--water-deep);
+    }
+    
+    /* Grid positioning */
+    .problem { grid-column: 1; grid-row: 1; }
+    .solution { grid-column: 2; grid-row: 1; }
+    .customer-segments { grid-column: 3; grid-row: 1; }
+    .unique-value { grid-column: 2; grid-row: 2; }
+    .channels { grid-column: 3; grid-row: 2; }
+    .key-metrics { grid-column: 1; grid-row: 2; }
+    .unfair-advantage { grid-column: 2; grid-row: 3/5; }
+    .cost-structure { grid-column: 1; grid-row: 3; }
+    .revenue-streams { grid-column: 3; grid-row: 3; }
+    
+    .problem::before { background: var(--alert-red); }
+    .solution::before { background: var(--climate-green); }
+    .customer-segments::before { background: var(--spirit-gold); }
+    
+    .network-effects-section {
+      background: linear-gradient(135deg, var(--mist-white) 0%, #E8F3F0 100%);
+      padding: 40px;
+      margin-top: 40px;
+      border-top: 3px solid var(--spirit-gold);
+    }
+    
+    .network-effects-section h2 {
+      color: var(--water-deep);
+      font-size: 32px;
+      margin-bottom: 30px;
+      text-align: center;
+      font-weight: 700;
+    }
+    
+    .network-effects-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+      gap: 25px;
+      margin-top: 30px;
+    }
+    
+    .network-effect-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      border-left: 5px solid var(--water-deep);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+    }
+    
+    .network-effect-card h3 {
+      color: var(--water-flow);
+      font-size: 18px;
+      margin-bottom: 12px;
+      font-weight: 700;
+    }
+    
+    .effect-type {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--mist-white);
+      border-radius: 15px;
+      font-size: 12px;
+      margin-bottom: 10px;
+      color: var(--stone-grey);
+      font-weight: 600;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: var(--stone-grey);
+      font-size: 14px;
+      background: var(--mist-white);
+    }
+    
+    @media (max-width: 1200px) {
+      .canvas-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .problem, .solution, .unique-value, .unfair-advantage, 
+      .customer-segments, .channels, .key-metrics, 
+      .cost-structure, .revenue-streams {
+        grid-column: 1;
+        grid-row: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas-container">
+    <div class="canvas-header">
+      <h1>Indigenous Procurement Verification Platform</h1>
+      <p>Preventing the Next ArriveCan Scandal Through Real-Time Indigenous Business Verification</p>
+      
+      <div class="mvp-tagline">
+        <strong>Government MVP:</strong> Never Again $59.5M Phantom Partnership Scandals<br>
+        Real-time verification across all 96+ federal + 330+ provincial procurement entities
+      </div>
+      
+      <div class="tam-highlight">
+        426+ Government Agencies × $20K/month = $102M Annual Market
+      </div>
+    </div>
+    
+    <div class="canvas-grid">
+      
+      <!-- PROBLEM -->
+      <div class="canvas-item problem">
+        <h2>1. Problem</h2>
+        <div class="update-indicator">ArriveCan Aftermath Crisis</div>
+        
+        <h3>$59.5M ArriveCan Scandal Exposed Verification Failures</h3>
+        <div class="arrivecan-box">
+          <ul>
+            <li><strong>Dalian/Coradix phantom partnership:</strong> $7.9M for ArriveCan, $317M total contracts since 2011</li>
+            <li><strong>Failed Indigenous audits:</strong> Across dozen contracts, no real Indigenous ownership</li>
+            <li><strong>GC Strategies middleman:</strong> $19.1M to 2-person firm with no technical staff</li>
+            <li><strong>RCMP investigation ongoing:</strong> Criminal fraud charges possible</li>
+          </ul>
+        </div>
+        
+        <h3>$500M+ Annual Compliance Burden</h3>
+        <ul>
+          <li><strong>96 federal departments:</strong> Each averaging $125K+ procurement officer salaries</li>
+          <li><strong>Manual verification hell:</strong> 24-month delays between data collection and action</li>
+          <li><strong>Fragmented tracking:</strong> 96 separate systems, no real-time visibility</li>
+          <li><strong>Only 1% reaches legitimate Indigenous businesses</strong> per AFN estimates</li>
+        </ul>
+        
+        <h3>5% Procurement Target Failures</h3>
+        <ul>
+          <li><strong>28% of departments missing targets</strong> despite massive administrative overhead</li>
+          <li><strong>PSPC only achieved 2.7%</strong> vs 5% target = $118.5M missed opportunities</li>
+          <li><strong>95% of Indigenous businesses unregistered</strong> (2,900 vs 60,000 operating)</li>
+          <li><strong>Procurement protests cost $50K+ each</strong> with 100-day contract freezes</li>
+        </ul>
+        
+        <div class="arrivecan-box">
+          <h3>🚨 Next Scandal Risk: $1.6B Indigenous Contracts Unverified</h3>
+          <ul>
+            <li>Every phantom partnership costs millions</li>
+            <li>Parliamentary hearings, Auditor General investigations</li>
+            <li>Reputational damage to reconciliation efforts</li>
+            <li>Ministers' careers at stake</li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- SOLUTION -->
+      <div class="canvas-item solution">
+        <h2>4. Solution</h2>
+        <div class="update-indicator">Real-Time Government Integration</div>
+        
+        <h3>Multi-System Verification Engine</h3>
+        <div class="compliance-box">
+          <ul>
+            <li><strong>CRA integration:</strong> Real-time business status, tax compliance, corporate structure</li>
+            <li><strong>ISED corporate registry:</strong> Directors, officers, ownership verification</li>
+            <li><strong>ISC Indigenous certification:</strong> Authentic Indigenous status validation</li>
+            <li><strong>Provincial registries:</strong> ON, QC, BC, AB corporate filings</li>
+            <li><strong>Pattern detection AI:</strong> Spot phantom partnerships before they happen</li>
+          </ul>
+        </div>
+        
+        <h3>Automated Compliance Dashboard</h3>
+        <ul>
+          <li><strong>Real-time 5% tracking:</strong> Live progress toward procurement targets</li>
+          <li><strong>Risk scoring:</strong> Flag suspicious businesses before contract award</li>
+          <li><strong>Audit trail automation:</strong> Complete documentation for Auditor General</li>
+          <li><strong>Performance analytics:</strong> Department benchmarking and optimization</li>
+        </ul>
+        
+        <h3>Indigenous Business Network Building</h3>
+        <ul>
+          <li><strong>Verification acceleration:</strong> 24-month → 24-hour business verification</li>
+          <li><strong>Community-controlled validation:</strong> Indigenous governance over authenticity</li>
+          <li><strong>Capability matching:</strong> Smart supplier recommendations for opportunities</li>
+          <li><strong>Performance tracking:</strong> Real supplier metrics, not phantom claims</li>
+        </ul>
+        
+        <div class="network-box">
+          <h3>🔄 Network Effects Foundation</h3>
+          <ul>
+            <li><strong>Government adoption drives supplier adoption:</strong> Must be verified to compete</li>
+            <li><strong>Data network effect:</strong> Every verification improves fraud detection</li>
+            <li><strong>Protocol network effect:</strong> Becomes standard for Indigenous procurement</li>
+            <li><strong>Platform lock-in:</strong> Integration with procurement systems</li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- CUSTOMER SEGMENTS -->
+      <div class="canvas-item customer-segments">
+        <h2>2. Customer Segments</h2>
+        <div class="update-indicator">426+ Government Agencies</div>
+        
+        <h3>Federal Departments (96 entities)</h3>
+        <div class="revenue-box">
+          <ul>
+            <li><strong>Tier 1 - Major Procurers (10):</strong> $100K-$200K/year
+              <br>• PSPC ($5.15B procurement), DND, ISC, ISED</li>
+            <li><strong>Tier 2 - Medium (25):</strong> $50K-$75K/year
+              <br>• Health Canada, Transport, Environment</li>
+            <li><strong>Tier 3 - Smaller (61):</strong> $25K/year
+              <br>• Agencies, boards, commissions</li>
+          </ul>
+        </div>
+        
+        <h3>Provincial Procurement (330+ entities)</h3>
+        <ul>
+          <li><strong>Ontario (170+ agencies):</strong> $50K+ each = $8.5M potential</li>
+          <li><strong>Quebec (48+ departments):</strong> $25K-$75K each</li>
+          <li><strong>BC, Alberta, others:</strong> 100+ additional entities</li>
+          <li><strong>Municipal procurement:</strong> Major cities with Indigenous targets</li>
+        </ul>
+        
+        <h3>Key Decision Makers</h3>
+        <ul>
+          <li><strong>Procurement directors:</strong> Need scandal prevention insurance</li>
+          <li><strong>Indigenous affairs ministers:</strong> Political careers depend on success</li>
+          <li><strong>Deputy ministers:</strong> Responsible for department compliance</li>
+          <li><strong>Treasury Board:</strong> Mandate adoption for cost savings</li>
+        </ul>
+        
+        <h3>Pain Points We Solve</h3>
+        <ul>
+          <li><strong>Career-ending scandals:</strong> No minister survives another ArriveCan</li>
+          <li><strong>Manual verification hell:</strong> Months of work, uncertain results</li>
+          <li><strong>Compliance anxiety:</strong> Never sure if targets will be met</li>
+          <li><strong>Fraud detection:</strong> Can't spot sophisticated phantom partnerships</li>
+        </ul>
+        
+        <div>
+          <span class="tag arrivecan">Scandal Prevention</span>
+          <span class="tag compliance">5% Target Achievement</span>
+          <span class="tag revenue">$500M Cost Savings</span>
+          <span class="tag">Real-time Verification</span>
+        </div>
+      </div>
+      
+      <!-- UNIQUE VALUE PROPOSITION -->
+      <div class="canvas-item unique-value">
+        <h2>3. Unique Value Proposition</h2>
+        <div class="update-indicator">ArriveCan Insurance Policy</div>
+        
+        <div class="arrivecan-box">
+          <p style="font-size: 18px; font-weight: 700; text-align: center;">
+            <strong>"The only platform that prevents $59.5M ArriveCan-style scandals while ensuring 5% Indigenous procurement targets are met with verified, authentic businesses"</strong>
+          </p>
+        </div>
+        
+        <h3>Scandal Prevention Guarantee</h3>
+        <ul>
+          <li><strong>Real-time verification:</strong> Across 5+ government systems simultaneously</li>
+          <li><strong>AI fraud detection:</strong> Spot phantom partnerships before contract award</li>
+          <li><strong>Complete audit trail:</strong> Auditor General-ready documentation</li>
+          <li><strong>Minister protection:</strong> Never again defend fake Indigenous partnerships</li>
+        </ul>
+        
+        <h3>Compliance Automation</h3>
+        <ul>
+          <li><strong>5% target achievement:</strong> Real-time tracking, predictive analytics</li>
+          <li><strong>Authentic supplier pool:</strong> 60,000 Indigenous businesses vs 2,900 registered</li>
+          <li><strong>Performance metrics:</strong> Actual results, not phantom claims</li>
+          <li><strong>Department benchmarking:</strong> Compare against best performers</li>
+        </ul>
+        
+        <h3>Cost Savings Justification</h3>
+        <ul>
+          <li><strong>$500M annual waste elimination:</strong> Automated compliance vs manual tracking</li>
+          <li><strong>Scandal prevention ROI:</strong> One prevented scandal = 10+ years platform cost</li>
+          <li><strong>Efficiency gains:</strong> 24-month → 24-hour verification cycles</li>
+          <li><strong>Phoenix precedent:</strong> Government pays $3.5B for critical systems</li>
+        </ul>
+        
+        <div class="network-box">
+          <h3>Strategic Foundation for Marketplace</h3>
+          <ul>
+            <li><strong>Government adoption drives supplier network:</strong> Must be verified to compete</li>
+            <li><strong>Data moat creation:</strong> Every verification improves the system</li>
+            <li><strong>Protocol establishment:</strong> Becomes standard for Indigenous commerce</li>
+            <li><strong>Marketplace readiness:</strong> Verified supplier network enables broader platform</li>
+          </ul>
+        </div>
+      </div>
+      
+      <!-- CHANNELS -->
+      <div class="canvas-item channels">
+        <h2>5. Channels</h2>
+        <div class="update-indicator">Government Sales Strategy</div>
+        
+        <h3>Direct Government Sales</h3>
+        <ul>
+          <li><strong>Treasury Board presentation:</strong> Mandate adoption for scandal prevention</li>
+          <li><strong>Procurement minister briefings:</strong> Career protection value proposition</li>
+          <li><strong>Deputy minister network:</strong> Peer pressure and benchmarking</li>
+          <li><strong>Indigenous affairs committees:</strong> Parliamentary oversight pressure</li>
+        </ul>
+        
+        <h3>Compliance Mandate Strategy</h3>
+        <ul>
+          <li><strong>Treasury Board Secretariat:</strong> Make platform standard procurement tool</li>
+          <li><strong>Office of Supplier Integrity:</strong> Official verification requirement</li>
+          <li><strong>Auditor General recommendations:</strong> Platform adoption as scandal prevention</li>
+          <li><strong>PSPC procurement modernization:</strong> Integration with CanadaBuys</li>
+        </ul>
+        
+        <h3>Partnership Channels</h3>
+        <ul>
+          <li><strong>System integrators:</strong> IBM, CGI, Accenture for government implementations</li>
+          <li><strong>Procurement consultants:</strong> Who advise departments on compliance</li>
+          <li><strong>Indigenous organizations:</strong> AFN, CCAB endorsement for authenticity</li>
+          <li><strong>Provincial shared services:</strong> OECM, BC Bid platform integration</li>
+        </ul>
+        
+        <h3>Media and Influence</h3>
+        <ul>
+          <li><strong>ArriveCan inquiry testimony:</strong> Position as scandal prevention solution</li>
+          <li><strong>Public administration conferences:</strong> Case studies on compliance automation</li>
+          <li><strong>Parliamentary committee briefings:</strong> Demonstrate cost savings potential</li>
+          <li><strong>Indigenous media coverage:</strong> Community support for authentic verification</li>
+        </ul>
+      </div>
+      
+      <!-- KEY METRICS -->
+      <div class="canvas-item key-metrics">
+        <h2>8. Key Metrics</h2>
+        <div class="update-indicator">Government Success Tracking</div>
+        
+        <div>
+          <span class="tag arrivecan">Scandals Prevented</span>
+          <span class="tag compliance">5% Target Achievement</span>
+          <span class="tag revenue">Cost Savings</span>
+          <span class="tag">Verification Accuracy</span>
+        </div>
+        
+        <h3>Primary Success Metrics</h3>
+        <ul>
+          <li><strong>Departments adopting platform:</strong> Target 50+ in Year 1</li>
+          <li><strong>5% target achievement rate:</strong> Departments meeting Indigenous procurement goals</li>
+          <li><strong>Verification accuracy:</strong> 99.5%+ phantom partnership detection</li>
+          <li><strong>Cost savings delivered:</strong> $100M+ annual compliance cost reduction</li>
+        </ul>
+        
+        <h3>Risk Prevention Metrics</h3>
+        <ul>
+          <li><strong>Fraudulent businesses flagged:</strong> Before contract award</li>
+          <li><strong>Audit trail completeness:</strong> 100% Auditor General compliance</li>
+          <li><strong>Scandal prevention value:</strong> ArriveCan-scale scandals avoided</li>
+          <li><strong>Media sentiment tracking:</strong> Government procurement reputation</li>
+        </ul>
+        
+        <h3>Network Effect Growth</h3>
+        <ul>
+          <li><strong>Indigenous businesses verified:</strong> 2,900 → 60,000 in database</li>
+          <li><strong>Cross-government adoption:</strong> Platform becomes standard</li>
+          <li><strong>Provincial expansion:</strong> Federal success drives provincial adoption</li>
+          <li><strong>Data network strengthening:</strong> Verification accuracy improving with scale</li>
+        </ul>
+        
+        <h3>Revenue Tracking</h3>
+        <ul>
+          <li><strong>Monthly recurring revenue:</strong> $8.5M target by Year 2</li>
+          <li><strong>Customer lifetime value:</strong> Government contracts = multi-year</li>
+          <li><strong>Expansion revenue:</strong> Additional modules and intelligence services</li>
+          <li><strong>Churn prevention:</strong> Mission-critical = sticky customers</li>
+        </ul>
+      </div>
+      
+      <!-- UNFAIR ADVANTAGE -->
+      <div class="canvas-item unfair-advantage">
+        <h2>9. Unfair Advantage</h2>
+        <div class="update-indicator">Government + Indigenous Trust Monopoly</div>
+        
+        <h3>Unique Government System Access</h3>
+        <div class="compliance-box">
+          <ul>
+            <li><strong>Multi-system integration:</strong> Only platform connecting CRA + ISED + ISC + Provincial registries</li>
+            <li><strong>Real-time API access:</strong> Government systems integration others can't replicate</li>
+            <li><strong>Security clearance team:</strong> Required for sensitive government data access</li>
+            <li><strong>Indigenous Services Canada partnership:</strong> Official verification authority</li>
+          </ul>
+        </div>
+        
+        <h3>25-Year Indigenous Trust Foundation</h3>
+        <ul>
+          <li><strong>Community relationships:</strong> Built over decades, impossible to replicate quickly</li>
+          <li><strong>Cultural competency:</strong> Understanding protocols, governance, authentic partnerships</li>
+          <li><strong>Elder knowledge integration:</strong> Traditional verification methods + modern tech</li>
+          <li><strong>Community-controlled validation:</strong> Indigenous governance over authenticity</li>
+        </ul>
+        
+        <h3>ArriveCan Timing Advantage</h3>
+        <ul>
+          <li><strong>Perfect market timing:</strong> Government desperate for scandal prevention</li>
+          <li><strong>Political urgency:</strong> Ministers' careers depend on avoiding fraud</li>
+          <li><strong>Budget justification:</strong> One prevented scandal = decades of platform cost</li>
+          <li><strong>First-mover advantage:</strong> No competitor has government + Indigenous trust</li>
+        </ul>
+        
+        <h3>Network Effects Compound</h3>
+        <div class="network-box">
+          <ul>
+            <li><strong>Data network effect:</strong> Every verification makes fraud detection smarter</li>
+            <li><strong>Government platform lock-in:</strong> Integration with procurement systems</li>
+            <li><strong>Protocol network effect:</strong> Becomes standard for Indigenous verification</li>
+            <li><strong>Supply-side network building:</strong> Government adoption drives Indigenous business participation</li>
+          </ul>
+        </div>
+        
+        <h3>Technical and Regulatory Moats</h3>
+        <ul>
+          <li><strong>Compliance complexity:</strong> PIPEDA, FINTRAC, government security requirements</li>
+          <li><strong>Bilingual requirements:</strong> Full French/English support mandated</li>
+          <li><strong>Audit trail standards:</strong> Auditor General-grade documentation</li>
+          <li><strong>Indigenous data sovereignty:</strong> Community-controlled governance protocols</li>
+        </ul>
+        
+        <div class="arrivecan-box">
+          <h3>🏛️ Becomes Government Infrastructure</h3>
+          <p style="text-align: center; font-weight: 700;">
+            Once embedded in 50+ departments as scandal prevention tool,<br>
+            removing platform becomes politically impossible
+          </p>
+        </div>
+      </div>
+      
+      <!-- COST STRUCTURE -->
+      <div class="canvas-item cost-structure">
+        <h2>7. Cost Structure</h2>
+        <div class="update-indicator">Government-Grade Platform</div>
+        
+        <h3>Platform Development (35%)</h3>
+        <ul>
+          <li><strong>Government systems integration:</strong> CRA, ISED, ISC API development</li>
+          <li><strong>Security & compliance:</strong> PIPEDA, FINTRAC, TBS security standards</li>
+          <li><strong>Bilingual platform:</strong> Full French/English interface mandated</li>
+          <li><strong>AI fraud detection:</strong> Pattern recognition, phantom partnership algorithms</li>
+        </ul>
+        
+        <h3>Sales & Government Relations (30%)</h3>
+        <ul>
+          <li><strong>Government affairs team:</strong> Treasury Board, minister briefings</li>
+          <li><strong>Security clearance staff:</strong> Required for government data access</li>
+          <li><strong>Implementation specialists:</strong> Department integration support</li>
+          <li><strong>Parliamentary relations:</strong> Committee testimony, inquiry support</li>
+        </ul>
+        
+        <h3>Indigenous Community Relations (25%)</h3>
+        <ul>
+          <li><strong>Community liaisons:</strong> 634+ First Nations relationship management</li>
+          <li><strong>Cultural advisors:</strong> Ensure authentic verification protocols</li>
+          <li><strong>Elder council engagement:</strong> Traditional knowledge integration</li>
+          <li><strong>Regional coordination:</strong> Provincial and territorial partnerships</li>
+        </ul>
+        
+        <h3>Operations & Compliance (10%)</h3>
+        <ul>
+          <li><strong>24/7 monitoring:</strong> Real-time verification system uptime</li>
+          <li><strong>Audit trail management:</strong> Government-grade documentation</li>
+          <li><strong>Customer success:</strong> Department training and support</li>
+          <li><strong>Data center costs:</strong> Government security requirements</li>
+        </ul>
+      </div>
+      
+      <!-- REVENUE STREAMS -->
+      <div class="canvas-item revenue-streams">
+        <h2>6. Revenue Streams</h2>
+        <div class="update-indicator">Government Enterprise SaaS</div>
+        
+        <h3>Tiered Government SaaS (Primary)</h3>
+        <div class="revenue-box">
+          <ul>
+            <li><strong>Tier 1 - Major Departments:</strong> $100K-$200K/year
+              <br>• 10 departments = $1.5M annually</li>
+            <li><strong>Tier 2 - Medium Departments:</strong> $50K-$75K/year
+              <br>• 25 departments = $1.5M annually</li>
+            <li><strong>Tier 3 - Smaller Agencies:</strong> $25K/year
+              <br>• 60+ agencies = $1.5M annually</li>
+          </ul>
+        </div>
+        
+        <h3>Provincial Government Expansion</h3>
+        <ul>
+          <li><strong>Ontario (170+ agencies):</strong> $8.5M annual potential</li>
+          <li><strong>Quebec procurement entities:</strong> $3M annual potential</li>
+          <li><strong>Other provinces combined:</strong> $10M annual potential</li>
+          <li><strong>Municipal governments:</strong> Major cities with Indigenous targets</li>
+        </ul>
+        
+        <h3>Premium Services & Intelligence</h3>
+        <ul>
+          <li><strong>Advanced analytics:</strong> Department benchmarking, optimization</li>
+          <li><strong>Custom reporting:</strong> Minister briefings, parliamentary testimony</li>
+          <li><strong>Audit support:</strong> Auditor General preparation services</li>
+          <li><strong>Training & certification:</strong> Procurement officer education</li>
+        </ul>
+        
+        <h3>Strategic Revenue Projections</h3>
+        <div class="revenue-box">
+          <ul>
+            <li><strong>Year 1:</strong> $4.5M (50 departments/agencies)</li>
+            <li><strong>Year 2:</strong> $12M (federal + provincial expansion)</li>
+            <li><strong>Year 3:</strong> $25M (full government penetration)</li>
+            <li><strong>Year 5:</strong> $50M+ (marketplace revenue layer)</li>
+          </ul>
+        </div>
+        
+        <div class="compliance-box">
+          <h3>Revenue Model Validation</h3>
+          <ul>
+            <li><strong>Phoenix precedent:</strong> $3.5B for pay system shows government payment capability</li>
+            <li><strong>ArriveCan lesson:</strong> $59.5M scandal > 30 years platform cost</li>
+            <li><strong>Enterprise software comparison:</strong> Oracle, SAP charge $50K-$500K annually</li>
+            <li><strong>Mission-critical status:</strong> Scandal prevention = unlimited budget justification</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <!-- NETWORK EFFECTS SECTION -->
+    <div class="network-effects-section">
+      <h2>🚀 Network Effects Strategy: Government → Marketplace</h2>
+      
+      <div class="network-effects-grid">
+        
+        <div class="network-effect-card">
+          <span class="effect-type">Platform Network Effect</span>
+          <h3>Government Adoption Drives Supplier Network</h3>
+          <p>When government requires verification for contracts, all Indigenous businesses must join platform. Government demand creates supply-side network automatically.</p>
+        </div>
+        
+        <div class="network-effect-card">
+          <span class="effect-type">Data Network Effect</span>
+          <h3>Every Verification Improves Fraud Detection</h3>
+          <p>Each business verified makes AI smarter at detecting phantom partnerships. Data advantage compounds - competitors can't replicate verification accuracy.</p>
+        </div>
+        
+        <div class="network-effect-card">
+          <span class="effect-type">Protocol Network Effect</span>
+          <h3>Becomes Indigenous Verification Standard</h3>
+          <p>Government adoption makes platform the standard for Indigenous business verification. Private sector must adopt same protocol for credibility.</p>
+        </div>
+        
+        <div class="network-effect-card">
+          <span class="effect-type">Market Network Effect</span>
+          <h3>Verified Businesses Enable Marketplace</h3>
+          <p>Once all Indigenous businesses verified through government sales, marketplace transactions become natural evolution. Trust + identity already established.</p>
+        </div>
+        
+        <div class="network-effect-card">
+          <span class="effect-type">Personal Utility Network</span>
+          <h3>Daily Government Workflow Integration</h3>
+          <p>Platform becomes essential tool for procurement officers. Real identities tied to professional success - creates strong retention and word-of-mouth.</p>
+        </div>
+        
+        <div class="network-effect-card">
+          <span class="effect-type">Expertise Network Effect</span>
+          <h3>Platform Skills Become Professional Requirement</h3>
+          <p>"Platform certified" becomes requirement for procurement roles. Government employees develop expertise that increases platform value and switching costs.</p>
+        </div>
+        
+      </div>
+      
+      <div class="arrivecan-box" style="margin-top: 30px; text-align: center; padding: 30px;">
+        <h3 style="color: var(--alert-red); font-size: 24px; margin-bottom: 15px;">The Strategic Moat</h3>
+        <p style="font-size: 18px; font-weight: 700;">
+          Government adoption creates Indigenous business network →
+        </p>
+        <p style="font-size: 18px; font-weight: 700; margin-top: 10px;">
+          Indigenous business network enables broader marketplace →
+        </p>
+        <p style="font-size: 28px; font-weight: 700; color: var(--alert-red); margin-top: 15px;">
+          $1+ Trillion Indigenous Economy Platform
+        </p>
+        <p style="margin-top: 20px; font-size: 16px;">
+          Government scandal prevention pays for building the infrastructure<br>
+          that captures the entire Indigenous economy
+        </p>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p><strong>Canvas V20 - Government MVP</strong> | Indigenous Procurement Verification Platform | January 2025</p>
+      <p><em>Preventing ArriveCan scandals while building foundation for $1+ trillion Indigenous economy platform</em></p>
+      <p style="margin-top: 15px; font-weight: 700;">Government pays to prevent scandals. We use that revenue to build marketplace dominance.</p>
+    </div>
+  </div>
+</body>
+</html>

@@ -1,0 +1,239 @@
+<svg viewBox="0 0 2400 1800" xmlns="http://www.w3.org/2000/svg">
+  <!-- Background -->
+  <rect width="2400" height="1800" fill="#f5f5f7"/>
+  
+  <!-- Title -->
+  <text x="1200" y="40" font-family="Arial, sans-serif" font-size="32" font-weight="bold" text-anchor="middle" fill="#1B4D3E">
+    Community Capacity Intelligence: The Economic Reconciliation Revolution
+  </text>
+  
+  <!-- Central Hub -->
+  <circle cx="1200" cy="900" r="120" fill="#1B4D3E" stroke="#B7853D" stroke-width="8"/>
+  <text x="1200" y="885" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white">
+    Community
+  </text>
+  <text x="1200" y="910" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white">
+    Capacity
+  </text>
+  <text x="1200" y="935" font-family="Arial, sans-serif" font-size="20" font-weight="bold" text-anchor="middle" fill="white">
+    Intelligence
+  </text>
+  
+  <!-- Main Branches -->
+  
+  <!-- 1. Workforce Registry (Top Left) -->
+  <line x1="1120" y1="820" x2="600" y2="400" stroke="#1B4D3E" stroke-width="6"/>
+  <circle cx="600" cy="400" r="80" fill="#2D6B5F" stroke="#B7853D" stroke-width="4"/>
+  <text x="600" y="395" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Workforce
+  </text>
+  <text x="600" y="415" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Registry
+  </text>
+  
+  <!-- Workforce Sub-branches -->
+  <line x1="520" y1="340" x2="300" y2="200" stroke="#2D6B5F" stroke-width="3"/>
+  <rect x="200" y="160" width="200" height="80" rx="10" fill="#E8F3F0" stroke="#2D6B5F" stroke-width="2"/>
+  <text x="300" y="190" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Certified Trades</text>
+  <text x="300" y="210" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Red Seal • Journeyman</text>
+  <text x="300" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Equipment Operators</text>
+  
+  <line x1="550" y1="330" x2="450" y2="200" stroke="#2D6B5F" stroke-width="3"/>
+  <rect x="350" y="160" width="200" height="80" rx="10" fill="#E8F3F0" stroke="#2D6B5F" stroke-width="2"/>
+  <text x="450" y="190" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Experience Levels</text>
+  <text x="450" y="210" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Years • Projects</text>
+  <text x="450" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Specializations</text>
+  
+  <line x1="600" y1="320" x2="600" y2="200" stroke="#2D6B5F" stroke-width="3"/>
+  <rect x="500" y="160" width="200" height="80" rx="10" fill="#E8F3F0" stroke="#2D6B5F" stroke-width="2"/>
+  <text x="600" y="190" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Youth Pipeline</text>
+  <text x="600" y="210" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Training Interest</text>
+  <text x="600" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Career Readiness</text>
+  
+  <line x1="650" y1="330" x2="750" y2="200" stroke="#2D6B5F" stroke-width="3"/>
+  <rect x="650" y="160" width="200" height="80" rx="10" fill="#E8F3F0" stroke="#2D6B5F" stroke-width="2"/>
+  <text x="750" y="190" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Local Businesses</text>
+  <text x="750" y="210" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Equipment • Supply</text>
+  <text x="750" y="230" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Service Capacity</text>
+  
+  <!-- 2. Real-Time Availability (Top Right) -->
+  <line x1="1280" y1="820" x2="1800" y2="400" stroke="#1B4D3E" stroke-width="6"/>
+  <circle cx="1800" cy="400" r="80" fill="#4A8B7C" stroke="#B7853D" stroke-width="4"/>
+  <text x="1800" y="395" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Real-Time
+  </text>
+  <text x="1800" y="415" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Availability
+  </text>
+  
+  <!-- Availability Sub-branches -->
+  <line x1="1720" y1="340" x2="1600" y2="250" stroke="#4A8B7C" stroke-width="3"/>
+  <rect x="1500" y="210" width="200" height="80" rx="10" fill="#E8F3F0" stroke="#4A8B7C" stroke-width="2"/>
+  <text x="1600" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Current Projects</text>
+  <text x="1600" y="260" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Who's Working Where</text>
+  <text x="1600" y="280" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Project Timelines</text>
+  
+  <line x1="1800" y1="320" x2="1800" y2="250" stroke="#4A8B7C" stroke-width="3"/>
+  <rect x="1700" y="210" width="200" height="80" rx="10" fill="#E8F3F0" stroke="#4A8B7C" stroke-width="2"/>
+  <text x="1800" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Cultural Calendar</text>
+  <text x="1800" y="260" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Traditional Activities</text>
+  <text x="1800" y="280" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Seasonal Patterns</text>
+  
+  <line x1="1880" y1="340" x2="2000" y2="250" stroke="#4A8B7C" stroke-width="3"/>
+  <rect x="1900" y="210" width="200" height="80" rx="10" fill="#E8F3F0" stroke="#4A8B7C" stroke-width="2"/>
+  <text x="2000" y="240" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Rotation Schedule</text>
+  <text x="2000" y="260" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">2-Week Rotations</text>
+  <text x="2000" y="280" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Travel Windows</text>
+  
+  <!-- 3. Crew Optimization (Left) -->
+  <line x1="1080" y1="900" x2="400" y2="900" stroke="#1B4D3E" stroke-width="6"/>
+  <circle cx="400" cy="900" r="80" fill="#B7853D" stroke="#1B4D3E" stroke-width="4"/>
+  <text x="400" y="895" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Crew
+  </text>
+  <text x="400" y="915" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Optimization
+  </text>
+  
+  <!-- Optimization Sub-branches -->
+  <line x1="320" y1="840" x2="200" y2="750" stroke="#B7853D" stroke-width="3"/>
+  <rect x="50" y="710" width="300" height="80" rx="10" fill="#FFF5E6" stroke="#B7853D" stroke-width="2"/>
+  <text x="200" y="740" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Local vs External Mix</text>
+  <text x="200" y="760" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">70% Local = 56% Cost Savings</text>
+  <text x="200" y="780" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Zero Accommodation Costs</text>
+  
+  <line x1="320" y1="960" x2="200" y2="1050" stroke="#B7853D" stroke-width="3"/>
+  <rect x="50" y="1010" width="300" height="80" rx="10" fill="#FFF5E6" stroke="#B7853D" stroke-width="2"/>
+  <text x="200" y="1040" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Mentorship Pairing</text>
+  <text x="200" y="1060" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Certified + Trainee Teams</text>
+  <text x="200" y="1080" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Skills Transfer Optimization</text>
+  
+  <!-- 4. Intelligence Products (Right) -->
+  <line x1="1320" y1="900" x2="2000" y2="900" stroke="#1B4D3E" stroke-width="6"/>
+  <circle cx="2000" cy="900" r="80" fill="#22C55E" stroke="#B7853D" stroke-width="4"/>
+  <text x="2000" y="895" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Intelligence
+  </text>
+  <text x="2000" y="915" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Products
+  </text>
+  
+  <!-- Intelligence Sub-branches -->
+  <line x1="2080" y1="840" x2="2200" y2="750" stroke="#22C55E" stroke-width="3"/>
+  <rect x="2050" y="710" width="300" height="80" rx="10" fill="#E6F7ED" stroke="#22C55E" stroke-width="2"/>
+  <text x="2200" y="740" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Community Reports</text>
+  <text x="2200" y="760" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">$500 Each • Skills Inventory</text>
+  <text x="2200" y="780" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Gap Analysis • Projections</text>
+  
+  <line x1="2080" y1="960" x2="2200" y2="1050" stroke="#22C55E" stroke-width="3"/>
+  <rect x="2050" y="1010" width="300" height="80" rx="10" fill="#E6F7ED" stroke="#22C55E" stroke-width="2"/>
+  <text x="2200" y="1040" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Regional Intelligence</text>
+  <text x="2200" y="1060" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">$10K/Month • Labor Markets</text>
+  <text x="2200" y="1080" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Multi-Community Optimization</text>
+  
+  <!-- 5. Training Intelligence (Bottom Left) -->
+  <line x1="1120" y1="980" x2="600" y2="1400" stroke="#1B4D3E" stroke-width="6"/>
+  <circle cx="600" cy="1400" r="80" fill="#D4AF37" stroke="#1B4D3E" stroke-width="4"/>
+  <text x="600" y="1395" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Training
+  </text>
+  <text x="600" y="1415" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Intelligence
+  </text>
+  
+  <!-- Training Sub-branches -->
+  <line x1="520" y1="1460" x2="300" y2="1550" stroke="#D4AF37" stroke-width="3"/>
+  <rect x="150" y="1510" width="300" height="80" rx="10" fill="#FFF9E6" stroke="#D4AF37" stroke-width="2"/>
+  <text x="300" y="1540" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Skills Gap Prediction</text>
+  <text x="300" y="1560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">2-Year Project Pipeline</text>
+  <text x="300" y="1580" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">95% Employment Rate</text>
+  
+  <line x1="680" y1="1460" x2="900" y2="1550" stroke="#D4AF37" stroke-width="3"/>
+  <rect x="750" y="1510" width="300" height="80" rx="10" fill="#FFF9E6" stroke="#D4AF37" stroke-width="2"/>
+  <text x="900" y="1540" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">ROI Optimization</text>
+  <text x="900" y="1560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Income Potential Analysis</text>
+  <text x="900" y="1580" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">Community Payback Period</text>
+  
+  <!-- 6. Economic Impact (Bottom Right) -->
+  <line x1="1280" y1="980" x2="1800" y2="1400" stroke="#1B4D3E" stroke-width="6"/>
+  <circle cx="1800" cy="1400" r="80" fill="#8B5A3C" stroke="#B7853D" stroke-width="4"/>
+  <text x="1800" y="1395" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Economic
+  </text>
+  <text x="1800" y="1415" font-family="Arial, sans-serif" font-size="16" font-weight="bold" text-anchor="middle" fill="white">
+    Impact
+  </text>
+  
+  <!-- Impact Sub-branches -->
+  <line x1="1720" y1="1460" x2="1500" y2="1550" stroke="#8B5A3C" stroke-width="3"/>
+  <rect x="1350" y="1510" width="300" height="80" rx="10" fill="#F5EBE6" stroke="#8B5A3C" stroke-width="2"/>
+  <text x="1500" y="1540" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">Community Retention</text>
+  <text x="1500" y="1560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">$3.5M Wages Stay Local</text>
+  <text x="1500" y="1580" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">3X Multiplier Effect</text>
+  
+  <line x1="1880" y1="1460" x2="2100" y2="1550" stroke="#8B5A3C" stroke-width="3"/>
+  <rect x="1950" y="1510" width="300" height="80" rx="10" fill="#F5EBE6" stroke="#8B5A3C" stroke-width="2"/>
+  <text x="2100" y="1540" font-family="Arial, sans-serif" font-size="14" text-anchor="middle">10-Year Projection</text>
+  <text x="2100" y="1560" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">$5B+ Retained Locally</text>
+  <text x="2100" y="1580" font-family="Arial, sans-serif" font-size="12" text-anchor="middle" fill="#666">vs $500M Token Benefits</text>
+  
+  <!-- Platform Integration Indicators -->
+  <g opacity="0.7">
+    <!-- Connection to Indigenious -->
+    <line x1="1200" y1="780" x2="1200" y2="700" stroke="#1B4D3E" stroke-width="4" stroke-dasharray="10,5"/>
+    <rect x="1050" y="660" width="300" height="40" rx="20" fill="#1B4D3E"/>
+    <text x="1200" y="685" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">
+      Indigenious Marketplace Data
+    </text>
+    
+    <!-- Connection to Unations -->
+    <line x1="1200" y1="1020" x2="1200" y2="1100" stroke="#B7853D" stroke-width="4" stroke-dasharray="10,5"/>
+    <rect x="1050" y="1100" width="300" height="40" rx="20" fill="#B7853D"/>
+    <text x="1200" y="1125" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="white">
+      Unations Policy Intelligence
+    </text>
+  </g>
+  
+  <!-- Revolutionary Impact Box -->
+  <rect x="850" y="1620" width="700" height="120" rx="15" fill="#1B4D3E" fill-opacity="0.1" stroke="#1B4D3E" stroke-width="3"/>
+  <text x="1200" y="1660" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#1B4D3E">
+    The Revolution: From "$350B spent ON communities"
+  </text>
+  <text x="1200" y="1690" font-family="Arial, sans-serif" font-size="18" font-weight="bold" text-anchor="middle" fill="#1B4D3E">
+    To "$350B spent BY communities hiring their own"
+  </text>
+  <text x="1200" y="1720" font-family="Arial, sans-serif" font-size="16" text-anchor="middle" fill="#B7853D">
+    Economic Sovereignty Through Workforce Intelligence
+  </text>
+  
+  <!-- Key Metrics Badges -->
+  <g transform="translate(100, 100)">
+    <rect x="0" y="0" width="200" height="60" rx="30" fill="#22C55E" fill-opacity="0.2" stroke="#22C55E" stroke-width="2"/>
+    <text x="100" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#22C55E">
+      56% Labor Cost
+    </text>
+    <text x="100" y="45" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#22C55E">
+      Savings
+    </text>
+  </g>
+  
+  <g transform="translate(2100, 100)">
+    <rect x="0" y="0" width="200" height="60" rx="30" fill="#B7853D" fill-opacity="0.2" stroke="#B7853D" stroke-width="2"/>
+    <text x="100" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#B7853D">
+      300% Community
+    </text>
+    <text x="100" y="45" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#B7853D">
+      Benefit Increase
+    </text>
+  </g>
+  
+  <g transform="translate(1100, 100)">
+    <rect x="0" y="0" width="200" height="60" rx="30" fill="#D4AF37" fill-opacity="0.2" stroke="#D4AF37" stroke-width="2"/>
+    <text x="100" y="25" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#D4AF37">
+      95% Training to
+    </text>
+    <text x="100" y="45" font-family="Arial, sans-serif" font-size="14" font-weight="bold" text-anchor="middle" fill="#D4AF37">
+      Employment Rate
+    </text>
+  </g>
+</svg>

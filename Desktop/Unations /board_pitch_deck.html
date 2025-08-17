@@ -1,0 +1,719 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unations/Indigenious - Board Meeting Pitch Deck</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 70%, rgba(27, 77, 62, 0.15) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 30%, rgba(183, 133, 61, 0.15) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            z-index: 1;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #1B4D3E, #B7853D);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #B7853D;
+        }
+        
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #1B4D3E;
+            background: rgba(255,255,255,0.9);
+            padding: 0.5rem 1rem;
+            border-radius: 8px;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            text-align: center;
+            color: #b8c5d6;
+            margin-bottom: 3rem;
+        }
+        
+        .highlight-box {
+            background: rgba(27, 77, 62, 0.2);
+            border: 2px solid #1B4D3E;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .truth-reconciliation {
+            background: rgba(183, 133, 61, 0.2);
+            border: 2px solid #B7853D;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: transform 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+        }
+        
+        .bullet-point {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .bullet {
+            width: 8px;
+            height: 8px;
+            background: #B7853D;
+            border-radius: 50%;
+            margin-right: 1rem;
+            margin-top: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2rem 0;
+            position: relative;
+        }
+        
+        .timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #1B4D3E 0%, #B7853D 100%);
+            z-index: 1;
+        }
+        
+        .timeline-item {
+            text-align: center;
+            position: relative;
+            z-index: 2;
+            background: #16213e;
+            padding: 1rem;
+            border-radius: 12px;
+            border: 2px solid #B7853D;
+        }
+        
+        .timeline-date {
+            font-weight: 700;
+            color: #B7853D;
+            margin-bottom: 0.5rem;
+        }
+        
+        .nav-buttons {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            background: rgba(27, 77, 62, 0.3);
+            border: 2px solid #1B4D3E;
+            color: #1B4D3E;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background: #1B4D3E;
+            color: white;
+        }
+        
+        .leadership-showcase {
+            background: rgba(183, 133, 61, 0.1);
+            border-radius: 20px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .leader-card {
+            background: rgba(255,255,255,0.1);
+            border-radius: 12px;
+            padding: 1.5rem;
+            margin: 1rem 0;
+        }
+        
+        .leader-name {
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #B7853D;
+            margin-bottom: 0.5rem;
+        }
+        
+        .leader-role {
+            font-size: 1.1rem;
+            color: #1B4D3E;
+            background: rgba(255,255,255,0.8);
+            padding: 0.3rem 0.8rem;
+            border-radius: 15px;
+            display: inline-block;
+            margin-bottom: 1rem;
+        }
+        
+        .legacy-connection {
+            font-style: italic;
+            color: #b8c5d6;
+            margin-top: 1rem;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 2rem; }
+            .grid { grid-template-columns: 1fr; }
+            .timeline { flex-direction: column; gap: 1rem; }
+            .timeline::before { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Slide 1: Opening -->
+    <section class="slide" id="slide1">
+        <div class="container">
+            <h1>Two Names, One Movement</h1>
+            <p class="subtitle">Building Indigenous Economic Infrastructure Through Community-Controlled Intelligence</p>
+            
+            <div class="highlight-box">
+                <h3>UNATIONS</h3>
+                <p style="font-size: 1.2rem; text-align: center;">thinks it through</p>
+                <p>Policy • Research • Intelligence Licensing</p>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>INDIGENIOUS</h3>
+                <p style="font-size: 1.2rem; text-align: center;">builds it out</p>
+                <p>Marketplace • Transparency • Community Verification</p>
+            </div>
+            
+            <div class="truth-reconciliation">
+                <h3 style="color: #B7853D;">🍁 Launch Target: September 30, 2025</h3>
+                <p style="text-align: center; font-size: 1.3rem; color: white;">
+                    Truth & Reconciliation Day<br>
+                    <strong>"Revolution doesn't begin with technology. It begins with language."</strong>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 2: The Problem -->
+    <section class="slide" id="slide2">
+        <div class="container">
+            <h2>The Digital Land Grab Crisis</h2>
+            
+            <div class="highlight-box">
+                <h3>Information Era Colonization Happening NOW</h3>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Silicon Valley extracting Indigenous data</strong> → AI trained on community patterns without consent</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Government digital strategies imposed</strong> → Bureaucrats deciding what technology communities "need"</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Corporate intelligence platforms launching</strong> → Indigenous insights sold back to communities at premium prices</div>
+                </div>
+            </div>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>$350B+ Infrastructure Crisis</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>634+ communities need climate-resilient infrastructure</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>$1.6B+ procurement undermined by phantom partnerships</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Communities pay 300% markups with no price transparency</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Data Extraction Without Consent</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Academic researchers mine community knowledge for careers</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Consulting firms package Indigenous insights for $500K reports</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Resource companies gather intelligence to optimize extraction</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="truth-reconciliation">
+                <p style="text-align: center; font-size: 1.5rem; font-weight: 700;">
+                    THE CHOICE: Control Indigenous intelligence or have it imposed by others
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Indigenous Leadership -->
+    <section class="slide" id="slide3">
+        <div class="container">
+            <h2>Indigenous Leadership Legacy</h2>
+            
+            <div class="leadership-showcase">
+                <div class="leader-card">
+                    <div class="leader-name">Billy Diamond's Vision</div>
+                    <div class="leader-role">Transformational Indigenous Leader</div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>James Bay Agreement (1975):</strong> First modern Indigenous self-government agreement</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>$232M transformed:</strong> Into permanent Indigenous economic institutions</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>"We don't want to be museum pieces":</strong> Economic modernization with cultural preservation</div>
+                    </div>
+                </div>
+                
+                <div class="leader-card">
+                    <div class="leader-name">Ernest Moses</div>
+                    <div class="leader-role">Waskaganish Leader & Language Innovator</div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>"We are now Indigenous? I say we are Indigenious!":</strong> Revolutionary language for economic sovereignty</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Billy Diamond's community:</strong> Continuing the legacy of Indigenous economic innovation</div>
+                    </div>
+                    <div class="legacy-connection">
+                        Carrying forward Billy Diamond's vision of Indigenous economic self-determination through community-controlled innovation
+                    </div>
+                </div>
+                
+                <div class="leader-card">
+                    <div class="leader-name">Clarence Louis</div>
+                    <div class="leader-role">Economic Transformation Leader</div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Osoyoos transformation:</strong> From welfare dependency to $500M+ enterprise portfolio</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Proven business model:</strong> Indigenous ownership of profitable infrastructure</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Economic reconciliation:</strong> Through business excellence, not charity dependence</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="truth-reconciliation">
+                <h3 style="color: #B7853D; text-align: center;">The Next Chapter</h3>
+                <p style="text-align: center; font-size: 1.3rem;">
+                    Billy Diamond showed Indigenous communities could negotiate as equals.<br>
+                    Clarence Louis proved Indigenous communities could compete as equals.<br>
+                    <strong>Now we show Indigenous communities can control the information economy as equals.</strong>
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 4: The Solution -->
+    <section class="slide" id="slide4">
+        <div class="container">
+            <h2>Revolutionary Dual-Entity Model</h2>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>INDIGENIOUS (Marketplace)</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Community-controlled verification:</strong> Real Indigenous businesses, not phantom partnerships</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Price transparency:</strong> End 300% markups through competitive bidding</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Smart escrow:</strong> Circumvent Section 89 payment risks</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Climate-embedded tracking:</strong> Carbon monitoring in every transaction</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>UNATIONS (Intelligence)</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Data sovereignty:</strong> Indigenous communities control their own economic intelligence</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Intelligence licensing:</strong> $35M+ annual revenue from community-controlled data</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Policy research:</strong> Evidence-based advocacy driven by marketplace data</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>International export:</strong> Model licensed to Indigenous communities globally</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>The Revolutionary Integration</h3>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Indigenious generates valuable data</strong> through marketplace transactions</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Unations controls and monetizes that data</strong> through Indigenous-majority governance</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Intelligence revenue funds policy research</strong> that improves marketplace features</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Policy insights make intelligence more valuable</strong> - perfect feedback loop</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Indigenous Data Sovereignty -->
+    <section class="slide" id="slide5">
+        <div class="container">
+            <h2>Indigenous Intelligence Empire</h2>
+            
+            <div class="truth-reconciliation">
+                <h3 style="color: #B7853D;">From Data Extraction → Data Control</h3>
+                <p style="text-align: center; font-size: 1.2rem; margin-bottom: 1rem;">
+                    <strong>OLD:</strong> Others study Indigenous communities and capture all value<br>
+                    <strong>NEW:</strong> Indigenous communities control and monetize their own intelligence
+                </p>
+            </div>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>Intelligence Products</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Resource Sector Intelligence:</strong> $150K/year - Partnership success patterns</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Government Optimization:</strong> $75K/year - Procurement efficiency data</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Financial Risk Intelligence:</strong> $200K/year - Default risk modeling</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Premium Market Access:</strong> $500K/year - Territory consultation strategies</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Revenue Projections</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Year 1:</strong> $3M intelligence licensing revenue</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Year 3:</strong> $12.5M annual intelligence revenue</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Year 5:</strong> $35M+ sustainable funding for Indigenous policy research</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Endowment:</strong> $100M+ permanent Indigenous economic research capacity</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>Indigenous-Majority Board Control</h3>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Approval required:</strong> All intelligence licensing over $50K</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Veto power:</strong> Any data use communities object to</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Revenue allocation:</strong> Community priorities drive spending decisions</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Cultural protocols:</strong> All data use respects Indigenous governance</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 6: Timeline -->
+    <section class="slide" id="slide6">
+        <div class="container">
+            <h2>Launch Timeline</h2>
+            
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">Summer 2025</div>
+                    <div>Board Formation</div>
+                    <div>Indigenous Leadership Assembly</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-date">August 2025</div>
+                    <div>Fundraising</div>
+                    <div>Community Partnerships</div>
+                </div>
+                
+                <div class="timeline-item">
+                    <div class="timeline-date">September 30, 2025</div>
+                    <div><strong>LAUNCH</strong></div>
+                    <div>Truth & Reconciliation Day</div>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>Summer 2025 Board Priorities</h3>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Indigenous governance structure:</strong> Formalize Indigenous-majority board authority</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Data sovereignty framework:</strong> Community consent protocols and cultural safeguards</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Community partnerships:</strong> Initial lighthouse communities for marketplace launch</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Fundraising strategy:</strong> Foundation grants and impact investment alignment</div>
+                </div>
+            </div>
+            
+            <div class="truth-reconciliation">
+                <h3 style="color: #B7853D;">September 30th Symbolic Launch</h3>
+                <p style="text-align: center; font-size: 1.3rem;">
+                    Truth & Reconciliation Day becomes the day Indigenous communities launch their own economic intelligence infrastructure
+                </p>
+                <p style="text-align: center; font-size: 1.1rem; margin-top: 1rem; font-style: italic;">
+                    From commemoration to transformation - building the economic sovereignty Billy Diamond envisioned
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 7: Board Decision -->
+    <section class="slide" id="slide7">
+        <div class="container">
+            <h2>Board Decision Points</h2>
+            
+            <div class="grid">
+                <div class="card">
+                    <h3>Governance Framework</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Indigenous-majority board:</strong> Community control of intelligence licensing</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Data sovereignty protocols:</strong> Community consent for all intelligence products</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Cultural safeguards:</strong> Traditional governance protocols respected</div>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <h3>Launch Strategy</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Lighthouse communities:</strong> Initial partnership selection</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Verification standards:</strong> Community-controlled authenticity criteria</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Intelligence pilot customers:</strong> Initial data licensing partnerships</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h3>Questions for Board Discussion</h3>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Community selection:</strong> Which communities should be approached for initial marketplace participation?</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Intelligence boundaries:</strong> What community data should never be licensed, regardless of price?</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Revenue allocation:</strong> How should intelligence licensing revenue be distributed?</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Cultural protocols:</strong> What traditional governance processes must be integrated?</div>
+                </div>
+            </div>
+            
+            <div class="truth-reconciliation">
+                <h3 style="color: #B7853D; text-align: center;">The Revolutionary Moment</h3>
+                <p style="text-align: center; font-size: 1.4rem; font-weight: 600;">
+                    Indigenous communities control the most valuable economic intelligence in Canada
+                </p>
+                <p style="text-align: center; font-size: 1.1rem; margin-top: 1rem;">
+                    For the first time in 150+ years, others pay Indigenous communities for the privilege of learning about Indigenous economies
+                </p>
+                <p style="text-align: center; font-size: 1.3rem; margin-top: 1.5rem; font-style: italic; color: #B7853D;">
+                    "That's not dependency. That's sovereignty."
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <div class="nav-buttons">
+        <button class="nav-btn" onclick="previousSlide()">Previous</button>
+        <button class="nav-btn" onclick="nextSlide()">Next</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 7;
+
+        function showSlide(n) {
+            if (n > totalSlides) currentSlide = 1;
+            if (n < 1) currentSlide = totalSlides;
+            
+            document.querySelectorAll('.slide').forEach(slide => slide.style.display = 'none');
+            document.getElementById(`slide${currentSlide}`).style.display = 'flex';
+        }
+
+        function nextSlide() {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+
+        function previousSlide() {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+
+        // Initialize
+        showSlide(1);
+    </script>
+</body>
+</html>

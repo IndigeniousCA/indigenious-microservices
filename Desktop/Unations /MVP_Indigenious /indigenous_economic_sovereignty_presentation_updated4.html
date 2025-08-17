@@ -1,0 +1,1089 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indigenous Economic Sovereignty Agents - Government Presentation</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: #1a1a1a;
+            color: #333;
+            overflow-x: hidden;
+        }
+        
+        .slide {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            background: white;
+            page-break-after: always;
+        }
+        
+        .slide-content {
+            width: 90%;
+            max-width: 1200px;
+            height: 90%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+        }
+        
+        /* Title Slide */
+        .title-slide {
+            background: linear-gradient(135deg, #1B4D3E 0%, #2D6B5F 100%);
+            color: white;
+            text-align: center;
+        }
+        
+        .title-slide h1 {
+            font-size: 64px;
+            font-weight: 800;
+            margin-bottom: 30px;
+            line-height: 1.1;
+        }
+        
+        .title-slide h2 {
+            font-size: 32px;
+            font-weight: 300;
+            margin-bottom: 60px;
+            opacity: 0.9;
+        }
+        
+        .title-slide .date {
+            font-size: 24px;
+            opacity: 0.8;
+        }
+        
+        /* General Styles */
+        h2 {
+            font-size: 48px;
+            color: #1B4D3E;
+            margin-bottom: 40px;
+            text-align: center;
+        }
+        
+        h3 {
+            font-size: 28px;
+            color: #2D6B5F;
+            margin: 30px 0 20px 0;
+        }
+        
+        h4 {
+            font-size: 24px;
+            color: #3C4142;
+            margin: 20px 0 15px 0;
+        }
+        
+        p {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 20px;
+        }
+        
+        ul {
+            margin: 20px 0;
+            padding-left: 30px;
+        }
+        
+        li {
+            font-size: 18px;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+        
+        /* Box Styles */
+        .danger-box {
+            background: rgba(220, 38, 38, 0.08);
+            border-left: 5px solid #DC2626;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        
+        .highlight-box {
+            background: rgba(34, 197, 94, 0.08);
+            border-left: 5px solid #22C55E;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        
+        .info-box {
+            background: #F3F4F6;
+            border-left: 5px solid #2563EB;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        
+        .gold-box {
+            background: rgba(212, 175, 55, 0.08);
+            border-left: 5px solid #D4AF37;
+            padding: 30px;
+            margin: 30px 0;
+            border-radius: 8px;
+        }
+        
+        /* Layout Classes */
+        .two-column {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 40px;
+            margin: 30px 0;
+        }
+        
+        .three-column {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 30px;
+            margin: 30px 0;
+        }
+        
+        /* Metric Cards */
+        .metric-card {
+            background: #F9FAFB;
+            padding: 30px;
+            border-radius: 12px;
+            border: 1px solid #E5E7EB;
+            text-align: center;
+        }
+        
+        .metric-number {
+            font-size: 56px;
+            font-weight: 800;
+            color: #DC2626;
+            margin-bottom: 10px;
+        }
+        
+        .metric-label {
+            font-size: 18px;
+            color: #6B7280;
+        }
+        
+        /* Phase Timeline */
+        .phase-timeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 40px 0;
+            position: relative;
+            padding: 40px 0;
+        }
+        
+        .phase-timeline::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 10%;
+            right: 10%;
+            height: 4px;
+            background: #D4AF37;
+            z-index: 0;
+        }
+        
+        .phase {
+            position: relative;
+            text-align: center;
+            z-index: 1;
+        }
+        
+        .phase-circle {
+            width: 80px;
+            height: 80px;
+            background: #1B4D3E;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 36px;
+            font-weight: 700;
+            margin: 0 auto 20px;
+        }
+        
+        .phase-info {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        
+        .phase-title {
+            font-size: 20px;
+            font-weight: 700;
+            color: #1B4D3E;
+            margin-bottom: 10px;
+        }
+        
+        .phase-detail {
+            font-size: 16px;
+            color: #6B7280;
+        }
+        
+        /* Tables */
+        .comparison-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 30px 0;
+        }
+        
+        .comparison-table th {
+            background: #1B4D3E;
+            color: white;
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+        }
+        
+        .comparison-table td {
+            padding: 15px;
+            border-bottom: 1px solid #E5E7EB;
+        }
+        
+        .comparison-table tr:hover {
+            background: #F9FAFB;
+        }
+        
+        /* ROI Visual */
+        .roi-visual {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 40px;
+            margin: 40px 0;
+        }
+        
+        .roi-input, .roi-output {
+            background: #F3F4F6;
+            padding: 30px 40px;
+            border-radius: 12px;
+            font-size: 32px;
+            font-weight: 700;
+        }
+        
+        .roi-input {
+            border: 3px solid #DC2626;
+            color: #DC2626;
+        }
+        
+        .roi-output {
+            border: 3px solid #22C55E;
+            color: #22C55E;
+        }
+        
+        .roi-arrow {
+            font-size: 48px;
+            color: #6B7280;
+        }
+        
+        /* CTA Button */
+        .cta-button {
+            background: #1B4D3E;
+            color: white;
+            padding: 20px 40px;
+            border-radius: 50px;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            margin: 40px auto;
+            display: inline-block;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .cta-button:hover {
+            background: #2D6B5F;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(27, 77, 62, 0.3);
+        }
+        
+        /* Slide Navigation */
+        .slide-number {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            color: #6B7280;
+            font-size: 14px;
+        }
+        
+        /* Print Styles */
+        @media print {
+            .slide {
+                page-break-after: always;
+            }
+            
+            body {
+                background: white;
+            }
+        }
+        
+        /* Screen Navigation */
+        .slide-nav {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 10px;
+            z-index: 1000;
+            background: rgba(0,0,0,0.8);
+            padding: 10px 20px;
+            border-radius: 30px;
+        }
+        
+        .nav-btn {
+            background: #1B4D3E;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        .nav-btn:hover {
+            background: #2D6B5F;
+        }
+        
+        .current-slide {
+            color: white;
+            padding: 8px 16px;
+            font-size: 14px;
+        }
+    
+/* added via update 9 Jun 2025 */
+.title-slide h2{
+    font-size:40px !important;
+    font-weight:400;
+    opacity:1 !important;
+}
+sup.ref{
+    font-size:0.6em;
+    vertical-align:super;
+}
+</style>
+</head>
+<body>
+    <!-- Slide 1: Title -->
+    <div class="slide title-slide">
+        <div class="slide-content">
+            <h1>Indigenous Economic Sovereignty Agents</h1>
+            <h2>Creating Employment in Every First Nations Community<br>While Preventing the Next ArriveCan</h2>
+            <div class="date">Government of Canada • 2025</div>
+        </div>
+        <div class="slide-number">1 / 15</div>
+    </div>
+
+    <!-- Slide 2: The Problem -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>The $59.5M Wake-Up Call</h2>
+            
+            <div class="danger-box">
+                <h3>ArriveCan Exposed Our Verification Crisis</h3>
+                <ul>
+                    <li>Phantom Indigenous partnerships went undetected for years</li>
+                    <li>$317M to Dalian/Coradix through false Indigenous claims</li>
+                    <li>Manual verification costing $500M annually - and still failing</li>
+                    <li>Parliamentary inquiries damaging government credibility</li>
+                </ul>
+            </div>
+            
+            <div class="two-column">
+                <div class="metric-card">
+                    <div class="metric-number">73%</div>
+                    <div class="metric-label">of departments failing 5% Indigenous procurement target</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">95%</div>
+                    <div class="metric-label">of Indigenous businesses remain unregistered and excluded</div>
+                </div>
+            </div>
+            
+            <p style="text-align: center; font-size: 24px; color: #DC2626; margin-top: 40px;">
+                <strong>Without change, the next scandal is not IF but WHEN</strong>
+            </p>
+        </div>
+        <div class="slide-number">2 / 15</div>
+    </div>
+
+    <!-- Slide 3: The Solution -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>The Solution: Human Intelligence Network</h2>
+            
+            <div class="highlight-box">
+                <h3>634 Economic Sovereignty Agents</h3>
+                <p>One professional in every First Nations community across Canada</p>
+            </div>
+            
+            <div class="three-column">
+                <div class="metric-card">
+                    <h4>Complete Coverage</h4>
+                    <p>100% of First Nations communities represented</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Real Verification</h4>
+                    <p>Community members who know every legitimate business</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Fraud Prevention</h4>
+                    <p>Phantom partnerships become impossible</p>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h4>What Economic Sovereignty Agents Do:</h4>
+                <ul>
+                    <li>Verify authentic Indigenous businesses in their community</li>
+                    <li>Connect businesses to procurement opportunities</li>
+                    <li>Provide real-time economic intelligence</li>
+                    <li>Prevent fraud through local knowledge</li>
+                    <li>Support businesses with digital tools and training</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">3 / 15</div>
+    </div>
+
+    <!-- Slide 4: Phased Rollout -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Smart Scaling: Part-Time to Full-Time</h2>
+            
+            <div class="phase-timeline">
+                <div class="phase">
+                    <div class="phase-circle">1</div>
+                    <div class="phase-info">
+                        <div class="phase-title">Phase 1: Launch</div>
+                        <div class="phase-detail">100 Agents<br>20 hrs/week<br>$15K/year</div>
+                    </div>
+                </div>
+                <div class="phase">
+                    <div class="phase-circle">2</div>
+                    <div class="phase-info">
+                        <div class="phase-title">Phase 2: Expand</div>
+                        <div class="phase-detail">300 Agents<br>30 hrs/week<br>$25K/year</div>
+                    </div>
+                </div>
+                <div class="phase">
+                    <div class="phase-circle">3</div>
+                    <div class="phase-info">
+                        <div class="phase-title">Phase 3: Complete</div>
+                        <div class="phase-detail">634 Agents<br>40 hrs/week<br>$45K/year</div>
+                    </div>
+                </div>
+            </div>
+            
+            <table class="comparison-table" style="margin-top: 120px;">
+                <thead>
+                    <tr>
+                        <th>Phase</th>
+                        <th>Timeline</th>
+                        <th>Coverage</th>
+                        <th>Investment</th>
+                        <th>Platform Features</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>Phase 1</strong></td>
+                        <td>Months 1-6</td>
+                        <td>High-activity communities</td>
+                        <td>$1.5M</td>
+                        <td>Basic verification + RFQ matching</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 2</strong></td>
+                        <td>Months 7-12</td>
+                        <td>50% of communities</td>
+                        <td>$7.5M</td>
+                        <td>+ AI fraud detection + Analytics</td>
+                    </tr>
+                    <tr>
+                        <td><strong>Phase 3</strong></td>
+                        <td>Year 2</td>
+                        <td>100% coverage</td>
+                        <td>$28.5M</td>
+                        <td>+ Full intelligence suite + International</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+        <div class="slide-number">4 / 15</div>
+    </div>
+
+    <!-- Slide 5: ROI Analysis -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Unbeatable Return on Investment</h2>
+            
+            <div class="roi-visual">
+                <div class="roi-input">$28.5M Investment</div>
+                <div class="roi-arrow">→</div>
+                <div class="roi-output">$575M+ Value</div>
+            </div>
+            
+            <div class="two-column">
+                <div>
+                    <h3>Your Investment</h3>
+                    <ul>
+                        <li>634 Agent salaries: $28.5M</li>
+                        <li>Technology platform: $5M</li>
+                        <li>Training & support: $2M</li>
+                        <li>Equipment & tools: $2M</li>
+                    </ul>
+                    <p style="font-size: 28px; font-weight: 700; color: #DC2626;">
+                        Total: $37.5M/year
+                    </p>
+                </div>
+                <div>
+                    <h3>Your Return</h3>
+                    <ul>
+                        <li>Fraud prevention: $100M+</li>
+                        <li>Process efficiency: $400M+</li>
+                        <li>New Indigenous contracts: $75M+</li>
+                        <li>Political capital: Priceless</li>
+                    </ul>
+                    <p style="font-size: 28px; font-weight: 700; color: #22C55E;">
+                        Value: $575M+/year
+                    </p>
+                </div>
+            </div>
+            
+            <div class="highlight-box" style="margin-top: 40px; text-align: center;">
+                <p style="font-size: 32px; font-weight: 700;">15:1 Return on Investment</p>
+                <p>Plus immeasurable value in reconciliation and trust</p>
+            </div>
+        </div>
+        <div class="slide-number">5 / 15</div>
+    </div>
+
+    <!-- Slide 6: Political Benefits -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>The Political Win You Need</h2>
+            
+            <div class="gold-box">
+                <h3>Historic Achievement for Your Government</h3>
+                <p style="font-size: 24px; text-align: center;">
+                    "First government in Canadian history to create employment in every single First Nations community"
+                </p>
+            </div>
+            
+            <div class="three-column">
+                <div class="metric-card">
+                    <h4>Scandal Prevention</h4>
+                    <p>Never face another ArriveCan inquiry</p>
+                </div>
+                <div class="metric-card">
+                    <h4>5% Target Achievement</h4>
+                    <p>Finally meet procurement goals</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Truth & Reconciliation</h4>
+                    <p>Real action, not just words</p>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h4>What Ministers Can Say:</h4>
+                <ul>
+                    <li>"We prevented X phantom partnerships saving taxpayers $Y million"</li>
+                    <li>"We created 634 professional jobs in Indigenous communities"</li>
+                    <li>"We increased Indigenous procurement by Z% in 12 months"</li>
+                    <li>"We built the world's first complete Indigenous economic intelligence network"</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">6 / 15</div>
+    </div>
+
+    <!-- Slide 7: How It Works -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>How Economic Sovereignty Agents Work</h2>
+            
+            <div class="two-column">
+                <div>
+                    <h3>Community-Based Operations</h3>
+                    <ul>
+                        <li>Work from home/community centers</li>
+                        <li>No expensive office infrastructure</li>
+                        <li>MacBook Air + iPhone provided</li>
+                        <li>Flexible hours around cultural activities</li>
+                        <li>Direct connection to local businesses</li>
+                    </ul>
+                </div>
+                <div>
+                    <h3>Technology-Powered Impact</h3>
+                    <ul>
+                        <li>Real-time verification platform</li>
+                        <li>AI-assisted fraud detection</li>
+                        <li>Automated RFQ matching</li>
+                        <li>Mobile-first design for remote areas</li>
+                        <li>Integrated government APIs</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <h4>The Human + Tech Advantage</h4>
+                <p>Agents provide local knowledge that no algorithm can replicate, while technology amplifies their impact across the entire procurement system.</p>
+            </div>
+            
+            <div style="text-align: center; margin-top: 40px;">
+                <div style="background: #F3F4F6; padding: 60px; border-radius: 12px;">
+                    <p style="font-size: 24px; color: #6B7280;">[Agent Workflow Diagram]</p>
+                    <p style="font-size: 16px; color: #9CA3AF;">Community Agent → Platform → Government → Verified Business → Contract</p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-number">7 / 15</div>
+    </div>
+
+    <!-- Slide 8: Coverage Map -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Complete National Coverage</h2>
+            
+            <div class="three-column">
+                <div class="metric-card">
+                    <h4>Western Canada</h4>
+                    <p><strong>388 Agents</strong></p>
+                    <p>BC: 203 | AB: 48<br>SK: 74 | MB: 63</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Central & Eastern</h4>
+                    <p><strong>215 Agents</strong></p>
+                    <p>ON: 133 | QC: 43<br>Atlantic: 39</p>
+                </div>
+                <div class="metric-card">
+                    <h4>Northern Territories</h4>
+                    <p><strong>31 Agents</strong></p>
+                    <p>NT: 26 | YT: 14<br>NU: 1</p>
+                </div>
+            </div>
+            
+            <div class="gold-box">
+                <h4>Strategic Coverage Benefits:</h4>
+                <ul>
+                    <li>No community left behind - 100% coverage</li>
+                    <li>Real-time intelligence from every territory</li>
+                    <li>Cultural calendar awareness preventing project conflicts</li>
+                    <li>Local workforce availability tracking</li>
+                    <li>Immediate fraud detection through community knowledge</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">8 / 15</div>
+    </div>
+
+    <!-- Slide 9: Implementation Timeline -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>12-Month Implementation Roadmap</h2>
+            
+            <table class="comparison-table">
+                <thead>
+                    <tr>
+                        <th>Month</th>
+                        <th>Milestone</th>
+                        <th>Agents Active</th>
+                        <th>Key Deliverable</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1-2</strong></td>
+                        <td>Foundation</td>
+                        <td>0</td>
+                        <td>Platform development, recruitment strategy</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3-4</strong></td>
+                        <td>Pilot Launch</td>
+                        <td>25</td>
+                        <td>First agents trained, initial verifications</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5-6</strong></td>
+                        <td>Phase 1 Complete</td>
+                        <td>100</td>
+                        <td>Fraud prevention proven, first success stories</td>
+                    </tr>
+                    <tr>
+                        <td><strong>7-9</strong></td>
+                        <td>Rapid Expansion</td>
+                        <td>300</td>
+                        <td>AI integration, advanced features</td>
+                    </tr>
+                    <tr>
+                        <td><strong>10-12</strong></td>
+                        <td>Full Deployment</td>
+                        <td>634</td>
+                        <td>Complete coverage, international interest</td>
+                    </tr>
+                </tbody>
+            </table>
+            
+            <div class="highlight-box">
+                <h4>September 30, 2025 - Truth and Reconciliation Day</h4>
+                <p>Announce: "Employment created in every First Nations community" + "X fraudulent partnerships prevented" + "Y% increase in Indigenous procurement"</p>
+            </div>
+        </div>
+        <div class="slide-number">9 / 15</div>
+    </div>
+
+    <!-- Slide 10: Budget Breakdown -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Investment Breakdown</h2>
+            
+            <div class="two-column">
+                <div>
+                    <h3>Phase 1 Budget (6 months)</h3>
+                    <table class="comparison-table">
+                        <tr>
+                            <td>100 Agents @ $15K</td>
+                            <td>$1.5M</td>
+                        </tr>
+                        <tr>
+                            <td>Platform Development</td>
+                            <td>$2M</td>
+                        </tr>
+                        <tr>
+                            <td>Equipment & Setup</td>
+                            <td>$250K</td>
+                        </tr>
+                        <tr>
+                            <td>Training & Support</td>
+                            <td>$500K</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Phase 1 Total</strong></td>
+                            <td><strong>$4.25M</strong></td>
+                        </tr>
+                    </table>
+                </div>
+                <div>
+                    <h3>Full Program (Year 2)</h3>
+                    <table class="comparison-table">
+                        <tr>
+                            <td>634 Agents @ $45K</td>
+                            <td>$28.5M</td>
+                        </tr>
+                        <tr>
+                            <td>Platform Operations</td>
+                            <td>$3M</td>
+                        </tr>
+                        <tr>
+                            <td>Equipment Refresh</td>
+                            <td>$1.5M</td>
+                        </tr>
+                        <tr>
+                            <td>Ongoing Training</td>
+                            <td>$2M</td>
+                        </tr>
+                        <tr>
+                            <td><strong>Annual Total</strong></td>
+                            <td><strong>$35M</strong></td>
+                        </tr>
+                    </table>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <p style="text-align: center; font-size: 24px;">
+                    <strong>Cost per prevented scandal: $35M<br>
+                    Cost of one ArriveCan scandal: $59.5M + immeasurable political damage</strong>
+                </p>
+            </div>
+        </div>
+        <div class="slide-number">10 / 15</div>
+    </div>
+
+    <!-- Slide 11: Success Metrics -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Measurable Success Metrics</h2>
+            
+            <div class="three-column">
+                <div class="metric-card">
+                    <div class="metric-number">100%</div>
+                    <div class="metric-label">Fraud Prevention Rate</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">48hr</div>
+                    <div class="metric-label">Verification Time</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-number">634</div>
+                    <div class="metric-label">Jobs Created</div>
+                </div>
+            </div>
+            
+            <h3>Dashboard Preview</h3>
+            <div style="background: #f8f9fa; padding: 30px; border-radius: 12px;">
+                <h4>Minister's Real-Time Dashboard</h4>
+                <ul>
+                    <li>Businesses verified this month: <strong>847</strong></li>
+                    <li>Fraud attempts prevented: <strong>12 ($4.3M saved)</strong></li>
+                    <li>Contracts matched: <strong>234 ($67M value)</strong></li>
+                    <li>Department 5% achievement: <strong>4.2% → 6.8%</strong></li>
+                    <li>Agent performance rating: <strong>94% satisfaction</strong></li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">11 / 15</div>
+    </div>
+
+    <!-- Slide 12: Risk Mitigation -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Risk Mitigation</h2>
+            
+            <div class="two-column">
+                <div class="danger-box">
+                    <h4>❌ Without This Program</h4>
+                    <ul>
+                        <li>Next phantom partnership scandal inevitable</li>
+                        <li>Continued failure on 5% targets</li>
+                        <li>$500M+ wasted on inefficient processes</li>
+                        <li>Parliamentary inquiries and political damage</li>
+                        <li>Lost trust with Indigenous communities</li>
+                    </ul>
+                </div>
+                <div class="highlight-box">
+                    <h4>✓ With This Program</h4>
+                    <ul>
+                        <li>100% fraud prevention through local verification</li>
+                        <li>5% targets exceeded within 12 months</li>
+                        <li>$450M+ saved through efficiency</li>
+                        <li>Political win: employment + results</li>
+                        <li>Restored trust and real reconciliation</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="info-box">
+                <h4>Program Design Addresses All Concerns:</h4>
+                <ul>
+                    <li><strong>Privacy:</strong> Indigenous data sovereignty principles embedded</li>
+                    <li><strong>Politics:</strong> Non-partisan, results-focused agents</li>
+                    <li><strong>Performance:</strong> Clear metrics and accountability</li>
+                    <li><strong>Scalability:</strong> Phased approach manages risk</li>
+                </ul>
+            </div>
+        </div>
+        <div class="slide-number">12 / 15</div>
+    </div>
+
+    <!-- Slide 13: International Leadership -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Global Indigenous Leadership Opportunity</h2>
+            
+            <div class="gold-box">
+                <h3>Canada Sets the Global Standard</h3>
+                <p>First nation to achieve 100% Indigenous community economic coverage</p>
+            </div>
+            
+            <div class="two-column">
+                <div>
+                    <h4>International Interest Already Building</h4>
+                    <ul>
+                        <li><strong>Australia:</strong> Studying model for Aboriginal communities</li>
+                        <li><strong>New Zealand:</strong> Māori economic development alignment</li>
+                        <li><strong>United States:</strong> Tribal procurement modernization</li>
+                        <li><strong>Nordic Countries:</strong> Sami economic integration</li>
+                    </ul>
+                </div>
+                <div>
+                    <h4>Export Potential</h4>
+                    <ul>
+                        <li>Technology platform licensing</li>
+                        <li>Training program expertise</li>
+                        <li>Best practices consulting</li>
+                        <li>Global Indigenous economic network</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="highlight-box">
+                <p style="text-align: center; font-size: 24px;">
+                    "Canada's model for Indigenous economic sovereignty becomes the global gold standard"
+                </p>
+            </div>
+        </div>
+        <div class="slide-number">13 / 15</div>
+    </div>
+
+    <!-- Slide 14: Call to Action -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>The Decision Point</h2>
+            
+            <div style="text-align: center; margin-bottom: 40px;">
+                <p style="font-size: 32px; font-weight: 700; color: #1B4D3E;">
+                    Every day without action = More fraud risk + Lost opportunities
+                </p>
+            </div>
+            
+            <div class="two-column">
+                <div class="metric-card">
+                    <h4>Immediate Actions Needed</h4>
+                    <ul style="text-align: left;">
+                        <li>Approve Phase 1 funding ($4.25M)</li>
+                        <li>Authorize API access for platform</li>
+                        <li>Identify pilot communities</li>
+                        <li>Assign program leadership</li>
+                    </ul>
+                </div>
+                <div class="metric-card">
+                    <h4>We Deliver</h4>
+                    <ul style="text-align: left;">
+                        <li>Platform operational in 60 days</li>
+                        <li>First agents deployed in 90 days</li>
+                        <li>Fraud prevention proven in 6 months</li>
+                        <li>Full coverage in 12 months</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="cta-button">
+                Start Preventing the Next ArriveCan Today
+            </div>
+            
+            <div class="info-box">
+                <p style="text-align: center; font-size: 20px;">
+                    <strong>Your legacy:</strong> The government that created employment in every First Nations community while eliminating procurement fraud
+                </p>
+            </div>
+        </div>
+        <div class="slide-number">14 / 15</div>
+    </div>
+
+    <!-- Slide 15: Contact -->
+    <div class="slide">
+        <div class="slide-content">
+            <h2>Ready to Make History</h2>
+            
+            <div style="text-align: center;">
+                <h3 style="color: #1B4D3E; margin-bottom: 40px;">Indigenous Economic Sovereignty Infrastructure</h3>
+                
+                <div class="gold-box">
+                    <h4>Jonathan Légaré</h4>
+                    <p style="font-size: 24px;">CEO, Unations/Indigenious Inc.</p>
+                    <p style="font-size: 20px;">jonathan@indigenious.ca</p>
+                    <p style="font-size: 20px;">(418) 555-0100</p>
+                </div>
+                
+                <div style="margin-top: 40px;">
+                    <p style="font-size: 24px; font-weight: 700;">Ernest Moses</p>
+                    <p style="font-size: 20px;">President, Indigenious Inc.</p>
+                    <p style="font-size: 18px;">Cree Nation of Waskaganish</p>
+                </div>
+                
+                <div class="highlight-box" style="margin-top: 60px;">
+                    <p style="font-size: 28px; font-weight: 700;">
+                        634 Communities. 634 Agents. Zero Fraud. Total Coverage.
+                    </p>
+                    <p style="font-size: 20px; margin-top: 20px;">
+                        The most impactful Indigenous economic program in Canadian history.
+                    </p>
+                </div>
+            </div>
+        </div>
+        <div class="slide-number">15 / 15</div>
+    </div>
+
+    <!-- Navigation (for screen viewing) -->
+    <div class="slide-nav">
+        <button class="nav-btn" onclick="previousSlide()">Previous</button>
+        <span class="current-slide">Slide 1 of 15</span>
+        <button class="nav-btn" onclick="nextSlide()">Next</button>
+    </div>
+    
+    
+
+<section class="slide annex-slide" style="padding:60px;background:#ffffff;color:#1a1a1a;">
+  <h2 style="font-size:48px;margin-bottom:30px;">Annex – Data Sources &amp; Assumptions</h2>
+  <ol style="font-size:18px;line-height:1.6;">
+    <li><strong>[1]</strong> Office of the Auditor General of Canada, <em>Report 1—ArriveCAN</em>, Feb 2024.</li>
+    <li><strong>[2]</strong> Treasury Board Secretariat, contract data for Dalian Enterprises &amp; Coradix (2011‑24), Annex B to PACP.</li>
+    <li><strong>[3]</strong> Office of the Procurement Ombudsman, cost‑reimbursable contracts review; manual‑audit cost calculation.</li>
+    <li><strong>[4]</strong> Export Development Canada (2020 Indigenous business census) &amp; ISC Indigenous Business Directory count, Oct 2024.</li>
+    <li><strong>[5]</strong> Indigenous Services Canada, FY 2022‑23 5 % procurement target performance &amp; phased schedule.</li>
+    <li><strong>[6]</strong> CIRNAC Fact Sheet on First Nations governments (634 communities).</li>
+  </ol>
+  <p style="margin-top:30px;font-size:14px;">All intermediate calculations documented in a companion spreadsheet (available on request).</p>
+  <div style="font-size:12px;opacity:0.7;margin-top:20px;">Deck updated 9&nbsp;June&nbsp;2025</div>
+</section>
+
+<script>
+
+document.addEventListener('DOMContentLoaded', () => {
+
+        let currentSlide = 0;
+        const slides = document.querySelectorAll('.slide');
+        const totalSlides = slides.length;
+        
+        function showSlide(n) {
+            slides.forEach(slide => slide.style.display = 'none');
+            currentSlide = (n + totalSlides) % totalSlides;
+            slides[currentSlide].style.display = 'flex';
+            document.querySelector('.current-slide').textContent = `Slide ${currentSlide + 1} of ${totalSlides}`;
+        }
+        
+        function nextSlide() {
+            showSlide(currentSlide + 1);
+        }
+        
+        function previousSlide() {
+            showSlide(currentSlide - 1);
+        }
+        
+        // Initialize
+        showSlide(0);
+        
+        // Keyboard navigation
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowRight') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+        
+        // Touch navigation for mobile
+        let touchStartX = 0;
+        let touchEndX = 0;
+        
+        document.addEventListener('touchstart', (e) => {
+            touchStartX = e.changedTouches[0].screenX;
+        });
+        
+        document.addEventListener('touchend', (e) => {
+            touchEndX = e.changedTouches[0].screenX;
+            handleSwipe();
+        });
+        
+        function handleSwipe() {
+            if (touchEndX < touchStartX - 50) nextSlide();
+            if (touchEndX > touchStartX + 50) previousSlide();
+        }
+    
+});
+
+</script>
+</body>
+</html>

@@ -1,0 +1,58 @@
+#!/usr/bin/env python3
+"""
+Indigenous Business REQ Scraper
+Identifies phantom partnerships through Quebec business registry
+"""
+
+import requests
+import cloudscraper
+from bs4 import BeautifulSoup
+import pandas as pd
+from datetime import datetime
+import time
+import concurrent.futures
+import psycopg2
+from psycopg2.extras import RealDictCursor
+
+# First, let's create a simple version that works
+class QuickREQScraper:
+    def __init__(self):
+        self.session = cloudscraper.create_scraper()
+        self.base_url = "https://www.registreentreprises.gouv.qc.ca/RQAnonymeGR/GR/GR03/GR03A2_19A_PIU_RechEnt_PC/PageRechSimple.aspx"
+        
+    def test_connection(self):
+        """Test if we can connect to REQ"""
+        try:
+            response = self.session.get(self.base_url)
+            print(f"Connection successful! Status: {response.status_code}")
+            return True
+        except Exception as e:
+            print(f"Connection failed: {e}")
+            return False
+    
+    def search_business(self, business_name):
+        """Search for a business - simplified version"""
+        print(f"Searching for: {business_name}")
+        # Add actual search logic here
+        return {"status": "ready to implement"}
+
+# Test the setup
+if __name__ == "__main__":
+    print("Starting Indigenous Business Verification Scanner...")
+    print("="*50)
+    
+    scraper = QuickREQScraper()
+    
+    # Test connection
+    if scraper.test_connection():
+        print("\n✓ Successfully connected to REQ!")
+        
+        # Test with one business
+        result = scraper.search_business("Desjardins")
+        print(f"\nTest search result: {result}")
+        
+        print("\nReady to process your businesses!")
+        print("Next step: Add full scraping logic")
+    else:
+        print("\n✗ Could not connect to REQ")
+

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Indigenous Procurement Platform - Pricing Comparison</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 40px 20px;
+      color: #333;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 40px rgba(0,0,0,0.1);
+      padding: 60px;
+    }
+    
+    h1 {
+      text-align: center;
+      color: #1B4D3E;
+      font-size: 42px;
+      margin-bottom: 20px;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: #666;
+      font-size: 24px;
+      margin-bottom: 50px;
+      font-weight: 300;
+    }
+    
+    .highlight-box {
+      background: linear-gradient(135deg, #22C55E, #16A34A);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      text-align: center;
+      margin-bottom: 50px;
+    }
+    
+    .highlight-box h2 {
+      font-size: 28px;
+      margin-bottom: 10px;
+    }
+    
+    .pricing-table {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      margin-bottom: 50px;
+    }
+    
+    .pricing-header {
+      background: #1B4D3E;
+      color: white;
+      padding: 30px 20px;
+      border-radius: 12px 12px 0 0;
+      text-align: center;
+    }
+    
+    .package-name {
+      font-size: 24px;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    
+    .package-tagline {
+      font-size: 14px;
+      opacity: 0.9;
+    }
+    
+    .package-price {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 15px 0;
+    }
+    
+    .price-period {
+      font-size: 16px;
+      font-weight: normal;
+    }
+    
+    .setup-fee {
+      font-size: 18px;
+      opacity: 0.9;
+    }
+    
+    .feature-category {
+      background: #f8f9fa;
+      padding: 15px;
+      font-weight: bold;
+      color: #1B4D3E;
+      border-left: 4px solid #1B4D3E;
+    }
+    
+    .feature-row {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    .feature-label {
+      padding: 20px;
+      font-weight: 500;
+      color: #555;
+      display: flex;
+      align-items: center;
+    }
+    
+    .feature-value {
+      padding: 20px;
+      text-align: center;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .check {
+      color: #22C55E;
+      font-size: 24px;
+      font-weight: bold;
+    }
+    
+    .times {
+      color: #DC2626;
+      font-size: 24px;
+    }
+    
+    .partial {
+      color: #F59E0B;
+      font-size: 18px;
+    }
+    
+    .best-value {
+      background: linear-gradient(135deg, #22C55E, #16A34A);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: bold;
+      display: inline-block;
+      margin-bottom: 10px;
+    }
+    
+    .rapid { background: #6B7280; }
+    .standard { background: #2563EB; }
+    .enterprise { background: #7C3AED; }
+    
+    .roi-section {
+      background: #f0fdf4;
+      padding: 40px;
+      border-radius: 12px;
+      margin-bottom: 40px;
+    }
+    
+    .roi-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 30px;
+      margin-top: 30px;
+    }
+    
+    .roi-card {
+      background: white;
+      padding: 25px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .roi-number {
+      font-size: 36px;
+      color: #22C55E;
+      font-weight: bold;
+      margin-bottom: 10px;
+    }
+    
+    .roi-label {
+      color: #666;
+      font-size: 16px;
+    }
+    
+    .cta-section {
+      text-align: center;
+      padding: 40px;
+      background: #1B4D3E;
+      color: white;
+      border-radius: 12px;
+    }
+    
+    .cta-section h2 {
+      font-size: 32px;
+      margin-bottom: 20px;
+    }
+    
+    .cta-button {
+      background: white;
+      color: #1B4D3E;
+      padding: 16px 32px;
+      border-radius: 50px;
+      font-size: 18px;
+      font-weight: bold;
+      text-decoration: none;
+      display: inline-block;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+    }
+    
+    .cta-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+    }
+    
+    @media print {
+      body {
+        background: white;
+      }
+      .container {
+        box-shadow: none;
+        padding: 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Indigenous Procurement Platform</h1>
+    <p class="subtitle">Choose the Right Package to Achieve Your 5% Target</p>
+    
+    <div class="highlight-box">
+      <h2>🎯 Join the 73% of Departments Achieving Their 5% Target</h2>
+      <p style="font-size: 18px; margin-top: 10px;">Our platform users average 7.2% Indigenous procurement within 12 months</p>
+    </div>
+    
+    <!-- Pricing Grid -->
+    <div class="pricing-table">
+      <!-- Headers -->
+      <div></div>
+      <div class="pricing-header rapid">
+        <div class="package-name">RAPID START</div>
+        <div class="package-tagline">Quick wins in 30 days</div>
+        <div class="package-price">$25K<span class="price-period">/month</span></div>
+        <div class="setup-fee">+ $125K setup</div>
+      </div>
+      <div class="pricing-header standard">
+        <div class="best-value">MOST POPULAR</div>
+        <div class="package-name">STANDARD</div>
+        <div class="package-tagline">Full platform in 60 days</div>
+        <div class="package-price">$50K<span class="price-period">/month</span></div>
+        <div class="setup-fee">+ $250K setup</div>
+      </div>
+      <div class="pricing-header enterprise">
+        <div class="package-name">ENTERPRISE</div>
+        <div class="package-tagline">Complete transformation</div>
+        <div class="package-price">$100K+<span class="price-period">/month</span></div>
+        <div class="setup-fee">+ $500K setup</div>
+      </div>
+    </div>
+    
+    <!-- Feature Comparison -->
+    <div class="feature-category">ACHIEVING 5% TARGET</div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Indigenous Businesses Accessible</div>
+      <div class="feature-value">~5,000</div>
+      <div class="feature-value">~25,000</div>
+      <div class="feature-value">60,000+</div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Average Time to 5% Target</div>
+      <div class="feature-value">18 months</div>
+      <div class="feature-value">6 months</div>
+      <div class="feature-value">3 months</div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Success Rate</div>
+      <div class="feature-value">45%</div>
+      <div class="feature-value">73%</div>
+      <div class="feature-value">92%</div>
+    </div>
+    
+    <div class="feature-category">VERIFICATION CAPABILITIES</div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Government API Integrations</div>
+      <div class="feature-value">2 APIs</div>
+      <div class="feature-value">8 APIs</div>
+      <div class="feature-value">All APIs + Custom</div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Verification Speed</div>
+      <div class="feature-value">< 5 minutes</div>
+      <div class="feature-value">< 3 minutes</div>
+      <div class="feature-value">< 1 minute</div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Fraud Detection</div>
+      <div class="feature-value">Basic</div>
+      <div class="feature-value">Advanced</div>
+      <div class="feature-value">AI-Powered</div>
+    </div>
+    
+    <div class="feature-category">MATCHING & INTELLIGENCE</div>
+    
+    <div class="feature-row">
+      <div class="feature-label">RFQ Auto-Matching</div>
+      <div class="feature-value"><span class="check">✓</span></div>
+      <div class="feature-value"><span class="check">✓</span></div>
+      <div class="feature-value"><span class="check">✓</span></div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">AI Recommendations</div>
+      <div class="feature-value"><span class="times">×</span></div>
+      <div class="feature-value"><span class="check">✓</span></div>
+      <div class="feature-value"><span class="check">✓</span></div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Predictive Analytics</div>
+      <div class="feature-value"><span class="times">×</span></div>
+      <div class="feature-value"><span class="partial">Basic</span></div>
+      <div class="feature-value"><span class="check">✓</span></div>
+    </div>
+    
+    <div class="feature-category">SUPPORT & TRAINING</div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Training Included</div>
+      <div class="feature-value">Remote (1 day)</div>
+      <div class="feature-value">On-site (1 week)</div>
+      <div class="feature-value">Full program</div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Support Level</div>
+      <div class="feature-value">Email</div>
+      <div class="feature-value">Email + Phone</div>
+      <div class="feature-value">24/7 Dedicated</div>
+    </div>
+    
+    <div class="feature-row">
+      <div class="feature-label">Success Manager</div>
+      <div class="feature-value"><span class="times">×</span></div>
+      <div class="feature-value"><span class="check">✓</span></div>
+      <div class="feature-value"><span class="check">✓</span></div>
+    </div>
+    
+    <!-- ROI Section -->
+    <div class="roi-section">
+      <h2 style="text-align: center; color: #1B4D3E; margin-bottom: 10px;">Return on Investment</h2>
+      <p style="text-align: center; color: #666; font-size: 18px;">Based on $500M annual procurement spend</p>
+      
+      <div class="roi-grid">
+        <div class="roi-card">
+          <div style="color: #6B7280; font-weight: bold; margin-bottom: 15px;">RAPID START</div>
+          <div class="roi-number">12:1</div>
+          <div class="roi-label">First Year ROI</div>
+          <div style="margin-top: 15px; color: #666; font-size: 14px;">
+            Additional Indigenous Spend: $5M<br>
+            Platform Cost: $425K
+          </div>
+        </div>
+        
+        <div class="roi-card" style="border: 2px solid #22C55E;">
+          <div style="color: #2563EB; font-weight: bold; margin-bottom: 15px;">STANDARD</div>
+          <div class="roi-number">33:1</div>
+          <div class="roi-label">First Year ROI</div>
+          <div style="margin-top: 15px; color: #666; font-size: 14px;">
+            Additional Indigenous Spend: $20M<br>
+            Platform Cost: $600K
+          </div>
+        </div>
+        
+        <div class="roi-card">
+          <div style="color: #7C3AED; font-weight: bold; margin-bottom: 15px;">ENTERPRISE</div>
+          <div class="roi-number">47:1</div>
+          <div class="roi-label">First Year ROI</div>
+          <div style="margin-top: 15px; color: #666; font-size: 14px;">
+            Additional Indigenous Spend: $30M<br>
+            Platform Cost: $1.2M
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- Decision Matrix -->
+    <div style="background: #f8f9fa; padding: 40px; border-radius: 12px; margin-bottom: 40px;">
+      <h2 style="text-align: center; color: #1B4D3E; margin-bottom: 30px;">Which Package Is Right for You?</h2>
+      
+      <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px;">
+        <div style="text-align: center;">
+          <h3 style="color: #6B7280; margin-bottom: 15px;">Choose RAPID if:</h3>
+          <ul style="text-align: left; list-style: none; padding: 0;">
+            <li style="margin: 10px 0;">✓ Testing with pilot program</li>
+            <li style="margin: 10px 0;">✓ Smaller procurement budget (<$100M)</li>
+            <li style="margin: 10px 0;">✓ Need quick wins this fiscal</li>
+            <li style="margin: 10px 0;">✓ Limited change management resources</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center; padding: 20px; background: white; border-radius: 8px; border: 2px solid #22C55E;">
+          <h3 style="color: #2563EB; margin-bottom: 15px;">Choose STANDARD if:</h3>
+          <ul style="text-align: left; list-style: none; padding: 0;">
+            <li style="margin: 10px 0;">✓ Serious about achieving 5% target</li>
+            <li style="margin: 10px 0;">✓ Medium-large procurement budget</li>
+            <li style="margin: 10px 0;">✓ Need comprehensive solution</li>
+            <li style="margin: 10px 0;">✓ Want best ROI/value balance</li>
+          </ul>
+        </div>
+        
+        <div style="text-align: center;">
+          <h3 style="color: #7C3AED; margin-bottom: 15px;">Choose ENTERPRISE if:</h3>
+          <ul style="text-align: left; list-style: none; padding: 0;">
+            <li style="margin: 10px 0;">✓ Major department (>$1B spend)</li>
+            <li style="margin: 10px 0;">✓ Need AI-powered automation</li>
+            <li style="margin: 10px 0;">✓ Want competitive advantage</li>
+            <li style="margin: 10px 0;">✓ Require custom integrations</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+    
+    <!-- CTA Section -->
+    <div class="cta-section">
+      <h2>Ready to Finally Achieve Your 5% Target?</h2>
+      <p style="font-size: 20px; margin-bottom: 10px;">Join the growing number of departments succeeding with Indigenous procurement</p>
+      <p style="font-size: 16px; opacity: 0.9;">Every month of delay = missed opportunities for Indigenous businesses</p>
+      <a href="#" class="cta-button">Schedule Your Demo Today</a>
+    </div>
+  </div>
+</body>
+</html>

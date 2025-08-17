@@ -1,0 +1,992 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Indigenous Verified Marketplace - Transforming Construction and Procurement</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            color: #ffffff;
+            overflow-x: hidden;
+        }
+        
+        .slide {
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 2rem;
+            position: relative;
+        }
+        
+        .slide::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at 30% 70%, rgba(255, 107, 107, 0.1) 0%, transparent 50%),
+                        radial-gradient(circle at 70% 30%, rgba(78, 205, 196, 0.1) 0%, transparent 50%);
+            pointer-events: none;
+        }
+        
+        .container {
+            max-width: 1200px;
+            width: 100%;
+            z-index: 1;
+            position: relative;
+        }
+        
+        h1 {
+            font-size: 3.5rem;
+            font-weight: 700;
+            text-align: center;
+            margin-bottom: 1rem;
+            background: linear-gradient(45deg, #4ecdc4, #44a08d);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        
+        h2 {
+            font-size: 2.5rem;
+            font-weight: 600;
+            margin-bottom: 2rem;
+            text-align: center;
+            color: #4ecdc4;
+        }
+        
+        h3 {
+            font-size: 1.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: #ff6b6b;
+        }
+        
+        .subtitle {
+            font-size: 1.5rem;
+            text-align: center;
+            color: #b8c5d6;
+            margin-bottom: 3rem;
+        }
+        
+        .highlight-box {
+            background: rgba(78, 205, 196, 0.1);
+            border: 2px solid #4ecdc4;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .climate-box {
+            background: rgba(34, 197, 94, 0.1);
+            border: 2px solid #22c55e;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+            backdrop-filter: blur(10px);
+        }
+        
+        .problem-box {
+            background: rgba(255, 107, 107, 0.1);
+            border: 2px solid #ff6b6b;
+            border-radius: 15px;
+            padding: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .stat {
+            font-size: 4rem;
+            font-weight: 700;
+            color: #4ecdc4;
+            text-align: center;
+            margin-bottom: 0.5rem;
+        }
+        
+        .stat-label {
+            font-size: 1.2rem;
+            color: #b8c5d6;
+            text-align: center;
+            margin-bottom: 2rem;
+        }
+        
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 2rem;
+            margin: 2rem 0;
+        }
+        
+        .card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 15px;
+            padding: 2rem;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 30px rgba(78, 205, 196, 0.3);
+        }
+        
+        .bullet-point {
+            display: flex;
+            align-items: flex-start;
+            margin-bottom: 1rem;
+        }
+        
+        .bullet {
+            width: 8px;
+            height: 8px;
+            background: #4ecdc4;
+            border-radius: 50%;
+            margin-right: 1rem;
+            margin-top: 0.5rem;
+            flex-shrink: 0;
+        }
+        
+        .timeline {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 2rem 0;
+        }
+        
+        .timeline-item {
+            text-align: center;
+            flex: 1;
+            position: relative;
+        }
+        
+        .timeline-item::after {
+            content: '';
+            position: absolute;
+            top: 50%;
+            right: -50%;
+            width: 100%;
+            height: 2px;
+            background: #4ecdc4;
+            z-index: -1;
+        }
+        
+        .timeline-item:last-child::after {
+            display: none;
+        }
+        
+        .timeline-date {
+            background: #4ecdc4;
+            color: #1a1a2e;
+            padding: 0.5rem 1rem;
+            border-radius: 25px;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            display: inline-block;
+        }
+        
+        .revenue-model {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 1.5rem;
+            margin: 2rem 0;
+        }
+        
+        .revenue-item {
+            background: rgba(255, 255, 255, 0.08);
+            padding: 1.5rem;
+            border-radius: 10px;
+            text-align: center;
+        }
+        
+        .price {
+            font-size: 2rem;
+            color: #4ecdc4;
+            font-weight: 600;
+        }
+        
+        .footnote {
+            font-size: 0.9rem;
+            color: #8a9db3;
+            margin-top: 1rem;
+            line-height: 1.4;
+        }
+        
+        .source {
+            font-size: 0.8rem;
+            color: #6c7b8a;
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+        
+        .carney-green {
+            color: #22c55e;
+            font-weight: 600;
+        }
+        
+        .nav-buttons {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 1000;
+        }
+        
+        .nav-btn {
+            background: rgba(78, 205, 196, 0.2);
+            border: 2px solid #4ecdc4;
+            color: #4ecdc4;
+            padding: 0.5rem 1rem;
+            margin: 0.25rem;
+            border-radius: 25px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s ease;
+        }
+        
+        .nav-btn:hover {
+            background: #4ecdc4;
+            color: #1a1a2e;
+        }
+        
+        @media (max-width: 768px) {
+            h1 { font-size: 2.5rem; }
+            h2 { font-size: 2rem; }
+            .grid { grid-template-columns: 1fr; }
+            .timeline { flex-direction: column; gap: 1rem; }
+            .timeline-item::after { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Slide 1: Title -->
+    <section class="slide" id="slide1">
+        <div class="container">
+            <h1>Indigenous Verified Marketplace</h1>
+            <p class="subtitle">Climate-Smart Construction & Procurement Platform</p>
+            <div class="highlight-box">
+                <p style="text-align: center; font-size: 1.3rem;">Addressing the $350B+ Indigenous Infrastructure Gap Through Verified Businesses, Price Transparency, and Climate-Embedded Solutions</p>
+            </div>
+            <div class="climate-box">
+                <p style="text-align: center; font-size: 1.2rem;">🌱 <span class="carney-green">Mark Carney's Priority:</span> Supporting Indigenous climate solutions & sustainable finance as Canada's new Prime Minister</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 2: The Perfect Storm Crisis -->
+    <section class="slide" id="slide2">
+        <div class="container">
+            <h2>The Perfect Storm Crisis</h2>
+            <div class="grid">
+                <div class="problem-box">
+                    <div class="stat">$350B+</div>
+                    <div class="stat-label">Infrastructure gap must close by 2030¹</div>
+                    <p><strong>Climate Emergency:</strong> Every delay increases costs & climate vulnerability</p>
+                </div>
+                <div class="problem-box">
+                    <div class="stat">$177B</div>
+                    <div class="stat-label">Additional cost if delayed to 2040²</div>
+                    <p><strong>Cost of Inaction:</strong> 50% price increase due to inflation & climate damage</p>
+                </div>
+                <div class="problem-box">
+                    <div class="stat">$1.6B+</div>
+                    <div class="stat-label">Indigenous procurement at risk³</div>
+                    <p><strong>ArriveCan Scandal:</strong> False Indigenous claims undermine legitimate businesses</p>
+                </div>
+            </div>
+            <div class="card">
+                <h3>Multiple Crisis Convergence</h3>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Construction Crisis:</strong> Lumber prices +118.9%, extreme material costs⁴</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Climate Crisis:</strong> Fire risk 2.4x higher, infrastructure climate vulnerability⁵</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Verification Crisis:</strong> Non-Indigenous fronts stealing Indigenous opportunities⁶</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Financial Crisis:</strong> Traditional financing blocked by Indian Act Section 89⁷</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 3: Mark Carney's Climate Vision -->
+    <section class="slide" id="slide3">
+        <div class="container">
+            <h2>Mark Carney's Climate Opportunity</h2>
+            <div class="climate-box">
+                <h3 style="color: #22c55e; text-align: center;">Canada's New PM: Climate Finance Pioneer</h3>
+                <div class="grid">
+                    <div>
+                        <h3>Climate Priorities⁸</h3>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Indigenous-Led Climate Solutions:</strong> Partnership with Indigenous communities</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Sustainable Finance:</strong> $100B+ green investment mobilization</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Carbon Border Adjustments:</strong> Trade tools to support climate action</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Energy Efficiency:</strong> Industrial heat mandates, building retrofits</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Our Perfect Alignment</h3>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Indigenous Economic Reconciliation:</strong> Core to Carney's mandate</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Climate-Resilient Infrastructure:</strong> Adaptation & mitigation</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Sustainable Finance Innovation:</strong> New models beyond traditional banking</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Clean Energy Corridors:</strong> Supporting Indigenous renewable projects</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <p class="footnote"><strong>UN Special Envoy Background:</strong> Carney sees net-zero as "the greatest commercial opportunity of our time" with emphasis on Indigenous rights in climate finance⁹</p>
+        </div>
+    </section>
+
+    <!-- Slide 4: The $350B+ Market Opportunity -->
+    <section class="slide" id="slide4">
+        <div class="container">
+            <h2>The $350B+ Climate-Infrastructure Nexus</h2>
+            <div class="highlight-box">
+                <div class="grid">
+                    <div>
+                        <h3>Core Infrastructure Gap¹⁰</h3>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Climate-Resilient Housing:</strong> $135B for 157,453 homes</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Clean Energy Grid:</strong> $5B+ for renewable infrastructure</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Climate Adaptation:</strong> $209B for resilient infrastructure</div>
+                        </div>
+                    </div>
+                    <div>
+                        <h3>Extended Climate Economy</h3>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Indigenous Clean Energy:</strong> Wind, solar, hydro projects on traditional territories</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Carbon Credit Markets:</strong> Nature-based solutions, forest management</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Sustainable Mining:</strong> Critical minerals for clean energy transition</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Economic Multiplier:</strong> $635B potential impact over 7 years¹¹</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="climate-box">
+                <p style="text-align: center; font-size: 1.2rem;"><strong>Climate Imperative:</strong> 40-45% emissions reduction by 2030, net-zero by 2050¹²</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 5: Critical Problems We Solve -->
+    <section class="slide" id="slide5">
+        <div class="container">
+            <h2>Critical Problems We Solve</h2>
+            <div class="grid">
+                <div class="problem-box">
+                    <h3>1. Verification Crisis</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>ArriveCan Scandal:</strong> Coradix-Dalian failed Indigenous audits¹³</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>"Phantom Joint Ventures":</strong> Non-Indigenous fronts stealing opportunities¹⁴</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>$1.6B Risk:</strong> Indigenous set-aside contracts under threat¹⁵</div>
+                    </div>
+                </div>
+                <div class="problem-box">
+                    <h3>2. Financial Barrier: Section 89</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Indian Act Section 89:</strong> Reserve property unseizable by creditors¹⁶</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Financing Blocked:</strong> Banks cannot use reserve assets as collateral¹⁷</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Development Stunted:</strong> $350B projects need alternative financing</div>
+                    </div>
+                </div>
+                <div class="problem-box">
+                    <h3>3. Price Opacity & Climate Costs</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>No Price Transparency:</strong> Remote construction costs hidden</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Climate Premium:</strong> No pricing for climate-resilient materials</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Limited Competition:</strong> 634 separate communities, fragmented markets</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 6: Our Comprehensive Solution -->
+    <section class="slide" id="slide6">
+        <div class="container">
+            <h2>Indigenous Verified Marketplace</h2>
+            <div class="highlight-box">
+                <h3 style="color: #4ecdc4; text-align: center;">Climate-Embedded B2B Marketplace for Indigenous Communities</h3>
+                <div class="grid">
+                    <div class="card">
+                        <h3>🔍 Verified Business Directory</h3>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Indigenous-Owned & Controlled:</strong> Community-validated businesses</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>ALL Canadian Businesses:</strong> Interested in ethical Indigenous partnerships</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Climate Capabilities:</strong> Green building, renewable energy, carbon credits</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>💰 Price Transparency + Climate Pricing</h3>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Real-Time Pricing:</strong> Materials, labor, logistics, climate premiums</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Carbon Cost Integration:</strong> Embedded climate pricing in all quotes</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Competitive Bidding:</strong> Drives down costs through transparency</div>
+                        </div>
+                    </div>
+                    <div class="card">
+                        <h3>🏦 Escrow & Alternative Financing</h3>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Circumvents Section 89:</strong> Escrow services for unseizable assets</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Climate Finance:</strong> Green bonds, carbon credit monetization</div>
+                        </div>
+                        <div class="bullet-point">
+                            <div class="bullet"></div>
+                            <div><strong>Trust-Based Transactions:</strong> Secure payments without asset seizure risk</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 7: Technology Stack & Climate Integration -->
+    <section class="slide" id="slide7">
+        <div class="container">
+            <h2>Climate-Smart Technology Stack</h2>
+            <div class="grid">
+                <div class="card">
+                    <h3>🔐 Blockchain Verification</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Community Validation:</strong> Indigenous-led verification process</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Immutable Records:</strong> Prevents false claims & phantom partnerships</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Carbon Tracking:</strong> Embedded emissions monitoring</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>🌡️ Climate-Embedded Pricing</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Carbon Price Integration:</strong> Automatic climate cost calculation</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Climate Risk Pricing:</strong> Flood, fire, extreme weather premiums</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Green Material Incentives:</strong> Lower costs for sustainable options</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>💳 Smart Escrow System</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Section 89 Workaround:</strong> Secure payments without asset seizure</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Milestone-Based Release:</strong> Performance-triggered payments</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Climate Performance Bonds:</strong> Emissions reduction guarantees</div>
+                    </div>
+                </div>
+            </div>
+            <div class="timeline">
+                <div class="timeline-item">
+                    <div class="timeline-date">Q3 2025</div>
+                    <div>Verified Marketplace + Basic Escrow</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">Q4 2025</div>
+                    <div>Climate Pricing Engine</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">Q1 2026</div>
+                    <div>Carbon Credit Integration</div>
+                </div>
+                <div class="timeline-item">
+                    <div class="timeline-date">Q2 2026</div>
+                    <div>National Climate Platform</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 8: Impact Projections -->
+    <section class="slide" id="slide8">
+        <div class="container">
+            <h2>Projected Climate & Economic Impact</h2>
+            <div class="grid">
+                <div class="highlight-box">
+                    <div class="stat">10-15%</div>
+                    <div class="stat-label">Construction Cost Savings Through Price Transparency¹⁸</div>
+                    <p>Conservative estimate: Price transparency in competitive markets typically delivers 12-20% savings¹⁹</p>
+                </div>
+                <div class="highlight-box">
+                    <div class="stat">$35-52B</div>
+                    <div class="stat-label">Potential Savings on $350B Infrastructure Gap</div>
+                    <p>Cost reductions make projects more feasible, accelerating climate-resilient development</p>
+                </div>
+            </div>
+            <div class="climate-box">
+                <h3>Climate & Economic Multipliers</h3>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>338,300 Jobs/Year:</strong> 40% in climate-resilient construction²⁰</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>$308B GDP Impact:</strong> Green infrastructure economic multiplier²¹</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Carbon Sequestration:</strong> Nature-based solutions through Indigenous forestry</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div><strong>Climate Adaptation:</strong> Resilient infrastructure prevents future damage costs</div>
+                </div>
+            </div>
+            <div class="problem-box">
+                <h3>Climate Emergency: Cost of Delay</h3>
+                <p style="text-align: center; font-size: 1.2rem; margin-bottom: 1rem;"><strong>$177B Additional Cost if delayed to 2040²²</strong></p>
+                <p style="text-align: center;">Every year of delay increases both climate vulnerability and construction costs</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 9: Revenue Model -->
+    <section class="slide" id="slide9">
+        <div class="container">
+            <h2>Sustainable Revenue Model</h2>
+            <div class="revenue-model">
+                <div class="revenue-item">
+                    <h3>Government SaaS</h3>
+                    <div class="price">$2,500/month</div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>96 federal departments & agencies²³</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>13 provincial governments</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Climate compliance reporting</div>
+                    </div>
+                    <p><strong>Federal Potential:</strong> $2.88M annually</p>
+                </div>
+                <div class="revenue-item">
+                    <h3>Business Directory</h3>
+                    <div class="price">$500-2000/year</div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Tiered by business size & climate capabilities</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Carbon credit marketplace access</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Green certification services</div>
+                    </div>
+                </div>
+                <div class="revenue-item">
+                    <h3>Escrow Services</h3>
+                    <div class="price">1-2%</div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Section 89 workaround fees</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Climate performance bonds</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Carbon credit escrow</div>
+                    </div>
+                </div>
+                <div class="revenue-item">
+                    <h3>Climate Services</h3>
+                    <div class="price">Custom</div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Carbon footprint analysis</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Climate risk assessments</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div>Green finance advisory</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 10: Competitive Advantage -->
+    <section class="slide" id="slide10">
+        <div class="container">
+            <h2>Unparalleled Competitive Advantage</h2>
+            <div class="grid">
+                <div class="highlight-box">
+                    <h3>Indigenous-Led Governance</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Community Validation:</strong> First Nations-driven verification prevents ArriveCan-style fraud</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Cultural & Climate Competency:</strong> Traditional knowledge meets modern sustainability</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Trust & Authenticity:</strong> Real relationships, not shell companies</div>
+                    </div>
+                </div>
+                <div class="highlight-box">
+                    <h3>Financial Innovation</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Section 89 Solution:</strong> Only platform addressing Indian Act financing barriers</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Climate Finance Integration:</strong> Carbon credits, green bonds, ESG funding</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Escrow Innovation:</strong> Secure transactions without asset seizure risk</div>
+                    </div>
+                </div>
+                <div class="highlight-box">
+                    <h3>Market Timing</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Carney Administration:</strong> Climate & Indigenous priorities aligned</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Crisis Convergence:</strong> Climate emergency + infrastructure gap + financing crisis</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>No Competition:</strong> First comprehensive Indigenous climate-finance platform</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 11: Investment Ask -->
+    <section class="slide" id="slide11">
+        <div class="container">
+            <h2>Investment Ask</h2>
+            <div class="highlight-box">
+                <div class="stat">$5M</div>
+                <div class="stat-label">Seed Funding for Climate-Smart Platform & Escrow Infrastructure</div>
+            </div>
+            <div class="grid">
+                <div class="card">
+                    <h3>Dual Entity Structure</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>UN Charity Alignment:</strong> Economic reconciliation & climate action</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Minimal Dilution:</strong> Impact-focused, not traditional VC returns</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Mark Carney Aligned:</strong> Sustainable finance innovation priorities</div>
+                    </div>
+                </div>
+                <div class="card">
+                    <h3>Use of Funds</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>50% Technology:</strong> Platform, blockchain, climate pricing engine</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>25% Escrow Infrastructure:</strong> Section 89 workaround systems</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>15% Community Engagement:</strong> Indigenous partnerships</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>10% Climate Integration:</strong> Carbon markets, green finance</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 12: Social Impact & Climate Justice -->
+    <section class="slide" id="slide12">
+        <div class="container">
+            <h2>Climate Justice & Economic Reconciliation</h2>
+            <div class="grid">
+                <div class="highlight-box">
+                    <h3>Immediate Climate Impact</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Housing Crisis:</strong> 157,453 climate-resilient homes</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Emissions Reduction:</strong> Green building standards, renewable energy</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Nature-Based Solutions:</strong> Indigenous-led forest & land management</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>$35-52B Savings:</strong> Faster climate adaptation deployment</div>
+                    </div>
+                </div>
+                <div class="highlight-box">
+                    <h3>Systemic Transformation</h3>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Financial Sovereignty:</strong> Circumventing colonial financial barriers</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Climate Leadership:</strong> Indigenous knowledge + modern climate tech</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Economic Self-Determination:</strong> Community-controlled verification & finance</div>
+                    </div>
+                    <div class="bullet-point">
+                        <div class="bullet"></div>
+                        <div><strong>Carbon Wealth:</strong> Monetizing traditional ecological knowledge</div>
+                    </div>
+                </div>
+            </div>
+            <div class="climate-box">
+                <h3>Aligned with Mark Carney's Vision</h3>
+                <p style="text-align: center; font-size: 1.2rem; margin-bottom: 1rem;"><strong>Supporting Indigenous peoples as "full partners" in climate transition²⁴</strong></p>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div>Indigenous-led climate solutions as cornerstone of national climate strategy</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div>Sustainable finance innovation addressing systemic barriers</div>
+                </div>
+                <div class="bullet-point">
+                    <div class="bullet"></div>
+                    <div>Economic reconciliation through climate opportunity creation</div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Slide 13: Call to Action -->
+    <section class="slide" id="slide13">
+        <div class="container">
+            <h2>Join Canada's Climate & Reconciliation Transformation</h2>
+            <div class="highlight-box">
+                <h1 style="font-size: 2.5rem; margin-bottom: 2rem;">Partner with us to solve the $350B Indigenous infrastructure gap while advancing climate action</h1>
+                <div class="grid">
+                    <div class="card">
+                        <h3>Q2 2025</h3>
+                        <p><strong>Government Partnerships:</strong> Mark Carney administration alignment</p>
+                    </div>
+                    <div class="card">
+                        <h3>Q3 2025</h3>
+                        <p><strong>Platform Launch:</strong> Verified marketplace + escrow system</p>
+                    </div>
+                    <div class="card">
+                        <h3>Q4 2025</h3>
+                        <p><strong>Climate Integration:</strong> Carbon pricing + green finance</p>
+                    </div>
+                    <div class="card">
+                        <h3>2026</h3>
+                        <p><strong>National Impact:</strong> $35B+ savings, climate leadership</p>
+                    </div>
+                </div>
+            </div>
+            <div class="climate-box" style="text-align: center;">
+                <h3>The Moment is Now</h3>
+                <p style="font-size: 1.3rem; margin: 1rem 0;">Mark Carney's climate priorities + Indigenous infrastructure crisis + financing innovation = unprecedented opportunity</p>
+                <p style="font-size: 1.1rem;">Let's build climate justice and economic reconciliation together</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Sources -->
+    <section class="slide" id="sources">
+        <div class="container">
+            <h2>Sources & References</h2>
+            <div style="font-size: 0.85rem; line-height: 1.5; column-count: 2; column-gap: 2rem;">
+                <p><strong>1-2:</strong> <a href="https://www.aptnnews.ca/national-news/closing-first-nations-infrastructure-gap-could-generate-635b-report/">Assembly of First Nations - $350B infrastructure gap, $527B by 2040</a></p>
+                <p><strong>3:</strong> <a href="https://www.theglobeandmail.com/canada/article-indigenous-companies-procurement-contracts/">Globe and Mail - Indigenous procurement at risk</a></p>
+                <p><strong>4:</strong> <a href="https://afn.ca/opportunities/post-pandemic-construction-costs-study/">AFN - Construction costs study, lumber +118.9%</a></p>
+                <p><strong>5:</strong> <a href="https://waapihk.com/2023/12/12/building-standards-on-and-off-reserve/">waapihk research - Fire risk 2.4x higher on reserve</a></p>
+                <p><strong>6:</strong> <a href="https://www.theglobeandmail.com/politics/article-arrivecan-audit-indigenous-procurement-system/">ArriveCan contractors failed Indigenous audits</a></p>
+                <p><strong>7:</strong> <a href="https://laws-lois.justice.gc.ca/eng/acts/I-5/section-89.html">Indian Act Section 89 - Property seizure restrictions</a></p>
+                <p><strong>8-9:</strong> <a href="https://carboncredits.com/mark-carneys-climate-strategy-balancing-carbon-policy-trade-and-energy-security/">Mark Carney's Climate Strategy</a></p>
+                <p><strong>10-11:</strong> <a href="https://rabble.ca/indigenous/estimated-350bn-needed-to-close-infrastructure-gap-in-first-nations-communities/">$350B infrastructure breakdown, economic impact</a></p>
+                <p><strong>12:</strong> <a href="https://markcarney.ca/media/2025/01/mark-carney-presents-plan-for-change-on-consumer-carbon-tax">Canada's 40-45% emissions reduction target</a></p>
+                <p><strong>13-15:</strong> <a href="https://globalnews.ca/news/10700685/federal-contracts-indigenous-enterprises-canada/">Global News - Indigenous procurement verification crisis</a></p>
+                <p><strong>16-17:</strong> <a href="https://www.bennettjones.com/Publications-Section/Updates/Indian-Property---Lien-and-Seizure-Restrictions">Bennett Jones - Section 89 seizure restrictions</a></p>
+                <p><strong>18-19:</strong> <a href="https://www.thebuildchain.co.uk/news/unlocking-material-cost-savings-through-accurate-price-benchmarking/">Price transparency savings studies</a></p>
+                <p><strong>20-21:</strong> <a href="https://www.aptnnews.ca/national-news/closing-first-nations-infrastructure-gap-could-generate-635b-report/">Conference Board economic impact analysis</a></p>
+                <p><strong>22:</strong> <a href="https://rabble.ca/indigenous/estimated-350bn-needed-to-close-infrastructure-gap-in-first-nations-communities/">Cost of delay calculations</a></p>
+                <p><strong>23:</strong> <a href="https://open.canada.ca/data/en/dataset/34b3aa67-dd04-455b-996f-9d9b5032ed39">96 federal departments & agencies target</a></p>
+                <p><strong>24:</strong> <a href="https://www.un.org/en/climatechange/mark-carney-investing-net-zero-climate-solutions-creates-value-and-rewards">UN Special Envoy on Indigenous partnership</a></p>
+            </div>
+        </div>
+    </section>
+
+    <div class="nav-buttons">
+        <button class="nav-btn" onclick="previousSlide()">Previous</button>
+        <button class="nav-btn" onclick="nextSlide()">Next</button>
+    </div>
+
+    <script>
+        let currentSlide = 1;
+        const totalSlides = 14;
+
+        function showSlide(n) {
+            const slides = document.querySelectorAll('.slide');
+            if (n > totalSlides) currentSlide = 1;
+            if (n < 1) currentSlide = totalSlides;
+            
+            slides.forEach(slide => slide.style.display = 'none');
+            if (currentSlide <= 13) {
+                document.getElementById(`slide${currentSlide}`).style.display = 'flex';
+            } else {
+                document.getElementById('sources').style.display = 'flex';
+            }
+        }
+
+        function nextSlide() {
+            currentSlide++;
+            showSlide(currentSlide);
+        }
+
+        function previousSlide() {
+            currentSlide--;
+            showSlide(currentSlide);
+        }
+
+        // Keyboard navigation
+        document.addEventListener('keydown', function(e) {
+            if (e.key === 'ArrowRight' || e.key === ' ') nextSlide();
+            if (e.key === 'ArrowLeft') previousSlide();
+        });
+
+        // Initialize
+        showSlide(1);
+    </script>
+</body>
+</html>

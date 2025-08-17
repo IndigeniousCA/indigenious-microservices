@@ -1,0 +1,910 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unations/Indigenious - Enhanced Lean Startup Canvas</title>
+  <style>
+    :root {
+      --primary: #2F3338;
+      --secondary: #1B4D3E;
+      --accent: #B7853D;
+      --light: #FAFBFC;
+      --dark: #1A1A1A;
+      --danger: #D63447;
+      --success: #5E8B7E;
+      --warning: #F7C548;
+      --info: #6E7DAB;
+      --gradient-primary: linear-gradient(135deg, #2F3338 0%, #1B4D3E 100%);
+      --gradient-accent: linear-gradient(135deg, #B7853D 0%, #D4942B 100%);
+    }
+    
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'SF Pro Display', Roboto, Helvetica, Arial, sans-serif;
+      line-height: 1.6;
+      color: var(--dark);
+      background-color: var(--light);
+      padding: 20px;
+    }
+    
+    .canvas-container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background-color: white;
+      border-radius: 16px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+      overflow: hidden;
+    }
+    
+    .canvas-header {
+      background: var(--gradient-primary);
+      color: white;
+      padding: 30px;
+      text-align: center;
+    }
+    
+    .canvas-header h1 {
+      margin-bottom: 10px;
+      font-size: 32px;
+      font-weight: 600;
+      letter-spacing: -0.5px;
+    }
+    
+    .canvas-header p {
+      opacity: 0.9;
+      font-size: 18px;
+      margin-bottom: 20px;
+      font-weight: 300;
+    }
+    
+    .entity-toggle {
+      display: flex;
+      justify-content: center;
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .entity-button {
+      padding: 10px 24px;
+      border: 2px solid white;
+      background: transparent;
+      color: white;
+      border-radius: 50px;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      font-size: 16px;
+      font-weight: 500;
+    }
+    
+    .entity-button.active {
+      background: white;
+      color: var(--primary);
+    }
+    
+    .entity-button:hover:not(.active) {
+      background: rgba(255,255,255,0.1);
+    }
+    
+    .canvas-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      grid-auto-rows: minmax(min-content, max-content);
+      gap: 24px;
+      padding: 30px;
+    }
+    
+    .canvas-item {
+      border-radius: 12px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+      padding: 24px;
+      background-color: white;
+      display: flex;
+      flex-direction: column;
+      transition: all 0.3s ease;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .canvas-item::before {
+      content: '';
+      position: absolute;
+      left: 0;
+      top: 0;
+      bottom: 0;
+      width: 5px;
+      background: var(--primary);
+    }
+    
+    .canvas-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 8px 20px rgba(0,0,0,0.12);
+    }
+    
+    .canvas-item h2 {
+      color: var(--primary);
+      font-size: 20px;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 2px solid var(--accent);
+      display: flex;
+      align-items: center;
+      font-weight: 600;
+    }
+    
+    .canvas-item h2 i {
+      margin-right: 10px;
+      font-size: 24px;
+      color: var(--accent);
+    }
+    
+    .canvas-item h3 {
+      color: var(--secondary);
+      font-size: 16px;
+      margin: 16px 0 8px 0;
+      font-weight: 600;
+    }
+    
+    .canvas-item ul {
+      padding-left: 20px;
+      margin-bottom: 12px;
+    }
+    
+    .canvas-item li {
+      margin-bottom: 8px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .canvas-item strong {
+      color: var(--primary);
+      font-weight: 600;
+    }
+    
+    .canvas-item p {
+      margin-bottom: 12px;
+      font-size: 14px;
+      line-height: 1.6;
+    }
+    
+    .entity-content {
+      display: none;
+    }
+    
+    .entity-content.active {
+      display: grid;
+    }
+    
+    .problem {
+      grid-column: 1;
+      grid-row: 1;
+    }
+    
+    .problem::before {
+      background: var(--danger);
+    }
+    
+    .solution {
+      grid-column: 2;
+      grid-row: 1;
+    }
+    
+    .solution::before {
+      background: var(--success);
+    }
+    
+    .unique-value {
+      grid-column: 2;
+      grid-row: 2;
+    }
+    
+    .unique-value::before {
+      background: var(--accent);
+    }
+    
+    .unfair-advantage {
+      grid-column: 2;
+      grid-row: 3/5;
+    }
+    
+    .unfair-advantage::before {
+      background: var(--info);
+    }
+    
+    .customer-segments {
+      grid-column: 3;
+      grid-row: 1;
+    }
+    
+    .customer-segments::before {
+      background: var(--secondary);
+    }
+    
+    .channels {
+      grid-column: 3;
+      grid-row: 2;
+    }
+    
+    .channels::before {
+      background: var(--warning);
+    }
+    
+    .key-metrics {
+      grid-column: 1;
+      grid-row: 2;
+    }
+    
+    .key-metrics::before {
+      background: var(--primary);
+    }
+    
+    .cost-structure {
+      grid-column: 1;
+      grid-row: 3;
+    }
+    
+    .cost-structure::before {
+      background: var(--dark);
+    }
+    
+    .revenue-streams {
+      grid-column: 3;
+      grid-row: 3;
+    }
+    
+    .revenue-streams::before {
+      background: var(--success);
+    }
+    
+    .highlight {
+      background: linear-gradient(135deg, rgba(183, 133, 61, 0.1), rgba(27, 77, 62, 0.1));
+      padding: 16px;
+      border-radius: 8px;
+      margin: 12px 0;
+      border-left: 3px solid var(--accent);
+    }
+    
+    .tag {
+      display: inline-block;
+      padding: 4px 12px;
+      background: var(--light);
+      border-radius: 20px;
+      font-size: 12px;
+      margin-right: 8px;
+      margin-bottom: 8px;
+      color: var(--dark);
+      font-weight: 600;
+      border: 1px solid rgba(0,0,0,0.1);
+    }
+    
+    .section-divider {
+      border-top: 1px dashed #ddd;
+      margin: 20px 0;
+    }
+    
+    .footer {
+      text-align: center;
+      padding: 30px;
+      color: var(--dark);
+      font-size: 14px;
+      opacity: 0.7;
+      background: var(--light);
+    }
+    
+    .maturity-badge {
+      display: inline-block;
+      padding: 3px 8px;
+      font-size: 11px;
+      border-radius: 12px;
+      margin-left: 8px;
+      font-weight: 600;
+    }
+    
+    .mvp {
+      background: #E8F5E9;
+      color: #2E7D32;
+    }
+    
+    .v1 {
+      background: #E3F2FD;
+      color: #1565C0;
+    }
+    
+    .future {
+      background: #F3E5F5;
+      color: #6A1B9A;
+    }
+    
+    @media (max-width: 1200px) {
+      .canvas-grid {
+        grid-template-columns: 1fr;
+      }
+      
+      .problem, .solution, .unique-value, .unfair-advantage, 
+      .customer-segments, .channels, .key-metrics, 
+      .cost-structure, .revenue-streams {
+        grid-column: 1;
+        grid-row: auto;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="canvas-container">
+    <div class="canvas-header">
+      <h1>Unations/Indigenious Enhanced Lean Startup Canvas</h1>
+      <p>Technology-Driven Platform for Economic Reconciliation</p>
+      <p style="font-size: 16px; opacity: 0.8;">Target MVP: Summer 2025 | Vision: Transform Indigenous infrastructure by 2030</p>
+      
+      <div class="entity-toggle">
+        <button class="entity-button active" onclick="toggleEntity('unations')">Unations (Charity)</button>
+        <button class="entity-button" onclick="toggleEntity('indigenious')">Indigenious (For-Profit)</button>
+      </div>
+    </div>
+    
+    <!-- UNATIONS CANVAS -->
+    <div id="unations-canvas" class="canvas-grid entity-content active">
+      
+      <!-- PROBLEM -->
+      <div class="canvas-item problem">
+        <h2>1. Problem</h2>
+        <h3>Systemic Barriers</h3>
+        <ul>
+          <li><strong>Broken economic partnership:</strong> Canada was built through Indigenous-Canadian collaboration—now fragmented</li>
+          <li><strong>Policy void:</strong> No data-driven policy advocacy bridging Indigenous knowledge and government systems</li>
+          <li><strong>Technology gap:</strong> Lack of platforms enabling transparent, accountable collaboration at scale</li>
+          <li><strong>Climate urgency:</strong> Traditional ecological knowledge disconnected from modern climate solutions</li>
+          <li><strong>Trust deficit:</strong> Centuries of broken promises require radical transparency to rebuild</li>
+        </ul>
+        
+        <h3>Innovation Barriers</h3>
+        <ul>
+          <li><strong>R&D funding gap:</strong> No mechanism to de-risk expensive technology development for Indigenous tools</li>
+          <li><strong>Proof-of-concept void:</strong> Ideas die without lighthouse communities to prove systemic solutions</li>
+        </ul>
+      </div>
+      
+      <!-- SOLUTION -->
+      <div class="canvas-item solution">
+        <h2>4. Solution</h2>
+        <h3>Technology R&D Engine <span class="maturity-badge mvp">MVP</span></h3>
+        <ul>
+          <li><strong>Proof-of-concept funding:</strong> De-risk platform development through charitable donations</li>
+          <li><strong>Lighthouse communities:</strong> Real-world testing with willing First Nations partners</li>
+          <li><strong>Open-source tools:</strong> Transparent procurement, AI matching, blockchain accountability</li>
+        </ul>
+        
+        <h3>Policy Advocacy Platform <span class="maturity-badge mvp">MVP</span></h3>
+        <ul>
+          <li><strong>Data-to-policy pipeline:</strong> Convert platform insights into actionable policy briefs</li>
+          <li><strong>Indigenous-majority governance:</strong> Authentic voice driving systemic change</li>
+          <li><strong>Coalition building:</strong> Unite stakeholders around proven solutions</li>
+        </ul>
+        
+        <h3>Innovation Pipeline <span class="maturity-badge v1">V1</span></h3>
+        <ul>
+          <li><strong>Stage-gate funding:</strong> Systematic tool development based on impact potential</li>
+          <li><strong>Knowledge transfer:</strong> Proven tools licensed to Indigenious for scaling</li>
+          <li><strong>Continuous improvement:</strong> Revenue feeds back to fund next innovations</li>
+        </ul>
+      </div>
+      
+      <!-- CUSTOMER SEGMENTS -->
+      <div class="canvas-item customer-segments">
+        <h2>2. Customer Segments</h2>
+        
+        <h3>Primary Donors (Innovation Investors)</h3>
+        <ul>
+          <li><strong>Tech philanthropists:</strong> Fund platform development, not just projects</li>
+          <li><strong>Climate investors:</strong> Seeking systemic environmental solutions</li>
+          <li><strong>Corporate reconciliation leaders:</strong> Mining, energy, banks with Indigenous commitments</li>
+          <li><strong>Government grants:</strong> Innovation funding, Indigenous partnerships</li>
+        </ul>
+        
+        <h3>Primary Beneficiaries</h3>
+        <ul>
+          <li><strong>675+ First Nations:</strong> Direct platform access and advocacy</li>
+          <li><strong>Policy makers:</strong> Evidence-based recommendations</li>
+          <li><strong>Canadian public:</strong> Economic and climate benefits</li>
+        </ul>
+        
+        <div class="section-divider"></div>
+        
+        <h3>Key Partnerships</h3>
+        <ul>
+          <li>Lighthouse communities for pilot programs</li>
+          <li>Academic institutions for research validation</li>
+          <li>Indigenous governance organizations</li>
+        </ul>
+      </div>
+      
+      <!-- UNIQUE VALUE PROPOSITION -->
+      <div class="canvas-item unique-value">
+        <h2>3. Unique Value Proposition</h2>
+        <div class="highlight">
+          <p><strong>"We don't just fund projects—we build the technology platforms that make economic reconciliation operationally possible at scale."</strong></p>
+        </div>
+        
+        <h3>For Donors</h3>
+        <ul>
+          <li>Fund innovation, not charity—R&D with social ROI</li>
+          <li>Tax benefits + measurable systemic change</li>
+          <li>Transparent impact through live dashboards</li>
+        </ul>
+        
+        <h3>For Communities</h3>
+        <ul>
+          <li>Technology tools designed with/for Indigenous needs</li>
+          <li>Policy advocacy backed by real data</li>
+          <li>Sustainable solutions, not temporary fixes</li>
+        </ul>
+        
+        <h3>Core Differentiators</h3>
+        <div>
+          <span class="tag">Technology-First</span>
+          <span class="tag">Indigenous-Governed</span>
+          <span class="tag">Systems Change</span>
+          <span class="tag">Climate-Integrated</span>
+          <span class="tag">Radically Transparent</span>
+        </div>
+      </div>
+      
+      <!-- CHANNELS -->
+      <div class="canvas-item channels">
+        <h2>5. Channels</h2>
+        
+        <h3>Digital Presence <span class="maturity-badge mvp">MVP</span></h3>
+        <ul>
+          <li><strong>Innovation hub website:</strong> Unations.ca showcasing technology development</li>
+          <li><strong>Live impact dashboards:</strong> Real-time transparency on all projects</li>
+          <li><strong>Policy brief distribution:</strong> Direct to government, think tanks</li>
+        </ul>
+        
+        <h3>Strategic Outreach <span class="maturity-badge mvp">MVP</span></h3>
+        <ul>
+          <li><strong>Tech conferences:</strong> Position as innovation investment</li>
+          <li><strong>Climate summits:</strong> Indigenous wisdom + technology</li>
+          <li><strong>Corporate partnerships:</strong> Direct engagement with CSR leaders</li>
+        </ul>
+        
+        <h3>Community Engagement <span class="maturity-badge v1">V1</span></h3>
+        <ul>
+          <li><strong>Lighthouse tours:</strong> See technology in action</li>
+          <li><strong>Indigenous leadership councils:</strong> Direct involvement</li>
+          <li><strong>Academic partnerships:</strong> Research validation</li>
+        </ul>
+      </div>
+      
+      <!-- KEY METRICS -->
+      <div class="canvas-item key-metrics">
+        <h2>8. Key Metrics</h2>
+        
+        <div>
+          <span class="tag">Innovation</span>
+          <span class="tag">Policy Impact</span>
+          <span class="tag">Community Adoption</span>
+          <span class="tag">Donor LTV</span>
+        </div>
+        
+        <div class="section-divider"></div>
+        
+        <h3>Technology Development</h3>
+        <ul>
+          <li>Tools in development pipeline</li>
+          <li>Lighthouse communities engaged</li>
+          <li>Platform adoption rate</li>
+          <li>Cost savings documented</li>
+        </ul>
+        
+        <h3>Policy & Advocacy</h3>
+        <ul>
+          <li>Policy briefs published</li>
+          <li>Government meetings secured</li>
+          <li>Legislative changes influenced</li>
+          <li>Media citations achieved</li>
+        </ul>
+        
+        <h3>Fundraising & Sustainability</h3>
+        <ul>
+          <li>Donor acquisition cost (target: <$100)</li>
+          <li>Monthly recurring donors</li>
+          <li>Average donation size</li>
+          <li>Donor retention rate (target: 60%+)</li>
+        </ul>
+      </div>
+      
+      <!-- UNFAIR ADVANTAGE -->
+      <div class="canvas-item unfair-advantage">
+        <h2>9. Unfair Advantage</h2>
+        
+        <h3>Structural Advantages</h3>
+        <ul>
+          <li><strong>Indigenous-majority governance:</strong> Authentic voice others can't replicate</li>
+          <li><strong>Dual-entity model:</strong> Charity R&D feeding commercial scale</li>
+          <li><strong>First-mover in reconciliation tech:</strong> Building the category</li>
+        </ul>
+        
+        <h3>Strategic Timing</h3>
+        <ul>
+          <li><strong>2025 policy window:</strong> Carney's resource focus + climate urgency</li>
+          <li><strong>Tariff pressures:</strong> Domestic capacity imperative</li>
+          <li><strong>Reconciliation momentum:</strong> Corporate and government readiness</li>
+        </ul>
+        
+        <h3>Technology Leadership</h3>
+        <ul>
+          <li><strong>Platform development expertise:</strong> 89% complete on procurement engine</li>
+          <li><strong>AI/blockchain integration:</strong> Ahead of government adoption curve</li>
+          <li><strong>Traditional knowledge APIs:</strong> Unique dataset access</li>
+        </ul>
+        
+        <h3>Trust & Relationships</h3>
+        <ul>
+          <li><strong>Lighthouse community partnerships:</strong> Real-world proving grounds</li>
+          <li><strong>Cross-sector coalition:</strong> Tech + Indigenous + Climate + Policy</li>
+          <li><strong>Radical transparency:</strong> Open-source commitment builds trust</li>
+        </ul>
+      </div>
+      
+      <!-- COST STRUCTURE -->
+      <div class="canvas-item cost-structure">
+        <h2>7. Cost Structure</h2>
+        
+        <h3>Technology Development (60%)</h3>
+        <ul>
+          <li><strong>Platform engineering:</strong> $400k annually</li>
+          <li><strong>AI/blockchain development:</strong> $200k annually</li>
+          <li><strong>Lighthouse pilots:</strong> $150k per community</li>
+        </ul>
+        
+        <h3>Operations (25%)</h3>
+        <ul>
+          <li><strong>Core team:</strong> 5-7 FTEs initially</li>
+          <li><strong>Indigenous governance:</strong> Board & advisory</li>
+          <li><strong>Legal/compliance:</strong> Charity requirements</li>
+        </ul>
+        
+        <h3>Advocacy & Outreach (15%)</h3>
+        <ul>
+          <li><strong>Policy research:</strong> Data analysis, brief writing</li>
+          <li><strong>Community engagement:</strong> Travel, workshops</li>
+          <li><strong>Marketing:</strong> Digital presence, conferences</li>
+        </ul>
+      </div>
+      
+      <!-- REVENUE STREAMS -->
+      <div class="canvas-item revenue-streams">
+        <h2>6. Revenue Streams</h2>
+        
+        <h3>Innovation Investment Tiers</h3>
+        <ul>
+          <li><strong>Platform Developer:</strong> $50/month - Funds 2hrs AI programming</li>
+          <li><strong>System Architect:</strong> $250/month - Enables blockchain pilots</li>
+          <li><strong>Innovation Catalyst:</strong> $1,000/month - Supports lighthouse community</li>
+          <li><strong>Systems Transformer:</strong> $5,000/month - Regional deployment</li>
+        </ul>
+        
+        <h3>Major Funding Sources</h3>
+        <ul>
+          <li><strong>Foundation grants:</strong> $500k-2M for multi-year programs</li>
+          <li><strong>Government innovation:</strong> R&D tax credits, partnerships</li>
+          <li><strong>Corporate partnerships:</strong> CSR + innovation budgets</li>
+        </ul>
+        
+        <h3>Sustainable Revenue Model</h3>
+        <ul>
+          <li><strong>Indigenious dividends:</strong> 6% preferred return on investment</li>
+          <li><strong>IP licensing fees:</strong> Technology transfer revenue</li>
+          <li><strong>Data insights:</strong> Anonymized research licenses</li>
+        </ul>
+      </div>
+    </div>
+    
+    <!-- INDIGENIOUS CANVAS -->
+    <div id="indigenious-canvas" class="canvas-grid entity-content">
+      
+      <!-- PROBLEM -->
+      <div class="canvas-item problem">
+        <h2>1. Problem</h2>
+        <h3>Market Failures</h3>
+        <ul>
+          <li><strong>Procurement inequality:</strong> Indigenous firms face 11× less capital access, win <5% of contracts</li>
+          <li><strong>Cost explosion:</strong> Remote construction 118% above national average</li>
+          <li><strong>Opacity & collusion:</strong> No transparency in pricing, suspicions of bid-rigging</li>
+          <li><strong>Platform fragmentation:</strong> Merx, SEAO, Biddingo create maze, not marketplace</li>
+        </ul>
+        
+        <h3>Systemic Gaps</h3>
+        <ul>
+          <li><strong>No Indigenous-specific tools:</strong> Generic platforms miss cultural, logistical needs</li>
+          <li><strong>Climate blindness:</strong> No integration of environmental data in procurement</li>
+          <li><strong>Trust deficit:</strong> No verification systems for Indigenous business credentials</li>
+          <li><strong>Data silos:</strong> Insights trapped, can't drive policy or lending decisions</li>
+        </ul>
+      </div>
+      
+      <!-- SOLUTION -->
+      <div class="canvas-item solution">
+        <h2>4. Solution</h2>
+        <h3>Core Platform <span class="maturity-badge mvp">MVP</span></h3>
+        <ul>
+          <li><strong>RFQ/Tender Engine:</strong> Indigenous-specific filters, milestone escrow, anti-collusion alerts</li>
+          <li><strong>Verified Directory:</strong> Badge system (Indigenous-owned, climate-ready, remote-capable)</li>
+          <li><strong>Real-time transparency:</strong> Blockchain-backed audit trails, open pricing data</li>
+        </ul>
+        
+        <h3>AI & Automation <span class="maturity-badge v1">V1</span></h3>
+        <ul>
+          <li><strong>Smart matching:</strong> AI connects projects with optimal contractors</li>
+          <li><strong>Bid optimization:</strong> Auto-complete scopes, tri-lingual translation</li>
+          <li><strong>Predictive analytics:</strong> Cost overrun warnings, climate risk scoring</li>
+        </ul>
+        
+        <h3>Ecosystem Integration <span class="maturity-badge future">Future</span></h3>
+        <ul>
+          <li><strong>Lender APIs:</strong> Direct integration with Indigenous financial institutions</li>
+          <li><strong>Government sync:</strong> Auto-compliance with procurement regulations</li>
+          <li><strong>Climate tracking:</strong> Embodied carbon, traditional knowledge integration</li>
+        </ul>
+      </div>
+      
+      <!-- CUSTOMER SEGMENTS -->
+      <div class="canvas-item customer-segments">
+        <h2>2. Customer Segments</h2>
+        
+        <h3>Buy Side (Project Owners)</h3>
+        <ul>
+          <li><strong>First Nations governments:</strong> 675+ band councils, housing authorities</li>
+          <li><strong>Indigenous development corps:</strong> Economic development entities</li>
+          <li><strong>Federal/provincial agencies:</strong> With 5% Indigenous procurement targets</li>
+          <li><strong>Private developers:</strong> Working on Indigenous lands/partnerships</li>
+        </ul>
+        
+        <h3>Sell Side (Contractors/Suppliers)</h3>
+        <ul>
+          <li><strong>Indigenous contractors:</strong> GCs, subs seeking fair access</li>
+          <li><strong>Remote-ready suppliers:</strong> Specialized in fly-in logistics</li>
+          <li><strong>Climate-conscious vendors:</strong> Low-carbon materials, methods</li>
+          <li><strong>Partnership seekers:</strong> Non-Indigenous firms building relationships</li>
+        </ul>
+        
+        <div class="section-divider"></div>
+        
+        <h3>Ecosystem Partners</h3>
+        <ul>
+          <li><strong>Indigenous financial institutions:</strong> NACCA members, First Nations banks</li>
+          <li><strong>Insurance providers:</strong> Seeking verified project data</li>
+          <li><strong>Policy makers:</strong> Using platform data for decisions</li>
+        </ul>
+      </div>
+      
+      <!-- UNIQUE VALUE PROPOSITION -->
+      <div class="canvas-item unique-value">
+        <h2>3. Unique Value Proposition</h2>
+        <div class="highlight">
+          <p><strong>"The first Indigenous-governed, AI-powered procurement platform that cuts costs 30%, ensures fair competition, and tracks climate impact—turning the 11× credit gap into a trust dividend."</strong></p>
+        </div>
+        
+        <h3>For Project Owners</h3>
+        <ul>
+          <li>Access pre-verified Indigenous contractors</li>
+          <li>Reduce project costs through competition</li>
+          <li>Meet procurement targets with confidence</li>
+          <li>Track ESG metrics automatically</li>
+        </ul>
+        
+        <h3>For Contractors</h3>
+        <ul>
+          <li>Level playing field with transparency</li>
+          <li>Direct access to 675+ Nations' projects</li>
+          <li>AI tools competing with larger firms</li>
+          <li>Build verified reputation over time</li>
+        </ul>
+        
+        <div>
+          <span class="tag">Indigenous-Governed</span>
+          <span class="tag">AI-Powered</span>
+          <span class="tag">Blockchain-Verified</span>
+          <span class="tag">Climate-Tracked</span>
+        </div>
+      </div>
+      
+      <!-- CHANNELS -->
+      <div class="canvas-item channels">
+        <h2>5. Channels</h2>
+        
+        <h3>Direct Sales <span class="maturity-badge mvp">MVP</span></h3>
+        <ul>
+          <li><strong>Lighthouse communities:</strong> Waskaganish, 5 others committed</li>
+          <li><strong>Webinars & demos:</strong> Weekly education sessions</li>
+          <li><strong>Conference presence:</strong> CCAB, AFN, NIEDB events</li>
+        </ul>
+        
+        <h3>Partnership Channels <span class="maturity-badge v1">V1</span></h3>
+        <ul>
+          <li><strong>Indigenous organizations:</strong> CCAB certification, AFN endorsement</li>
+          <li><strong>Financial institutions:</strong> Bundle with lending products</li>
+          <li><strong>Government integration:</strong> ISC, CIRNAC partnerships</li>
+        </ul>
+        
+        <h3>Digital Marketing <span class="maturity-badge v1">V1</span></h3>
+        <ul>
+          <li><strong>Content strategy:</strong> Success stories, cost savings data</li>
+          <li><strong>SEO/SEM:</strong> Target procurement searches</li>
+          <li><strong>API marketplace:</strong> Third-party integrations</li>
+        </ul>
+      </div>
+      
+      <!-- KEY METRICS -->
+      <div class="canvas-item key-metrics">
+        <h2>8. Key Metrics</h2>
+        
+        <div>
+          <span class="tag">GMV</span>
+          <span class="tag">Platform Liquidity</span>
+          <span class="tag">Cost Savings</span>
+          <span class="tag">Climate Impact</span>
+        </div>
+        
+        <div class="section-divider"></div>
+        
+        <h3>Platform Growth</h3>
+        <ul>
+          <li>Gross Merchandise Value (target: $100M Y1)</li>
+          <li>Active Nations (target: 50 Y1, 200 Y2)</li>
+          <li>Verified contractors (target: 500 Y1)</li>
+          <li>Monthly active users</li>
+        </ul>
+        
+        <h3>Market Health</h3>
+        <ul>
+          <li>Bids per RFQ (target: ≥4)</li>
+          <li>Time to award (target: ≤21 days)</li>
+          <li>Contract completion rate (>95%)</li>
+          <li>Escrow default rate (<1%)</li>
+        </ul>
+        
+        <h3>Impact Metrics</h3>
+        <ul>
+          <li>Average cost savings (target: 30%)</li>
+          <li>Indigenous firm win rate (target: >25%)</li>
+          <li>Carbon tracking coverage (80%)</li>
+          <li>Platform NPS (target: >50)</li>
+        </ul>
+      </div>
+      
+      <!-- UNFAIR ADVANTAGE -->
+      <div class="canvas-item unfair-advantage">
+        <h2>9. Unfair Advantage</h2>
+        
+        <h3>Technology Assets</h3>
+        <ul>
+          <li><strong>Proven platform:</strong> 89% complete procurement engine from Unations R&D</li>
+          <li><strong>AI head start:</strong> Custom models trained on Indigenous procurement data</li>
+          <li><strong>Blockchain infrastructure:</strong> Tamper-proof ledger already deployed</li>
+        </ul>
+        
+        <h3>Market Position</h3>
+        <ul>
+          <li><strong>Indigenous governance:</strong> Trust that competitors can't buy</li>
+          <li><strong>First-mover advantage:</strong> Building THE Indigenous procurement platform</li>
+          <li><strong>Government alignment:</strong> 5% procurement targets create demand</li>
+          <li><strong>Community equity model:</strong> Nations become platform owners</li>
+        </ul>
+        
+        <h3>Data Network Effects</h3>
+        <ul>
+          <li><strong>Proprietary price database:</strong> Real costs for remote construction</li>
+          <li><strong>Contractor performance data:</strong> Verified track records</li>
+          <li><strong>Climate baselines:</strong> Traditional knowledge + sensor data</li>
+          <li><strong>Policy feedback loop:</strong> Platform data drives regulatory change</li>
+        </ul>
+        
+        <h3>Strategic Relationships</h3>
+        <ul>
+          <li><strong>Unations partnership:</strong> R&D pipeline + policy advocacy</li>
+          <li><strong>Lighthouse communities:</strong> Real-world validation sites</li>
+          <li><strong>Lender relationships:</strong> De-risking through transparency</li>
+        </ul>
+      </div>
+      
+      <!-- COST STRUCTURE -->
+      <div class="canvas-item cost-structure">
+        <h2>7. Cost Structure</h2>
+        
+        <h3>Technology (40%)</h3>
+        <ul>
+          <li><strong>Platform development:</strong> 5 engineers @ $120k</li>
+          <li><strong>Cloud infrastructure:</strong> AWS/Azure scaling</li>
+          <li><strong>AI/ML compute:</strong> Model training, inference</li>
+          <li><strong>Blockchain nodes:</strong> Distributed verification</li>
+        </ul>
+        
+        <h3>Operations (35%)</h3>
+        <ul>
+          <li><strong>Customer success:</strong> Onboarding, support</li>
+          <li><strong>Verification team:</strong> KYC/KYB, badges</li>
+          <li><strong>Community liaison:</strong> Indigenous engagement</li>
+        </ul>
+        
+        <h3>Growth (25%)</h3>
+        <ul>
+          <li><strong>Sales team:</strong> Enterprise, government</li>
+          <li><strong>Marketing:</strong> Content, events, digital</li>
+          <li><strong>Partnerships:</strong> Strategic relationships</li>
+        </ul>
+      </div>
+      
+      <!-- REVENUE STREAMS -->
+      <div class="canvas-item revenue-streams">
+        <h2>6. Revenue Streams</h2>
+        
+        <h3>Transaction-Based</h3>
+        <ul>
+          <li><strong>Buy-side fees:</strong> 2-3% of contract value</li>
+          <li><strong>Escrow float:</strong> Interest on held funds</li>
+          <li><strong>Express payments:</strong> Premium for fast release</li>
+        </ul>
+        
+        <h3>Subscription Tiers</h3>
+        <ul>
+          <li><strong>Basic:</strong> Free listings, 5 bids/month</li>
+          <li><strong>Professional:</strong> $200/month, unlimited bids, analytics</li>
+          <li><strong>Enterprise:</strong> $2,000/month, API access, white-label</li>
+        </ul>
+        
+        <h3>Value-Added Services</h3>
+        <ul>
+          <li><strong>Verification badges:</strong> $300-500 one-time</li>
+          <li><strong>AI bid assistance:</strong> $50-200 per RFQ</li>
+          <li><strong>Data insights:</strong> $5,000+ enterprise licenses</li>
+          <li><strong>Carbon credits:</strong> Facilitation fees</li>
+        </ul>
+        
+        <h3>Future Revenue</h3>
+        <ul>
+          <li><strong>Financing marketplace:</strong> Origination fees</li>
+          <li><strong>Insurance products:</strong> Embedded premiums</li>
+          <li><strong>Training/certification:</strong> Course fees</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="footer">
+      <p><strong>Unations/Indigenious</strong> • Enhanced Lean Startup Canvas • Vision: Transform Indigenous Infrastructure by 2030</p>
+      <p style="margin-top: 10px; font-size: 12px;">Building the technology platforms that make economic reconciliation operationally possible at scale</p>
+    </div>
+  </div>
+  
+  <script>
+    function toggleEntity(entity) {
+      // Update button states
+      const buttons = document.querySelectorAll('.entity-button');
+      buttons.forEach(btn => {
+        if (btn.textContent.toLowerCase().includes(entity)) {
+          btn.classList.add('active');
+        } else {
+          btn.classList.remove('active');
+        }
+      });
+      
+      // Update content visibility
+      const unationsCanvas = document.getElementById('unations-canvas');
+      const indigeniousCanvas = document.getElementById('indigenious-canvas');
+      
+      if (entity === 'unations') {
+        unationsCanvas.classList.add('active');
+        indigeniousCanvas.classList.remove('active');
+      } else {
+        unationsCanvas.classList.remove('active');
+        indigeniousCanvas.classList.add('active');
+      }
+    }
+  </script>
+</body>
+</html>
