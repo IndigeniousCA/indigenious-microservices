@@ -1,0 +1,431 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Queue definitions
+model Queue {
+  id                    String   @id @default(uuid())
+  queueName            String   @unique
+  description          String?
+  
+  // Queue type and configuration
+  queueType            String   @default("BULL") // BULL, RABBITMQ, KAFKA, SQS, PUBSUB
+  priority             Int      @default(5) // 1-10, higher is more important
+  
+  // Processing configuration
+  concurrency          Int      @default(5)
+  maxJobs              Int      @default(10000)
+  rateLimit            Int?     // Jobs per minute
+  retryAttempts        Int      @default(3)
+  retryDelay           Int      @default(5000) // milliseconds
+  timeout              Int      @default(30000) // milliseconds
+  
+  // Indigenous priority handling
+  indigenousPriority   Boolean  @default(false)
+  elderPriority        Boolean  @default(false) // Elder requests get priority
+  ceremonyAware        Boolean  @default(false) // Ceremony scheduling awareness
+  communityQueue       Boolean  @default(false) // Community-specific queue
+  nation               String?  // Specific Indigenous nation
+  territory            String?  // Traditional territory
+  
+  // Scheduling
+  scheduleType         String   @default("IMMEDIATE") // IMMEDIATE, SCHEDULED, CRON, CEREMONY
+  cronExpression       String?  // For scheduled jobs
+  ceremonyCalendar     Boolean  @default(false) // Follow ceremony calendar
+  moonPhaseAware       Boolean  @default(false) // Moon phase scheduling
+  seasonalAware        Boolean  @default(false) // Seasonal scheduling
+  
+  // Dead letter queue
+  enableDLQ            Boolean  @default(true)
+  dlqName              String?
+  maxRetries           Int      @default(3)
+  
+  // Message retention
+  retentionPeriod      Int      @default(7) // days
+  archiveEnabled       Boolean  @default(true)
+  
+  // Security
+  encrypted            Boolean  @default(true)
+  requiresAuth         Boolean  @default(true)
+  allowedRoles         String[]
+  
+  // Performance
+  batchSize            Int      @default(10)
+  prefetch             Int      @default(2)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  jobs                 Job[]
+  queueMetrics         QueueMetrics[]
+  dlqJobs              DeadLetterJob[]
+}
+
+model Job {
+  id                    String   @id @default(uuid())
+  jobId                String   @unique
+  
+  queueId              String
+  queue                Queue    @relation(fields: [queueId], references: [id])
+  
+  // Job details
+  type                 String   // Job type/category
+  name                 String
+  data                 Json
+  metadata             Json?
+  
+  // Priority and scheduling
+  priority             Int      @default(5) // 1-10
+  scheduledAt          DateTime?
+  delayUntil           DateTime?
+  
+  // Indigenous metadata
+  indigenousJob        Boolean  @default(false)
+  elderRequest         Boolean  @default(false)
+  ceremonyRelated      Boolean  @default(false)
+  nation               String?
+  community            String?
+  culturalImportance   String?  // HIGH, MEDIUM, LOW
+  
+  // Seven generations tracking
+  generationalImpact   Boolean  @default(false)
+  impactScore          Float?   // Seven generations impact score
+  
+  // Status tracking
+  status               String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  progress             Int      @default(0) // 0-100
+  attempts             Int      @default(0)
+  
+  // Timing
+  createdAt            DateTime @default(now())
+  processedAt          DateTime?
+  completedAt          DateTime?
+  failedAt             DateTime?
+  
+  // Results and errors
+  result               Json?
+  error                String?
+  errorStack           String?  @db.Text
+  
+  // Worker information
+  workerId             String?
+  workerName           String?
+  
+  // Dependencies
+  dependsOn            String[] // Job IDs this job depends on
+  childJobs            String[] // Job IDs created by this job
+  parentJobId          String?
+  
+  // Retry information
+  retryCount           Int      @default(0)
+  nextRetryAt          DateTime?
+  lastRetryAt          DateTime?
+  
+  // Callbacks
+  onCompleteCallback   String?  // URL or function name
+  onFailCallback       String?  // URL or function name
+  
+  processLogs          ProcessLog[]
+  
+  @@index([queueId, status])
+  @@index([scheduledAt])
+  @@index([priority])
+  @@index([nation, community])
+}
+
+model DeadLetterJob {
+  id                    String   @id @default(uuid())
+  
+  originalJobId        String
+  queueId              String
+  queue                Queue    @relation(fields: [queueId], references: [id])
+  
+  // Original job data
+  jobData              Json
+  jobMetadata          Json?
+  
+  // Failure information
+  failureReason        String
+  failureCount         Int
+  lastFailureAt        DateTime
+  errorDetails         Json?
+  
+  // Recovery
+  canRetry             Boolean  @default(true)
+  retriedAt            DateTime?
+  recoveredAt          DateTime?
+  
+  // Indigenous tracking
+  indigenousJob        Boolean  @default(false)
+  elderNotified        Boolean  @default(false)
+  communityNotified    Boolean  @default(false)
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([queueId])
+  @@index([originalJobId])
+}
+
+model Worker {
+  id                    String   @id @default(uuid())
+  workerId             String   @unique
+  workerName           String
+  
+  // Worker configuration
+  hostname             String
+  pid                  Int
+  queues               String[] // Queue names this worker processes
+  
+  // Capacity
+  concurrency          Int      @default(5)
+  currentJobs          Int      @default(0)
+  maxJobs              Int      @default(100)
+  
+  // Status
+  status               String   @default("IDLE") // IDLE, BUSY, PAUSED, STOPPED
+  lastHeartbeat        DateTime @default(now())
+  startedAt            DateTime @default(now())
+  
+  // Performance metrics
+  jobsProcessed        Int      @default(0)
+  jobsFailed           Int      @default(0)
+  avgProcessingTime    Float?   // milliseconds
+  
+  // Indigenous worker specialization
+  indigenousWorker     Boolean  @default(false)
+  ceremonySpecialist   Boolean  @default(false)
+  elderWorker          Boolean  @default(false) // Handles Elder priority jobs
+  nation               String?  // Specialized for specific nation
+  languages            String[] // Indigenous languages supported
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  processLogs          ProcessLog[]
+}
+
+model ProcessLog {
+  id                    String   @id @default(uuid())
+  
+  jobId                String?
+  job                  Job?     @relation(fields: [jobId], references: [id])
+  
+  workerId             String?
+  worker               Worker?  @relation(fields: [workerId], references: [id])
+  
+  // Log details
+  level                String   // INFO, WARN, ERROR, DEBUG
+  message              String   @db.Text
+  metadata             Json?
+  
+  // Timing
+  timestamp            DateTime @default(now())
+  duration             Float?   // milliseconds
+  
+  // Context
+  queueName            String?
+  jobType              String?
+  
+  @@index([jobId])
+  @@index([workerId])
+  @@index([timestamp])
+}
+
+model QueueMetrics {
+  id                    String   @id @default(uuid())
+  
+  queueId              String
+  queue                Queue    @relation(fields: [queueId], references: [id])
+  
+  // Time window
+  periodStart          DateTime
+  periodEnd            DateTime
+  
+  // Job metrics
+  jobsCreated          Int      @default(0)
+  jobsProcessed        Int      @default(0)
+  jobsCompleted        Int      @default(0)
+  jobsFailed           Int      @default(0)
+  jobsRetried          Int      @default(0)
+  
+  // Performance metrics
+  avgWaitTime          Float?   // milliseconds
+  avgProcessingTime    Float?   // milliseconds
+  minProcessingTime    Float?
+  maxProcessingTime    Float?
+  p95ProcessingTime    Float?   // 95th percentile
+  p99ProcessingTime    Float?   // 99th percentile
+  
+  // Queue health
+  queueDepth           Int      @default(0) // Current queue size
+  peakQueueDepth       Int      @default(0)
+  workerUtilization    Float    @default(0) // 0-100%
+  
+  // Indigenous metrics
+  indigenousJobs       Int      @default(0)
+  elderPriorityJobs    Int      @default(0)
+  ceremonyJobs         Int      @default(0)
+  communityJobs        Json?    // Breakdown by community
+  
+  // Error metrics
+  errorRate            Float    @default(0) // Percentage
+  dlqCount             Int      @default(0) // Jobs in DLQ
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([queueId, periodStart])
+}
+
+model ScheduledJob {
+  id                    String   @id @default(uuid())
+  
+  // Schedule configuration
+  name                 String   @unique
+  description          String?
+  
+  // Scheduling
+  scheduleType         String   // CRON, INTERVAL, ONCE, CEREMONY
+  cronExpression       String?  // e.g., "0 0 * * *"
+  intervalSeconds      Int?
+  runOnce              Boolean  @default(false)
+  runAt                DateTime? // For one-time jobs
+  
+  // Ceremony scheduling
+  ceremonyType         String?  // Type of ceremony
+  moonPhase            String?  // NEW_MOON, FULL_MOON, etc.
+  season               String?  // SPRING, SUMMER, FALL, WINTER
+  
+  // Job details
+  jobType              String
+  jobData              Json
+  queueName            String
+  priority             Int      @default(5)
+  
+  // Indigenous scheduling
+  indigenousCalendar   Boolean  @default(false)
+  nation               String?
+  territory            String?
+  elderApproved        Boolean  @default(false)
+  
+  // Execution tracking
+  lastRunAt            DateTime?
+  nextRunAt            DateTime?
+  runCount             Int      @default(0)
+  
+  // Status
+  enabled              Boolean  @default(true)
+  paused               Boolean  @default(false)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model MessageTemplate {
+  id                    String   @id @default(uuid())
+  
+  templateName         String   @unique
+  description          String?
+  
+  // Template content
+  messageType          String   // EMAIL, SMS, PUSH, WEBHOOK
+  subject              String?
+  body                 String   @db.Text
+  metadata             Json?
+  
+  // Variables
+  variables            String[] // Variable placeholders in template
+  requiredVars         String[] // Required variables
+  
+  // Indigenous templates
+  indigenousTemplate   Boolean  @default(false)
+  languages            Json?    // Translations in Indigenous languages
+  culturallyApproved   Boolean  @default(false)
+  elderReviewed        Boolean  @default(false)
+  
+  // Usage
+  useCount             Int      @default(0)
+  lastUsedAt           DateTime?
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model QueueEvent {
+  id                    String   @id @default(uuid())
+  
+  // Event details
+  eventType            String   // JOB_CREATED, JOB_COMPLETED, JOB_FAILED, QUEUE_STALLED
+  eventData            Json
+  
+  // Source
+  queueName            String?
+  jobId                String?
+  workerId             String?
+  
+  // Handling
+  processed            Boolean  @default(false)
+  processedAt          DateTime?
+  
+  // Webhooks
+  webhooksTriggered    String[] // Webhook URLs triggered
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([eventType])
+  @@index([timestamp])
+}
+
+model RateLimiter {
+  id                    String   @id @default(uuid())
+  
+  // Rate limit configuration
+  limiterName          String   @unique
+  resource             String   // Resource being limited
+  
+  // Limits
+  maxRequests          Int      // Max requests
+  windowMs             Int      // Time window in milliseconds
+  
+  // Indigenous exemptions
+  elderExempt          Boolean  @default(false) // Elders exempt from limits
+  ceremonyExempt       Boolean  @default(false) // Ceremony jobs exempt
+  
+  // Current state
+  currentCount         Int      @default(0)
+  windowStart          DateTime @default(now())
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model CircuitBreaker {
+  id                    String   @id @default(uuid())
+  
+  // Circuit breaker for queue operations
+  serviceName          String   @unique
+  
+  // Configuration
+  failureThreshold     Int      @default(5)
+  successThreshold     Int      @default(2)
+  timeout              Int      @default(60000) // milliseconds
+  halfOpenRequests     Int      @default(3)
+  
+  // State
+  state                String   @default("CLOSED") // CLOSED, OPEN, HALF_OPEN
+  failureCount         Int      @default(0)
+  successCount         Int      @default(0)
+  lastFailureTime      DateTime?
+  nextAttemptTime      DateTime?
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
