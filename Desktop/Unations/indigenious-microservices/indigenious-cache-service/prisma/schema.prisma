@@ -1,0 +1,404 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Cache configuration and policies
+model CachePolicy {
+  id                    String   @id @default(uuid())
+  policyName           String   @unique
+  description          String?
+  
+  // TTL settings
+  defaultTTL           Int      @default(3600) // seconds
+  maxTTL               Int      @default(86400) // 24 hours
+  minTTL               Int      @default(60) // 1 minute
+  
+  // Eviction policies
+  evictionPolicy       String   @default("LRU") // LRU, LFU, FIFO, TTL
+  maxMemoryPolicy      String   @default("allkeys-lru")
+  maxMemorySize        BigInt   @default(1073741824) // 1GB in bytes
+  
+  // Indigenous data sovereignty
+  dataLocation         String   @default("CANADA") // Data residency
+  indigenousDataOnly   Boolean  @default(false)
+  communityOwned       Boolean  @default(false)
+  territoryRestricted  Boolean  @default(false)
+  allowedTerritories   String[] // Allowed Indigenous territories
+  
+  // Encryption and security
+  encryptionEnabled    Boolean  @default(true)
+  encryptionType       String   @default("AES-256-GCM")
+  compressionEnabled   Boolean  @default(true)
+  compressionType      String   @default("snappy") // snappy, gzip, lz4
+  
+  // Access control
+  requiresAuth         Boolean  @default(true)
+  allowedRoles         String[]
+  deniedRoles          String[]
+  ipWhitelist          String[]
+  ipBlacklist          String[]
+  
+  // Performance settings
+  cachingEnabled       Boolean  @default(true)
+  preloadEnabled       Boolean  @default(false)
+  warmupEnabled        Boolean  @default(false)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  cacheEntries         CacheEntry[]
+  cacheStats           CacheStatistics[]
+}
+
+model CacheEntry {
+  id                    String   @id @default(uuid())
+  key                  String   @unique
+  namespace            String   @default("default")
+  
+  // Value storage
+  value                Json?
+  binaryValue          Bytes?
+  compressedValue      Bytes?
+  checksum             String?  // For integrity verification
+  
+  // Metadata
+  dataType             String   // string, json, binary, object
+  originalSize         Int      // Size before compression
+  compressedSize       Int?     // Size after compression
+  compressionRatio     Float?
+  
+  // TTL and expiration
+  ttl                  Int?     // Time to live in seconds
+  expiresAt            DateTime?
+  isExpired            Boolean  @default(false)
+  
+  // Access tracking
+  accessCount          Int      @default(0)
+  lastAccessedAt       DateTime?
+  createdBy            String?
+  
+  // Indigenous metadata
+  indigenousData       Boolean  @default(false)
+  nation               String?  // Indigenous nation/tribe
+  territory            String?  // Traditional territory
+  communityId          String?  // Community identifier
+  culturalSensitive    Boolean  @default(false)
+  elderApproved        Boolean  @default(false)
+  ceremonyData         Boolean  @default(false)
+  
+  // Data sovereignty
+  dataOwner            String?  // Who owns this data
+  dataLocation         String   @default("CANADA")
+  canLeaveTerritory    Boolean  @default(true)
+  requiresConsent      Boolean  @default(false)
+  consentGiven         Boolean  @default(false)
+  
+  // Versioning
+  version              Int      @default(1)
+  previousVersion      String?  // Reference to previous version
+  
+  // Cache policy
+  policyId             String?
+  policy               CachePolicy? @relation(fields: [policyId], references: [id])
+  
+  // Performance metrics
+  hitCount             Int      @default(0)
+  missCount            Int      @default(0)
+  hitRate              Float    @default(0)
+  avgResponseTime      Float?   // milliseconds
+  
+  // Tags and categorization
+  tags                 String[]
+  category             String?
+  priority             Int      @default(5) // 1-10, higher is more important
+  
+  // Invalidation
+  invalidatedAt        DateTime?
+  invalidationReason   String?
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  accessLogs           CacheAccessLog[]
+  
+  @@index([key, namespace])
+  @@index([expiresAt])
+  @@index([nation, territory])
+}
+
+model CacheAccessLog {
+  id                    String   @id @default(uuid())
+  
+  entryId              String
+  entry                CacheEntry @relation(fields: [entryId], references: [id])
+  
+  // Access details
+  accessType           String   // GET, SET, DELETE, EXPIRE, INVALIDATE
+  userId               String?
+  userRole             String?
+  ipAddress            String?
+  userAgent            String?
+  
+  // Performance
+  responseTime         Float    // milliseconds
+  cacheHit             Boolean
+  fromMemory           Boolean  // Memory vs disk cache
+  
+  // Indigenous tracking
+  indigenousUser       Boolean  @default(false)
+  nation               String?
+  community            String?
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([entryId, timestamp])
+  @@index([userId])
+}
+
+model CacheCluster {
+  id                    String   @id @default(uuid())
+  clusterName          String   @unique
+  
+  // Cluster configuration
+  clusterType          String   @default("REDIS") // REDIS, HAZELCAST, MEMCACHED
+  topology             String   @default("REPLICATED") // STANDALONE, REPLICATED, SHARDED
+  
+  // Nodes
+  masterNode           String   // Master node address
+  slaveNodes           String[] // Slave node addresses
+  sentinelNodes        String[] // Sentinel nodes for HA
+  
+  // Sharding
+  shardingEnabled      Boolean  @default(false)
+  shardCount           Int      @default(1)
+  shardingStrategy     String   @default("HASH") // HASH, RANGE, GEO
+  
+  // Replication
+  replicationFactor    Int      @default(2)
+  syncReplication      Boolean  @default(true)
+  
+  // Performance
+  maxConnections       Int      @default(10000)
+  connectionPoolSize   Int      @default(50)
+  
+  // Health
+  healthCheckInterval  Int      @default(5000) // milliseconds
+  healthCheckTimeout   Int      @default(3000)
+  
+  // Indigenous data distribution
+  indigenousNodesOnly  Boolean  @default(false)
+  preferredTerritories String[] // Preferred data locations
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  nodes                CacheNode[]
+}
+
+model CacheNode {
+  id                    String   @id @default(uuid())
+  nodeId               String   @unique
+  
+  clusterId            String
+  cluster              CacheCluster @relation(fields: [clusterId], references: [id])
+  
+  // Node details
+  hostname             String
+  ipAddress            String
+  port                 Int      @default(6379)
+  role                 String   @default("SLAVE") // MASTER, SLAVE, SENTINEL
+  
+  // Capacity
+  maxMemory            BigInt   // bytes
+  usedMemory           BigInt   @default(0)
+  availableMemory      BigInt
+  
+  // Performance metrics
+  cpuUsage             Float    @default(0)
+  hitRate              Float    @default(0)
+  missRate             Float    @default(0)
+  evictionRate         Float    @default(0)
+  
+  // Location (for data sovereignty)
+  dataCenter           String
+  region               String
+  country              String   @default("CANADA")
+  indigenousTerritory  String?  // Traditional territory hosting
+  
+  // Health
+  status               String   @default("HEALTHY") // HEALTHY, DEGRADED, UNHEALTHY
+  lastHealthCheck      DateTime @default(now())
+  uptime               BigInt   @default(0) // seconds
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model CacheStatistics {
+  id                    String   @id @default(uuid())
+  
+  policyId             String?
+  policy               CachePolicy? @relation(fields: [policyId], references: [id])
+  
+  // Time window
+  periodStart          DateTime
+  periodEnd            DateTime
+  
+  // Basic metrics
+  totalRequests        BigInt   @default(0)
+  cacheHits            BigInt   @default(0)
+  cacheMisses          BigInt   @default(0)
+  hitRate              Float    @default(0)
+  
+  // Performance metrics
+  avgResponseTime      Float    // milliseconds
+  p50ResponseTime      Float    // 50th percentile
+  p95ResponseTime      Float    // 95th percentile
+  p99ResponseTime      Float    // 99th percentile
+  
+  // Memory metrics
+  totalMemoryUsed      BigInt   // bytes
+  peakMemoryUsed       BigInt
+  avgMemoryUsed        BigInt
+  evictionCount        BigInt   @default(0)
+  
+  // Data metrics
+  totalKeys            BigInt   @default(0)
+  expiredKeys          BigInt   @default(0)
+  evictedKeys          BigInt   @default(0)
+  
+  // Indigenous data metrics
+  indigenousDataCount  BigInt   @default(0)
+  indigenousHitRate    Float    @default(0)
+  communityDataCount   Json?    // Breakdown by community
+  territoryDataCount   Json?    // Breakdown by territory
+  
+  // Bandwidth
+  bytesRead            BigInt   @default(0)
+  bytesWritten         BigInt   @default(0)
+  
+  // Errors
+  errorCount           BigInt   @default(0)
+  timeoutCount         BigInt   @default(0)
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([periodStart, periodEnd])
+  @@index([policyId])
+}
+
+model CacheWarmup {
+  id                    String   @id @default(uuid())
+  
+  // Warmup configuration
+  name                 String   @unique
+  description          String?
+  
+  // Schedule
+  scheduleType         String   @default("CRON") // CRON, INTERVAL, MANUAL
+  cronExpression       String?  // e.g., "0 0 * * *" for daily
+  intervalSeconds      Int?
+  
+  // Data to preload
+  dataSource           String   // DATABASE, API, FILE
+  query                String?  // SQL query or API endpoint
+  keys                 String[] // Specific keys to preload
+  
+  // Filters
+  namespace            String   @default("default")
+  tags                 String[]
+  priority             Int      @default(5)
+  
+  // Indigenous data warmup
+  indigenousDataOnly   Boolean  @default(false)
+  nations              String[] // Specific nations to preload
+  territories          String[] // Specific territories
+  ceremonyDates        DateTime[] // Preload for ceremonies
+  
+  // Performance
+  batchSize            Int      @default(100)
+  parallelism          Int      @default(5)
+  timeout              Int      @default(30000) // milliseconds
+  
+  // Status
+  lastRunAt            DateTime?
+  lastRunStatus        String?  // SUCCESS, FAILED, PARTIAL
+  lastRunDuration      Int?     // milliseconds
+  keysWarmed           Int      @default(0)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model CircuitBreaker {
+  id                    String   @id @default(uuid())
+  
+  // Circuit breaker for cache operations
+  serviceName          String   @unique
+  
+  // Configuration
+  failureThreshold     Int      @default(5) // Failures before opening
+  successThreshold     Int      @default(2) // Successes before closing
+  timeout              Int      @default(60000) // Open state timeout (ms)
+  volumeThreshold      Int      @default(10) // Min requests for calculation
+  
+  // State
+  state                String   @default("CLOSED") // CLOSED, OPEN, HALF_OPEN
+  failureCount         Int      @default(0)
+  successCount         Int      @default(0)
+  lastFailureTime      DateTime?
+  lastSuccessTime      DateTime?
+  nextAttemptTime      DateTime?
+  
+  // Metrics
+  totalRequests        BigInt   @default(0)
+  totalFailures        BigInt   @default(0)
+  totalSuccesses       BigInt   @default(0)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model DataSovereigntyRule {
+  id                    String   @id @default(uuid())
+  
+  ruleName             String   @unique
+  description          String?
+  
+  // Data location rules
+  requiredLocation     String   // CANADA, INDIGENOUS_TERRITORY
+  allowedRegions       String[]
+  prohibitedRegions    String[]
+  
+  // Indigenous governance
+  requiresElderApproval Boolean @default(false)
+  requiresCommunityConsent Boolean @default(false)
+  indigenousNation     String?
+  territory            String?
+  
+  // Data handling
+  canCrossBoders       Boolean  @default(false)
+  canBeReplicated      Boolean  @default(true)
+  maxReplicas          Int      @default(3)
+  
+  // Retention
+  minRetentionDays     Int      @default(7)
+  maxRetentionDays     Int      @default(365)
+  
+  // Compliance
+  gdprCompliant        Boolean  @default(true)
+  pipedaCompliant      Boolean  @default(true) // Canadian privacy law
+  ocapCompliant        Boolean  @default(true) // Indigenous data principles
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
