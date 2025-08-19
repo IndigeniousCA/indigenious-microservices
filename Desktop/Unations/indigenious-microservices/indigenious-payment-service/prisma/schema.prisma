@@ -1,0 +1,716 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Payment {
+  id                    String                  @id @default(uuid())
+  paymentId             String                  @unique
+  invoiceId             String?
+  orderId               String?
+  rfqId                 String?
+  
+  // Payment details
+  amount                Decimal                 @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  exchangeRate          Decimal?                @db.Decimal(10, 6)
+  baseAmount            Decimal?                @db.Decimal(19, 4) // Amount in base currency
+  
+  // Tax information
+  subtotal              Decimal                 @db.Decimal(19, 4)
+  taxAmount             Decimal                 @db.Decimal(19, 4)
+  gstAmount             Decimal?                @db.Decimal(19, 4)
+  pstAmount             Decimal?                @db.Decimal(19, 4)
+  hstAmount             Decimal?                @db.Decimal(19, 4)
+  
+  // Payment method
+  method                PaymentMethod
+  provider              PaymentProvider
+  providerTransactionId String?
+  providerResponse      Json?
+  
+  // Parties involved
+  payerId               String
+  payerType             PartyType
+  payerName             String
+  payerEmail            String?
+  
+  payeeId               String
+  payeeType             PartyType
+  payeeName             String
+  payeeEmail            String?
+  
+  // Indigenous business tracking
+  isIndigenousBusiness  Boolean                 @default(false)
+  indigenousBusinessId  String?
+  bandNumber            String?
+  indigenousCategory    IndigenousCategory?
+  contributes5Percent   Boolean                 @default(false)
+  
+  // Payment status
+  status                PaymentStatus
+  processedAt           DateTime?
+  clearedAt             DateTime?
+  failureReason         String?
+  retryCount            Int                     @default(0)
+  maxRetries            Int                     @default(3)
+  
+  // Banking details
+  bankAccount           String?                 // Encrypted
+  routingNumber         String?                 // Encrypted
+  swiftCode             String?
+  iban                  String?
+  
+  // Fees and charges
+  processingFee         Decimal?                @db.Decimal(19, 4)
+  platformFee           Decimal?                @db.Decimal(19, 4)
+  indigenousWaivedFee   Decimal?                @db.Decimal(19, 4) // Fee waived for Indigenous businesses
+  netAmount             Decimal                 @db.Decimal(19, 4)
+  
+  // Compliance
+  amlChecked            Boolean                 @default(false)
+  amlStatus             String?
+  kycVerified           Boolean                 @default(false)
+  sanctionsChecked      Boolean                 @default(false)
+  
+  // References
+  referenceNumber       String?
+  description           String?
+  metadata              Json?
+  
+  // Relationships
+  splits                PaymentSplit[]
+  reconciliations       Reconciliation[]
+  refunds               Refund[]
+  disputes              Dispute[]
+  auditLogs             PaymentAuditLog[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([payerId])
+  @@index([payeeId])
+  @@index([status])
+  @@index([isIndigenousBusiness])
+  @@index([processedAt])
+  @@index([invoiceId])
+  @@index([orderId])
+}
+
+model PaymentSplit {
+  id                    String                  @id @default(uuid())
+  paymentId             String
+  
+  // Split details
+  recipientId           String
+  recipientType         PartyType
+  recipientName         String
+  isIndigenousBusiness  Boolean                 @default(false)
+  
+  // Amount
+  amount                Decimal                 @db.Decimal(19, 4)
+  percentage            Decimal?                @db.Decimal(5, 2)
+  
+  // Status
+  status                SplitStatus
+  processedAt           DateTime?
+  
+  // Banking
+  accountNumber         String?                 // Encrypted
+  routingNumber         String?                 // Encrypted
+  
+  payment               Payment                 @relation(fields: [paymentId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([paymentId])
+  @@index([recipientId])
+}
+
+model Reconciliation {
+  id                    String                  @id @default(uuid())
+  reconciliationId      String                  @unique
+  
+  // Reconciliation period
+  startDate             DateTime
+  endDate               DateTime
+  
+  // Reconciliation details
+  type                  ReconciliationType
+  status                ReconciliationStatus
+  
+  // Totals
+  totalPayments         Int
+  totalAmount           Decimal                 @db.Decimal(19, 4)
+  reconciledAmount      Decimal                 @db.Decimal(19, 4)
+  discrepancyAmount     Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous metrics
+  indigenousPayments    Int                     @default(0)
+  indigenousAmount      Decimal                 @db.Decimal(19, 4)
+  indigenousPercentage  Decimal                 @db.Decimal(5, 2)
+  mandate5Compliance    Boolean                 @default(false)
+  
+  // Bank reconciliation
+  bankStatementId       String?
+  bankBalance           Decimal?                @db.Decimal(19, 4)
+  systemBalance         Decimal?                @db.Decimal(19, 4)
+  
+  // Processing
+  reconciledBy          String?
+  reconciledAt          DateTime?
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Issues found
+  discrepancies         Json?
+  adjustments           ReconciliationAdjustment[]
+  
+  // References
+  payments              Payment[]
+  notes                 String?
+  attachments           String[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([startDate, endDate])
+  @@index([status])
+  @@index([type])
+}
+
+model ReconciliationAdjustment {
+  id                    String                  @id @default(uuid())
+  reconciliationId      String
+  
+  // Adjustment details
+  type                  AdjustmentType
+  reason                String
+  amount                Decimal                 @db.Decimal(19, 4)
+  
+  // References
+  paymentId             String?
+  referenceNumber       String?
+  
+  // Approval
+  requiresApproval      Boolean                 @default(true)
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  reconciliation        Reconciliation          @relation(fields: [reconciliationId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([reconciliationId])
+}
+
+model Refund {
+  id                    String                  @id @default(uuid())
+  refundId              String                  @unique
+  paymentId             String
+  
+  // Refund details
+  amount                Decimal                 @db.Decimal(19, 4)
+  reason                RefundReason
+  description           String?
+  
+  // Processing
+  status                RefundStatus
+  processedAt           DateTime?
+  providerRefundId      String?
+  
+  // Indigenous consideration
+  indigenousImpact      Boolean                 @default(false)
+  mandateAdjustment     Decimal?                @db.Decimal(19, 4)
+  
+  requestedBy           String
+  approvedBy            String?
+  
+  payment               Payment                 @relation(fields: [paymentId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([paymentId])
+  @@index([status])
+}
+
+model Dispute {
+  id                    String                  @id @default(uuid())
+  disputeId             String                  @unique
+  paymentId             String
+  
+  // Dispute details
+  type                  DisputeType
+  reason                String
+  amount                Decimal                 @db.Decimal(19, 4)
+  
+  // Status
+  status                DisputeStatus
+  outcome               DisputeOutcome?
+  
+  // Parties
+  disputedBy            String
+  disputedByType        PartyType
+  
+  // Resolution
+  resolvedAt            DateTime?
+  resolvedBy            String?
+  resolutionNotes       String?
+  
+  // Evidence
+  evidence              Json?
+  documents             String[]
+  
+  // Deadlines
+  responseDeadline      DateTime?
+  
+  payment               Payment                 @relation(fields: [paymentId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([paymentId])
+  @@index([status])
+}
+
+model PaymentSchedule {
+  id                    String                  @id @default(uuid())
+  scheduleId            String                  @unique
+  
+  // Schedule details
+  name                  String
+  description           String?
+  
+  // Payment configuration
+  payerId               String
+  payeeId               String
+  amount                Decimal                 @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  
+  // Schedule
+  frequency             PaymentFrequency
+  startDate             DateTime
+  endDate               DateTime?
+  nextPaymentDate       DateTime?
+  
+  // Execution
+  isActive              Boolean                 @default(true)
+  lastExecutedAt        DateTime?
+  executionCount        Int                     @default(0)
+  
+  // Indigenous tracking
+  isIndigenousPayment   Boolean                 @default(false)
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([isActive])
+  @@index([nextPaymentDate])
+  @@index([payerId])
+  @@index([payeeId])
+}
+
+model PaymentMethod {
+  id                    String                  @id @default(uuid())
+  userId                String
+  
+  // Method details
+  type                  PaymentMethodType
+  provider              PaymentProvider
+  isDefault             Boolean                 @default(false)
+  
+  // Card details (encrypted)
+  cardLast4             String?
+  cardBrand             String?
+  cardExpMonth          Int?
+  cardExpYear           Int?
+  
+  // Bank details (encrypted)
+  bankName              String?
+  accountLast4          String?
+  accountType           String?
+  
+  // Provider reference
+  providerCustomerId    String?
+  providerMethodId      String?
+  
+  // Verification
+  isVerified            Boolean                 @default(false)
+  verifiedAt            DateTime?
+  
+  // Indigenous business preference
+  indigenousPreferred   Boolean                 @default(false)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([userId])
+  @@index([isDefault])
+}
+
+model PaymentGatewayConfig {
+  id                    String                  @id @default(uuid())
+  provider              PaymentProvider         @unique
+  
+  // API credentials (encrypted)
+  apiKey                String?
+  apiSecret             String?
+  merchantId            String?
+  publicKey             String?
+  privateKey            String?
+  
+  // Configuration
+  isActive              Boolean                 @default(true)
+  isSandbox             Boolean                 @default(false)
+  webhookSecret         String?
+  webhookUrl            String?
+  
+  // Fee structure
+  transactionFeePercent Decimal                 @db.Decimal(5, 4)
+  transactionFeeFixed   Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous business rates
+  indigenousFeePercent  Decimal?                @db.Decimal(5, 4) // Reduced rate
+  indigenousFeeFixed    Decimal?                @db.Decimal(19, 4) // Reduced fixed fee
+  
+  // Supported features
+  supportedCurrencies   String[]
+  supportedCountries    String[]
+  supportedMethods      String[]
+  
+  // Limits
+  minAmount             Decimal                 @db.Decimal(19, 4)
+  maxAmount             Decimal                 @db.Decimal(19, 4)
+  dailyLimit            Decimal?                @db.Decimal(19, 4)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+}
+
+model IndigenousPaymentIncentive {
+  id                    String                  @id @default(uuid())
+  
+  // Incentive details
+  name                  String
+  description           String
+  type                  IncentiveType
+  
+  // Value
+  discountPercent       Decimal?                @db.Decimal(5, 2)
+  bonusAmount           Decimal?                @db.Decimal(19, 4)
+  feeWaiver             Boolean                 @default(false)
+  
+  // Eligibility
+  minAmount             Decimal?                @db.Decimal(19, 4)
+  maxAmount             Decimal?                @db.Decimal(19, 4)
+  requiredOwnership     Decimal?                @db.Decimal(5, 2) // Minimum Indigenous ownership %
+  
+  // Band specific
+  specificBands         String[]                // Empty means all bands
+  
+  // Validity
+  validFrom             DateTime
+  validUntil            DateTime?
+  isActive              Boolean                 @default(true)
+  
+  // Usage tracking
+  usageCount            Int                     @default(0)
+  totalSavings          Decimal                 @db.Decimal(19, 4)
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([isActive])
+  @@index([type])
+}
+
+model PaymentCompliance {
+  id                    String                  @id @default(uuid())
+  paymentId             String                  @unique
+  
+  // 5% Mandate tracking
+  contributes5Percent   Boolean
+  mandateCategory       String?                 // Which procurement category
+  mandateAmount         Decimal                 @db.Decimal(19, 4)
+  
+  // Tax compliance
+  taxCompliant          Boolean                 @default(true)
+  gstRegistered         Boolean?
+  gstNumber             String?
+  
+  // Indigenous verification
+  indigenousVerified    Boolean                 @default(false)
+  verificationDate      DateTime?
+  verificationMethod    String?
+  certificationNumber   String?
+  
+  // Anti-money laundering
+  amlRiskScore          Decimal?                @db.Decimal(5, 2)
+  amlFlags              String[]
+  sanctionsCleared      Boolean                 @default(true)
+  
+  // Documentation
+  requiredDocs          String[]
+  receivedDocs          String[]
+  missingDocs           String[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([contributes5Percent])
+  @@index([indigenousVerified])
+}
+
+model PaymentAuditLog {
+  id                    String                  @id @default(uuid())
+  paymentId             String
+  
+  // Audit details
+  action                AuditAction
+  performedBy           String
+  performedAt           DateTime                @default(now())
+  
+  // Changes
+  previousState         Json?
+  newState              Json?
+  
+  // Context
+  ipAddress             String?
+  userAgent             String?
+  
+  payment               Payment                 @relation(fields: [paymentId], references: [id])
+  
+  @@index([paymentId])
+  @@index([action])
+  @@index([performedAt])
+}
+
+model PaymentReport {
+  id                    String                  @id @default(uuid())
+  reportId              String                  @unique
+  
+  // Report details
+  type                  ReportType
+  name                  String
+  description           String?
+  
+  // Period
+  startDate             DateTime
+  endDate               DateTime
+  
+  // Metrics
+  totalPayments         Int
+  totalAmount           Decimal                 @db.Decimal(19, 4)
+  averageAmount         Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous metrics
+  indigenousPayments    Int
+  indigenousAmount      Decimal                 @db.Decimal(19, 4)
+  indigenousPercentage  Decimal                 @db.Decimal(5, 2)
+  mandate5Status        MandateStatus
+  
+  // Breakdown
+  byMethod              Json
+  byProvider            Json
+  byCurrency            Json
+  byIndigenousCategory  Json
+  
+  // Files
+  fileUrl               String?
+  format                String                  @default("PDF")
+  
+  generatedBy           String
+  generatedAt           DateTime                @default(now())
+  
+  @@index([type])
+  @@index([startDate, endDate])
+}
+
+// Enums
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  E_TRANSFER
+  WIRE_TRANSFER
+  ACH
+  CHEQUE
+  CASH
+  PAYPAL
+  CRYPTO
+}
+
+enum PaymentProvider {
+  STRIPE
+  SQUARE
+  PAYPAL
+  BRAINTREE
+  MONERIS
+  BAMBORA
+  RAZORPAY
+  INTERNAL
+  BANK
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+  PARTIALLY_REFUNDED
+  DISPUTED
+  ON_HOLD
+}
+
+enum PartyType {
+  BUSINESS
+  INDIVIDUAL
+  GOVERNMENT
+  INDIGENOUS_BUSINESS
+  BAND_COUNCIL
+}
+
+enum IndigenousCategory {
+  BAND_OWNED
+  MEMBER_OWNED
+  PARTNERSHIP
+  JOINT_VENTURE
+  CERTIFIED
+}
+
+enum SplitStatus {
+  PENDING
+  PROCESSED
+  FAILED
+  CANCELLED
+}
+
+enum ReconciliationType {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  CUSTOM
+}
+
+enum ReconciliationStatus {
+  IN_PROGRESS
+  COMPLETED
+  DISCREPANCY_FOUND
+  APPROVED
+  REJECTED
+}
+
+enum AdjustmentType {
+  BANK_FEE
+  CURRENCY_ADJUSTMENT
+  CORRECTION
+  WRITE_OFF
+  REVERSAL
+}
+
+enum RefundReason {
+  DUPLICATE_PAYMENT
+  CUSTOMER_REQUEST
+  FRAUD
+  SERVICE_ISSUE
+  OVERPAYMENT
+  ERROR
+}
+
+enum RefundStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum DisputeType {
+  CHARGEBACK
+  FRAUD_CLAIM
+  SERVICE_DISPUTE
+  AMOUNT_DISPUTE
+  QUALITY_ISSUE
+}
+
+enum DisputeStatus {
+  OPEN
+  UNDER_REVIEW
+  EVIDENCE_REQUIRED
+  RESOLVED
+  LOST
+  WON
+  EXPIRED
+}
+
+enum DisputeOutcome {
+  MERCHANT_FAVOR
+  CUSTOMER_FAVOR
+  SPLIT
+  WITHDRAWN
+}
+
+enum PaymentFrequency {
+  ONCE
+  DAILY
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+}
+
+enum PaymentMethodType {
+  CARD
+  BANK_ACCOUNT
+  DIGITAL_WALLET
+  CRYPTOCURRENCY
+}
+
+enum IncentiveType {
+  DISCOUNT
+  BONUS
+  FEE_WAIVER
+  CASHBACK
+  POINTS
+}
+
+enum MandateStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  AT_RISK
+  EXCEEDING
+}
+
+enum ReportType {
+  TRANSACTION
+  RECONCILIATION
+  INDIGENOUS_MANDATE
+  TAX
+  COMPLIANCE
+  DISPUTE
+  REFUND
+}
+
+enum AuditAction {
+  PAYMENT_CREATED
+  PAYMENT_PROCESSED
+  PAYMENT_FAILED
+  PAYMENT_REFUNDED
+  PAYMENT_DISPUTED
+  RECONCILIATION_PERFORMED
+  ADJUSTMENT_MADE
+  METHOD_ADDED
+  METHOD_REMOVED
+}

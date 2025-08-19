@@ -1,0 +1,834 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model DeliveryRoute {
+  id                    String                  @id @default(uuid())
+  routeId               String                  @unique
+  routeCode             String                  @unique
+  
+  // Route details
+  routeName             String
+  routeType             RouteType
+  description           String?
+  
+  // Service area
+  serviceArea           Json                    // GeoJSON polygon
+  communities           String[]                // Community IDs served
+  postalCodes           String[]
+  
+  // Indigenous route features
+  indigenousRoute       Boolean                 @default(false)
+  treatyTerritory       String?
+  traditionalTerritory  String?
+  bandNumbers           String[]
+  
+  // Remote access
+  remoteRoute           Boolean                 @default(false)
+  accessMethod          AccessMethod
+  winterRoadOnly        Boolean                 @default(false)
+  seasonalRestrictions  Json?                   // Months when inaccessible
+  
+  // Float plane routes
+  floatPlaneRoute       Boolean                 @default(false)
+  landingLocations      Json?                   // GPS coordinates of landing spots
+  weatherDependent      Boolean                 @default(false)
+  
+  // Water routes
+  waterRoute            Boolean                 @default(false)
+  dockLocations         Json?
+  tideDependent         Boolean                 @default(false)
+  
+  // Trail routes (ATV/Snowmobile)
+  trailRoute            Boolean                 @default(false)
+  trailConditions       String?
+  trailMaintainer       String?
+  
+  // Schedule
+  frequency             DeliveryFrequency
+  scheduleDays          String[]                // Days of week
+  cutoffTime            String?                 // Time for same-day inclusion
+  
+  // Capacity
+  maxStops              Int?
+  maxWeight             Decimal?                @db.Decimal(10, 2)
+  maxVolume             Decimal?                @db.Decimal(10, 3)
+  
+  // Performance
+  avgDeliveryTime       Decimal?                @db.Decimal(10, 2) // hours
+  avgDistance           Decimal?                @db.Decimal(10, 2) // km
+  
+  // Deliveries
+  deliveries            Delivery[]
+  
+  // Driver assignments
+  driverAssignments     DriverAssignment[]
+  
+  // Status
+  status                RouteStatus             @default(ACTIVE)
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([routeCode])
+  @@index([routeType])
+  @@index([indigenousRoute])
+  @@index([status])
+}
+
+model Delivery {
+  id                    String                  @id @default(uuid())
+  deliveryId            String                  @unique
+  trackingNumber        String                  @unique
+  
+  // Order reference
+  orderId               String?
+  shipmentId            String?
+  
+  // Route assignment
+  routeId               String?
+  
+  // Delivery type
+  deliveryType          DeliveryType
+  priority              DeliveryPriority
+  
+  // Origin
+  originWarehouse       String?
+  pickupLocation        Json?                   // Address
+  
+  // Destination
+  deliveryAddress       Json                    // Full address with GPS
+  deliveryInstructions  String?
+  
+  // Indigenous delivery
+  indigenousDelivery    Boolean                 @default(false)
+  communityDelivery     Boolean                 @default(false)
+  bandOfficeDelivery    Boolean                 @default(false)
+  elderDelivery         Boolean                 @default(false)
+  
+  // Community coordinator
+  communityCoordinator  String?
+  coordinatorPhone      String?
+  coordinatorEmail      String?
+  
+  // Ceremony delivery
+  ceremonyDelivery      Boolean                 @default(false)
+  ceremonyDate          DateTime?
+  moonPhaseRequired     String?
+  elderPresence         Boolean                 @default(false)
+  
+  // Cultural protocols
+  culturalProtocols     Json?
+  smudgingRequired      Boolean                 @default(false)
+  tobaccoOffering       Boolean                 @default(false)
+  
+  // Remote delivery
+  remoteDelivery        Boolean                 @default(false)
+  lastMileMethod        LastMileMethod?
+  specialEquipment      String[]                // Snowmobile, boat, etc.
+  
+  // Package details
+  packages              DeliveryPackage[]
+  totalWeight           Decimal                 @db.Decimal(10, 2)
+  totalVolume           Decimal                 @db.Decimal(10, 3)
+  fragile               Boolean                 @default(false)
+  perishable            Boolean                 @default(false)
+  hazmat                Boolean                 @default(false)
+  
+  // Sacred items
+  sacredItems           Boolean                 @default(false)
+  sacredHandling        Json?                   // Special handling instructions
+  
+  // Delivery window
+  requestedDate         DateTime
+  deliveryWindow        Json?                   // Start and end time
+  
+  // Driver assignment
+  driverId              String?
+  vehicleId             String?
+  
+  // Status tracking
+  status                DeliveryStatus
+  statusHistory         DeliveryStatusHistory[]
+  
+  // Actual delivery
+  deliveredAt           DateTime?
+  deliveredTo           String?                 // Person who received
+  deliveryPhoto         String?                 // S3 URL
+  signature             String?                 // Base64 or S3 URL
+  
+  // Location tracking
+  currentLocation       Json?                   // Current GPS
+  locationHistory       Json?                   // Array of GPS points
+  
+  // Weather impact
+  weatherDelay          Boolean                 @default(false)
+  weatherConditions     Json?
+  
+  // Attempts
+  attemptCount          Int                     @default(0)
+  maxAttempts           Int                     @default(3)
+  failureReasons        String[]
+  
+  // Customer communication
+  customerNotified      Boolean                 @default(false)
+  notificationMethod    NotificationMethod?
+  
+  // Feedback
+  customerFeedback      CustomerFeedback?
+  
+  // Costs
+  deliveryCost          Decimal?                @db.Decimal(10, 2)
+  indigenousDiscount    Decimal?                @db.Decimal(5, 2)
+  
+  route                 DeliveryRoute?          @relation(fields: [routeId], references: [id])
+  driver                Driver?                 @relation(fields: [driverId], references: [id])
+  vehicle               Vehicle?                @relation(fields: [vehicleId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([trackingNumber])
+  @@index([routeId])
+  @@index([driverId])
+  @@index([status])
+  @@index([requestedDate])
+  @@index([indigenousDelivery])
+}
+
+model DeliveryPackage {
+  id                    String                  @id @default(uuid())
+  packageId             String                  @unique
+  deliveryId            String
+  
+  // Package details
+  packageNumber         String
+  description           String
+  
+  // Dimensions
+  weight                Decimal                 @db.Decimal(10, 2)
+  length                Decimal                 @db.Decimal(10, 2)
+  width                 Decimal                 @db.Decimal(10, 2)
+  height                Decimal                 @db.Decimal(10, 2)
+  
+  // Special handling
+  fragile               Boolean                 @default(false)
+  keepUpright           Boolean                 @default(false)
+  temperatureControlled Boolean                 @default(false)
+  
+  // Indigenous items
+  ceremonyItem          Boolean                 @default(false)
+  sacredItem            Boolean                 @default(false)
+  traditionalMedicine   Boolean                 @default(false)
+  
+  // Tracking
+  barcode               String?
+  rfidTag               String?
+  
+  // Status
+  status                PackageStatus
+  
+  delivery              Delivery                @relation(fields: [deliveryId], references: [id])
+  
+  @@index([deliveryId])
+  @@index([packageNumber])
+}
+
+model Driver {
+  id                    String                  @id @default(uuid())
+  driverId              String                  @unique
+  employeeId            String?
+  
+  // Personal information
+  firstName             String
+  lastName              String
+  email                 String                  @unique
+  phone                 String
+  emergencyContact      Json?
+  
+  // Indigenous driver
+  indigenousDriver      Boolean                 @default(false)
+  statusNumber          String?
+  bandMembership        String?
+  
+  // Qualifications
+  licenseNumber         String
+  licenseClass          String
+  licenseExpiry         DateTime
+  endorsements          String[]                // Hazmat, air brake, etc.
+  
+  // Special qualifications
+  floatPlaneRating      Boolean                 @default(false)
+  boatLicense           Boolean                 @default(false)
+  atvCertified          Boolean                 @default(false)
+  snowmobileCertified   Boolean                 @default(false)
+  
+  // Cultural knowledge
+  culturalTraining      Boolean                 @default(false)
+  languagesSpoken       String[]
+  ceremonyKnowledge     Boolean                 @default(false)
+  elderProtocol         Boolean                 @default(false)
+  
+  // Remote experience
+  winterRoadExperience  Boolean                 @default(false)
+  remoteExperience      Boolean                 @default(false)
+  bushSurvival          Boolean                 @default(false)
+  
+  // Service areas
+  serviceAreas          String[]                // Community IDs
+  preferredRoutes       String[]                // Route IDs
+  
+  // Availability
+  availability          Json                    // Schedule
+  maxHoursPerDay        Int                     @default(8)
+  maxHoursPerWeek       Int                     @default(40)
+  
+  // Performance
+  deliveriesCompleted   Int                     @default(0)
+  onTimeRate            Decimal?                @db.Decimal(5, 2)
+  customerRating        Decimal?                @db.Decimal(3, 2)
+  safetyScore           Decimal?                @db.Decimal(5, 2)
+  
+  // Current status
+  status                DriverStatus
+  currentLocation       Json?                   // GPS
+  currentRouteId        String?
+  
+  // Assignments
+  assignments           DriverAssignment[]
+  deliveries            Delivery[]
+  
+  // Training
+  trainingRecords       Json?
+  lastTrainingDate      DateTime?
+  nextTrainingDue       DateTime?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([driverId])
+  @@index([email])
+  @@index([indigenousDriver])
+  @@index([status])
+}
+
+model Vehicle {
+  id                    String                  @id @default(uuid())
+  vehicleId             String                  @unique
+  vehicleNumber         String                  @unique
+  
+  // Vehicle details
+  make                  String
+  model                 String
+  year                  Int
+  vin                   String                  @unique
+  licensePlate          String
+  
+  // Type
+  vehicleType           VehicleType
+  vehicleClass          VehicleClass
+  
+  // Special vehicles
+  snowmobile            Boolean                 @default(false)
+  atv                   Boolean                 @default(false)
+  boat                  Boolean                 @default(false)
+  floatPlane            Boolean                 @default(false)
+  
+  // Capacity
+  cargoCapacity         Decimal                 @db.Decimal(10, 2) // kg
+  volumeCapacity        Decimal                 @db.Decimal(10, 3) // m³
+  palletCapacity        Int?
+  passengerCapacity     Int                     @default(1)
+  
+  // Features
+  refrigerated          Boolean                 @default(false)
+  heated                Boolean                 @default(false)
+  liftgate              Boolean                 @default(false)
+  fourWheelDrive        Boolean                 @default(false)
+  
+  // Winter equipment
+  winterTires           Boolean                 @default(false)
+  blockHeater           Boolean                 @default(false)
+  snowChains            Boolean                 @default(false)
+  
+  // Technology
+  gpsTracking           Boolean                 @default(false)
+  dashCam               Boolean                 @default(false)
+  temperatureMonitor    Boolean                 @default(false)
+  
+  // Indigenous features
+  ceremonyVehicle       Boolean                 @default(false)
+  elderTransport        Boolean                 @default(false)
+  
+  // Maintenance
+  lastServiceDate       DateTime?
+  nextServiceDue        DateTime?
+  odometerReading       Int?
+  fuelType              String
+  fuelEfficiency        Decimal?                @db.Decimal(5, 2) // L/100km
+  
+  // Insurance
+  insurancePolicy       String?
+  insuranceExpiry       DateTime?
+  
+  // Status
+  status                VehicleStatus
+  currentLocation       Json?                   // GPS
+  
+  // Assignments
+  deliveries            Delivery[]
+  maintenanceRecords    Json?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([vehicleNumber])
+  @@index([vehicleType])
+  @@index([status])
+}
+
+model DriverAssignment {
+  id                    String                  @id @default(uuid())
+  assignmentId          String                  @unique
+  
+  // Assignment details
+  driverId              String
+  routeId               String
+  vehicleId             String?
+  
+  // Date
+  assignmentDate        DateTime
+  startTime             DateTime
+  endTime               DateTime?
+  
+  // Deliveries
+  plannedDeliveries     Int
+  completedDeliveries   Int                     @default(0)
+  
+  // Performance
+  onTimeDeliveries      Int                     @default(0)
+  lateDeliveries        Int                     @default(0)
+  missedDeliveries      Int                     @default(0)
+  
+  // Distance
+  plannedDistance       Decimal?                @db.Decimal(10, 2) // km
+  actualDistance        Decimal?                @db.Decimal(10, 2)
+  
+  // Time
+  plannedDuration       Int?                    // minutes
+  actualDuration        Int?
+  breakTime             Int                     @default(0)
+  
+  // Issues
+  issues                Json?
+  weatherDelays         Boolean                 @default(false)
+  vehicleIssues         Boolean                 @default(false)
+  
+  // Status
+  status                AssignmentStatus
+  
+  driver                Driver                  @relation(fields: [driverId], references: [id])
+  route                 DeliveryRoute           @relation(fields: [routeId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([driverId])
+  @@index([routeId])
+  @@index([assignmentDate])
+  @@index([status])
+}
+
+model DeliveryStatusHistory {
+  id                    String                  @id @default(uuid())
+  historyId             String                  @unique
+  deliveryId            String
+  
+  // Status change
+  fromStatus            DeliveryStatus?
+  toStatus              DeliveryStatus
+  
+  // Location
+  location              Json?                   // GPS coordinates
+  address               String?
+  
+  // Details
+  notes                 String?
+  reason                String?
+  
+  // Who made the change
+  changedBy             String
+  changeType            ChangeType
+  
+  // Timestamp
+  timestamp             DateTime                @default(now())
+  
+  delivery              Delivery                @relation(fields: [deliveryId], references: [id])
+  
+  @@index([deliveryId])
+  @@index([timestamp])
+}
+
+model CustomerFeedback {
+  id                    String                  @id @default(uuid())
+  feedbackId            String                  @unique
+  deliveryId            String                  @unique
+  
+  // Ratings
+  overallRating         Int                     // 1-5
+  timelinessRating      Int?
+  conditionRating       Int?
+  driverRating          Int?
+  
+  // Feedback
+  comments              String?
+  compliments           String[]
+  complaints            String[]
+  
+  // Cultural satisfaction
+  culturalRespect       Boolean?
+  protocolsFollowed     Boolean?
+  elderSatisfaction     Boolean?
+  
+  // Would recommend
+  wouldRecommend        Boolean?
+  
+  // Follow up
+  requiresFollowUp      Boolean                 @default(false)
+  followUpNotes         String?
+  followUpCompleted     Boolean                 @default(false)
+  
+  delivery              Delivery                @relation(fields: [deliveryId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([deliveryId])
+  @@index([overallRating])
+}
+
+model CommunityHub {
+  id                    String                  @id @default(uuid())
+  hubId                 String                  @unique
+  hubCode               String                  @unique
+  
+  // Hub details
+  hubName               String
+  hubType               HubType
+  description           String?
+  
+  // Location
+  address               Json
+  coordinates           Json                    // GPS
+  
+  // Community
+  communityName         String
+  bandNumber            String?
+  treatyTerritory       String?
+  population            Int?
+  
+  // Contact
+  coordinator           String
+  coordinatorPhone      String
+  coordinatorEmail      String
+  alternateContact      Json?
+  
+  // Operating hours
+  operatingHours        Json
+  seasonalHours         Json?                   // Different hours by season
+  
+  // Services
+  packagePickup         Boolean                 @default(true)
+  packageDropoff        Boolean                 @default(true)
+  coldStorage           Boolean                 @default(false)
+  secureStorage         Boolean                 @default(false)
+  
+  // Capacity
+  storageCapacity       Decimal?                @db.Decimal(10, 2) // m³
+  dailyCapacity         Int?                    // packages per day
+  
+  // Equipment
+  hasForklift           Boolean                 @default(false)
+  hasLoadingDock        Boolean                 @default(false)
+  hasRefrigeration      Boolean                 @default(false)
+  
+  // Cultural space
+  ceremonySpace         Boolean                 @default(false)
+  elderMeetingRoom      Boolean                 @default(false)
+  traditionalStorage    Boolean                 @default(false)
+  
+  // Accessibility
+  accessibleEntrance    Boolean                 @default(true)
+  elderFriendly         Boolean                 @default(true)
+  
+  // Internet
+  hasInternet           Boolean                 @default(false)
+  internetSpeed         String?
+  hasWifi               Boolean                 @default(false)
+  
+  // Remote access
+  winterRoadAccess      Boolean                 @default(false)
+  airAccess             Boolean                 @default(false)
+  waterAccess           Boolean                 @default(false)
+  yearRoundAccess       Boolean                 @default(true)
+  
+  // Status
+  status                HubStatus               @default(ACTIVE)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([hubCode])
+  @@index([communityName])
+  @@index([status])
+}
+
+model DeliveryOptimization {
+  id                    String                  @id @default(uuid())
+  optimizationId        String                  @unique
+  
+  // Optimization run
+  runDate               DateTime
+  routeIds              String[]
+  
+  // Parameters
+  optimizationType      OptimizationType
+  constraints           Json                    // Time windows, capacity, etc.
+  
+  // Indigenous priorities
+  ceremonyPriority      Boolean                 @default(false)
+  elderPriority         Boolean                 @default(false)
+  remotePriority        Boolean                 @default(false)
+  
+  // Results
+  originalDistance      Decimal                 @db.Decimal(10, 2)
+  optimizedDistance     Decimal                 @db.Decimal(10, 2)
+  distanceSaved         Decimal                 @db.Decimal(10, 2)
+  
+  originalTime          Int                     // minutes
+  optimizedTime         Int
+  timeSaved             Int
+  
+  originalCost          Decimal?                @db.Decimal(10, 2)
+  optimizedCost         Decimal?                @db.Decimal(10, 2)
+  costSaved             Decimal?                @db.Decimal(10, 2)
+  
+  // Delivery metrics
+  deliveriesOptimized   Int
+  onTimeImprovement     Decimal?                @db.Decimal(5, 2)
+  
+  // Environmental impact
+  co2Saved              Decimal?                @db.Decimal(10, 2) // kg
+  
+  // Status
+  status                OptimizationStatus
+  applied               Boolean                 @default(false)
+  appliedAt             DateTime?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([runDate])
+  @@index([status])
+}
+
+// Enums
+enum RouteType {
+  URBAN
+  RURAL
+  REMOTE
+  INDIGENOUS
+  WINTER_ROAD
+  FLOAT_PLANE
+  WATER
+  TRAIL
+  MIXED
+}
+
+enum AccessMethod {
+  ROAD
+  WINTER_ROAD
+  FLOAT_PLANE
+  HELICOPTER
+  BOAT
+  BARGE
+  SNOWMOBILE
+  ATV
+  FOOT
+}
+
+enum DeliveryFrequency {
+  DAILY
+  WEEKDAYS
+  WEEKLY
+  BIWEEKLY
+  MONTHLY
+  ON_DEMAND
+  SEASONAL
+}
+
+enum RouteStatus {
+  ACTIVE
+  INACTIVE
+  SEASONAL
+  MAINTENANCE
+  DISCONTINUED
+}
+
+enum DeliveryType {
+  STANDARD
+  EXPRESS
+  SAME_DAY
+  SCHEDULED
+  CEREMONY
+  EMERGENCY
+  BULK
+}
+
+enum DeliveryPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  CRITICAL
+  CEREMONY
+  ELDER
+}
+
+enum LastMileMethod {
+  TRUCK
+  VAN
+  CAR
+  MOTORCYCLE
+  BICYCLE
+  FOOT
+  SNOWMOBILE
+  ATV
+  BOAT
+  HELICOPTER
+  DRONE
+  COMMUNITY_PICKUP
+}
+
+enum DeliveryStatus {
+  PENDING
+  ASSIGNED
+  IN_TRANSIT
+  ARRIVED
+  DELIVERED
+  FAILED
+  RETURNED
+  CANCELLED
+  RESCHEDULED
+}
+
+enum NotificationMethod {
+  EMAIL
+  SMS
+  PHONE
+  WHATSAPP
+  COMMUNITY_RADIO
+  COORDINATOR
+}
+
+enum PackageStatus {
+  PENDING
+  IN_TRANSIT
+  DELIVERED
+  DAMAGED
+  LOST
+  RETURNED
+}
+
+enum DriverStatus {
+  AVAILABLE
+  ON_ROUTE
+  ON_BREAK
+  OFF_DUTY
+  SICK
+  VACATION
+  TRAINING
+  TERMINATED
+}
+
+enum VehicleType {
+  TRUCK
+  VAN
+  CAR
+  SNOWMOBILE
+  ATV
+  BOAT
+  FLOAT_PLANE
+  HELICOPTER
+  DRONE
+}
+
+enum VehicleClass {
+  LIGHT
+  MEDIUM
+  HEAVY
+  SPECIAL
+}
+
+enum VehicleStatus {
+  AVAILABLE
+  IN_USE
+  MAINTENANCE
+  REPAIR
+  OUT_OF_SERVICE
+  RETIRED
+}
+
+enum AssignmentStatus {
+  PLANNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum ChangeType {
+  SYSTEM
+  DRIVER
+  CUSTOMER
+  DISPATCHER
+  AUTOMATED
+}
+
+enum HubType {
+  BAND_OFFICE
+  COMMUNITY_CENTER
+  HEALTH_CENTER
+  SCHOOL
+  GENERAL_STORE
+  POST_OFFICE
+  ELDER_CENTER
+}
+
+enum HubStatus {
+  ACTIVE
+  INACTIVE
+  SEASONAL
+  RENOVATING
+  CLOSED
+}
+
+enum OptimizationType {
+  DISTANCE
+  TIME
+  COST
+  COMBINED
+  CULTURAL_PRIORITY
+  ENVIRONMENTAL
+}
+
+enum OptimizationStatus {
+  RUNNING
+  COMPLETED
+  FAILED
+  APPLIED
+}
