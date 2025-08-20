@@ -1,0 +1,101 @@
+version: '3.8'
+
+services:
+  indigenious-design-system:
+    build: .
+    container_name: indigenious-design-system-service
+    ports:
+      - "3049:3049"
+    environment:
+      - NODE_ENV=production
+      - PORT=3049
+      - DATABASE_URL=postgresql://postgres:indigenous2024@postgres:5432/indigenious_design_system
+      - CORS_ORIGIN=http://localhost:3000,http://localhost:3001
+      - JWT_SECRET=${JWT_SECRET}
+      - REDIS_URL=redis://redis:6379
+      - PERFORMANCE_MODE=full-forest
+      - ENABLE_WEBSOCKETS=true
+      - ENABLE_SEASONAL_THEMES=true
+      - ENABLE_CEREMONY_AWARENESS=true
+      - DEFAULT_LANGUAGE=en
+      - ECOSYSTEM_HEALTH_THRESHOLD=80
+      - ANIMATION_FPS_TARGET=60
+      - PARTICLE_COUNT_MAX=100
+      - BACKGROUND_LAYERS_MAX=8
+      - CACHE_TTL=3600
+      - LOG_LEVEL=info
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - indigenious-network
+    volumes:
+      - ./uploads:/app/uploads
+      - ./assets:/app/public/assets
+      - ./logs:/app/logs
+    restart: unless-stopped
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.routers.design-system.rule=Host(`design.indigenious.local`)"
+      - "traefik.http.services.design-system.loadbalancer.server.port=3049"
+      - "com.indigenious.service=design-system"
+      - "com.indigenious.philosophy=Where Economics Meets The Land"
+      - "com.indigenious.elements=16"
+      - "com.indigenious.layers=8"
+
+  postgres:
+    image: postgres:16-alpine
+    container_name: indigenious-design-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=indigenous2024
+      - POSTGRES_DB=indigenious_design_system
+      - POSTGRES_MAX_CONNECTIONS=200
+      - POSTGRES_SHARED_BUFFERS=256MB
+    volumes:
+      - design-postgres-data:/var/lib/postgresql/data
+      - ./init.sql:/docker-entrypoint-initdb.d/init.sql
+    ports:
+      - "5449:5432"
+    networks:
+      - indigenious-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: indigenious-design-redis
+    command: redis-server --appendonly yes --maxmemory 256mb --maxmemory-policy allkeys-lru
+    volumes:
+      - design-redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - indigenious-network
+    restart: unless-stopped
+
+  # Optional: Storybook for component development
+  storybook:
+    build:
+      context: .
+      dockerfile: Dockerfile.storybook
+    container_name: indigenious-design-storybook
+    ports:
+      - "6006:6006"
+    environment:
+      - NODE_ENV=development
+    volumes:
+      - ./src:/app/src
+      - ./public:/app/public
+      - ./.storybook:/app/.storybook
+    networks:
+      - indigenious-network
+    profiles:
+      - development
+
+networks:
+  indigenious-network:
+    external: true
+
+volumes:
+  design-postgres-data:
+  design-redis-data:

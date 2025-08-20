@@ -1,0 +1,450 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// ELEMENTAL COMPONENTS
+// ==========================================
+
+model ElementalComponent {
+  id                    String   @id @default(uuid())
+  
+  // Element identity
+  symbol               String   @unique // Au, Ve, Pa, Ma, etc.
+  name                 String   // Authentication, Verification, etc.
+  atomicWeight         String   // 7, 48, 24, ∞, CO₂, etc.
+  
+  // Ecosystem mapping
+  ecosystem            String   // ROOTS, SOIL, RIVER, POLLEN, etc.
+  ecosystemRole        String   // Deep Root System, Soil Health Layer, etc.
+  element              String   // Fire, Water, Earth, Air
+  direction            String   // East, South, West, North
+  
+  // Visual properties
+  primaryColor         String   // Hex color
+  secondaryColor       String?  // Optional secondary
+  gradientStart        String?  // For gradient effects
+  gradientEnd          String?  // For gradient effects
+  glowColor            String?  // For hover effects
+  
+  // Feature mapping
+  featureIds           Int[]    // [1, 57, 66] - maps to platform features
+  featureNames         String[] // Human-readable feature names
+  
+  // Natural philosophy
+  description          String   @db.Text // Full poetic description
+  traditionalWisdom    String   @db.Text // Indigenous teaching
+  metaphor             String   // Natural world comparison
+  
+  // Behavioral properties
+  animationType        String   @default("pulse") // pulse, flow, grow, spiral
+  animationDuration    Int      @default(4000) // milliseconds
+  interactionType      String   @default("hover") // hover, click, presence
+  
+  // Time-based variations
+  seasonalVariations   Json?    // Different appearances by season
+  ceremonyMode         Json?    // Sacred time adjustments
+  timeOfDayVariations  Json?    // Dawn, day, dusk, night changes
+  
+  // Performance tiers
+  fullForestMode       Json     // All effects active
+  flowingRiverMode     Json     // Medium complexity
+  stillPondMode        Json     // Minimal effects
+  
+  // Indigenous context
+  nation               String?  // Specific nation association
+  territory            String?  // Traditional territory
+  language             String?  // Associated language
+  ceremonyRestricted   Boolean  @default(false)
+  elderApproved        Boolean  @default(true)
+  
+  // Metadata
+  active               Boolean  @default(true)
+  displayOrder         Int      // Position in grid
+  category             String   // CORE, INTELLIGENCE, GOVERNANCE, OPERATIONS
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  interactions         ElementInteraction[]
+  combinations         ElementCombination[] @relation("FirstElement")
+  combinationsWith     ElementCombination[] @relation("SecondElement")
+  
+  @@index([symbol])
+  @@index([ecosystem])
+  @@index([category])
+}
+
+model ElementInteraction {
+  id                    String   @id @default(uuid())
+  
+  elementId            String
+  element              ElementalComponent @relation(fields: [elementId], references: [id])
+  
+  // Interaction details
+  userId               String?  // Who interacted
+  interactionType      String   // hover, click, drag, combine
+  
+  // Context
+  timestamp            DateTime @default(now())
+  sessionId            String?
+  deviceType           String?  // mobile, tablet, desktop
+  performanceMode      String?  // full-forest, flowing-river, still-pond
+  
+  // Results
+  resultData           Json?    // What happened
+  duration             Int?     // How long interaction lasted (ms)
+  
+  @@index([elementId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model ElementCombination {
+  id                    String   @id @default(uuid())
+  
+  // Elements being combined
+  firstElementId       String
+  firstElement         ElementalComponent @relation("FirstElement", fields: [firstElementId], references: [id])
+  
+  secondElementId      String
+  secondElement        ElementalComponent @relation("SecondElement", fields: [secondElementId], references: [id])
+  
+  // Result
+  resultName           String   // "Economic Sovereignty"
+  resultDescription    String   @db.Text
+  visualEffect         String   // Animation or transformation
+  
+  // Natural law
+  naturalLaw           String   // Which natural law this represents
+  teachingStory        String?  @db.Text // Traditional story
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  
+  @@unique([firstElementId, secondElementId])
+}
+
+// ==========================================
+// BACKGROUND SYSTEM
+// ==========================================
+
+model BackgroundLayer {
+  id                    String   @id @default(uuid())
+  
+  // Layer identity
+  name                 String   @unique // riverFlow, topographic, aurora, etc.
+  zIndex               Int      // 0-1000 stacking order
+  
+  // Visual properties
+  type                 String   // video, canvas, css, webgl, particles
+  source               String?  // Video URL or generation function
+  
+  // Animation
+  animationType        String   // translate, rotate, scale, morph, flow
+  duration             Int      // Animation duration in ms
+  easing               String   // ease-in-out, linear, cubic-bezier
+  infinite             Boolean  @default(true)
+  
+  // Filters and effects
+  filters              Json?    // CSS/WebGL filters
+  blendMode            String?  // multiply, screen, overlay, etc.
+  opacity              Float    @default(1.0)
+  
+  // Performance
+  fullForestEnabled    Boolean  @default(true)
+  flowingRiverEnabled  Boolean  @default(true)
+  stillPondEnabled     Boolean  @default(false)
+  
+  // Seasonal variations
+  springVariant        Json?
+  summerVariant        Json?
+  fallVariant          Json?
+  winterVariant        Json?
+  
+  // Time variations
+  morningVariant       Json?    // 6am-12pm
+  afternoonVariant     Json?    // 12pm-6pm
+  eveningVariant       Json?    // 6pm-12am
+  nightVariant         Json?    // 12am-6am
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ==========================================
+// DESIGN TOKENS
+// ==========================================
+
+model DesignToken {
+  id                    String   @id @default(uuid())
+  
+  // Token identity
+  category             String   // color, spacing, animation, typography, effect
+  subcategory          String?  // primary, secondary, accent, etc.
+  name                 String   // riverBlue, forestGreen, sacredPurple
+  
+  // Value
+  value                String   // The actual value
+  cssVariable          String   // --river-blue
+  
+  // Semantic meaning
+  meaning              String   @db.Text // "The color of clean rivers flowing through territories"
+  usage                String[] // Where this token should be used
+  
+  // Natural association
+  naturalElement       String?  // water, earth, fire, air, spirit
+  ecosystem            String?  // forest, river, mountain, prairie
+  
+  // Variations
+  lightModeValue       String?
+  darkModeValue        String?
+  highContrastValue    String?
+  
+  // Seasonal adjustments
+  seasonalAdjustment   Boolean  @default(false)
+  springValue          String?
+  summerValue          String?
+  fallValue            String?
+  winterValue          String?
+  
+  // Ceremony awareness
+  ceremonyValue        String?  // Dimmed or altered during ceremonies
+  
+  // Performance tiers
+  reducedMotionValue   String?  // For accessibility
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([category, name])
+  @@index([category])
+}
+
+// ==========================================
+// ANIMATION SEQUENCES
+// ==========================================
+
+model AnimationSequence {
+  id                    String   @id @default(uuid())
+  
+  // Animation identity
+  name                 String   @unique // riverFlow, networkPulse, etc.
+  description          String?
+  
+  // Timing
+  duration             Int      // Total duration in ms
+  delay                Int      @default(0)
+  iterations           Int      @default(-1) // -1 for infinite
+  
+  // Keyframes
+  keyframes            Json     // Array of keyframe objects
+  
+  // Performance modes
+  fullForestKeyframes  Json     // Full quality
+  flowingRiverKeyframes Json?   // Reduced complexity
+  stillPondKeyframes   Json?    // Minimal or static
+  
+  // Easing
+  easingFunction       String   @default("ease-in-out")
+  customEasing         String?  // cubic-bezier values
+  
+  // Triggers
+  triggerType          String   @default("auto") // auto, hover, click, scroll, time
+  triggerConfig        Json?    // Additional trigger configuration
+  
+  // Context
+  usedBy               String[] // Which components use this
+  category             String   // background, element, effect, transition
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ==========================================
+// CULTURAL CALENDAR
+// ==========================================
+
+model CulturalEvent {
+  id                    String   @id @default(uuid())
+  
+  // Event identity
+  name                 String   // "Summer Solstice", "Harvest Moon"
+  type                 String   // ceremony, season, moon, celebration
+  
+  // Timing
+  startDate            DateTime
+  endDate              DateTime
+  recurring            Boolean  @default(false)
+  recurrenceRule       String?  // RRULE format
+  
+  // Design system adjustments
+  themeAdjustments     Json     // How the design should change
+  colorOverrides       Json?    // Specific color changes
+  animationOverrides   Json?    // Animation modifications
+  
+  // Behavioral changes
+  dimInterface         Boolean  @default(false) // For sacred times
+  pauseAnimations      Boolean  @default(false)
+  showRespectBanner    Boolean  @default(false)
+  
+  // Cultural context
+  nation               String?  // Specific to a nation
+  description          String   @db.Text
+  significance         String   @db.Text
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([startDate])
+  @@index([type])
+}
+
+// ==========================================
+// THEME CONFIGURATIONS
+// ==========================================
+
+model ThemeConfiguration {
+  id                    String   @id @default(uuid())
+  
+  // Theme identity
+  name                 String   @unique // "Spring Growth", "Winter Rest"
+  type                 String   // seasonal, time, ceremony, nation
+  
+  // Component overrides
+  elementOverrides     Json     // Changes to elemental components
+  backgroundOverrides  Json     // Changes to background layers
+  
+  // Color scheme
+  colorPalette         Json     // Complete color adjustments
+  
+  // Animation adjustments
+  animationSpeed       Float    @default(1.0) // Speed multiplier
+  particleCount        Int?     // Override particle count
+  
+  // Special effects
+  additionalEffects    Json?    // Extra effects for this theme
+  removedEffects       String[] // Effects to disable
+  
+  // Activation rules
+  activationRules      Json     // When this theme should activate
+  priority             Int      @default(0) // Higher priority overrides
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ==========================================
+// PERFORMANCE PROFILES
+// ==========================================
+
+model PerformanceProfile {
+  id                    String   @id @default(uuid())
+  
+  // Profile identity
+  name                 String   @unique // full-forest, flowing-river, still-pond
+  description          String
+  
+  // Settings
+  videoEnabled         Boolean  @default(true)
+  particleCount        Int      @default(30)
+  blurEnabled          Boolean  @default(true)
+  animationsEnabled    Boolean  @default(true)
+  webglEnabled         Boolean  @default(true)
+  
+  // Quality settings
+  textureQuality       String   @default("high") // low, medium, high
+  shadowQuality        String   @default("medium")
+  reflectionQuality    String   @default("low")
+  
+  // Animation complexity
+  backgroundLayers     Int      @default(8) // How many layers active
+  maxAnimations        Int      @default(20) // Concurrent animations
+  
+  // Frame rate targets
+  targetFPS            Int      @default(60)
+  minAcceptableFPS     Int      @default(30)
+  
+  // Device hints
+  recommendedFor       String[] // mobile, tablet, desktop, high-end
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ==========================================
+// USER PREFERENCES
+// ==========================================
+
+model UserDesignPreference {
+  id                    String   @id @default(uuid())
+  userId               String   @unique
+  
+  // Performance
+  performanceMode      String   @default("auto") // auto, full-forest, flowing-river, still-pond
+  
+  // Accessibility
+  reducedMotion        Boolean  @default(false)
+  highContrast         Boolean  @default(false)
+  colorBlindMode       String?  // protanopia, deuteranopia, tritanopia
+  
+  // Preferences
+  preferredTheme       String   @default("auto") // auto, light, dark, seasonal
+  particlesEnabled     Boolean  @default(true)
+  soundEnabled         Boolean  @default(false)
+  
+  // Cultural
+  showCeremonyAwareness Boolean @default(true)
+  preferredLanguage    String   @default("en")
+  nation               String?  // User's nation for customization
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+// ==========================================
+// ANALYTICS
+// ==========================================
+
+model DesignSystemAnalytics {
+  id                    String   @id @default(uuid())
+  
+  // Session info
+  sessionId            String
+  userId               String?
+  
+  // Performance metrics
+  averageFPS           Float?
+  loadTime             Int?     // ms
+  timeToInteractive    Int?     // ms
+  
+  // Interaction metrics
+  elementInteractions  Json     // Which elements were interacted with
+  rippleCount          Int      @default(0)
+  
+  // Device info
+  deviceType           String   // mobile, tablet, desktop
+  browser              String
+  screenResolution     String
+  
+  // Mode used
+  performanceMode      String
+  themeName            String?
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([sessionId])
+  @@index([userId])
+  @@index([timestamp])
+}
