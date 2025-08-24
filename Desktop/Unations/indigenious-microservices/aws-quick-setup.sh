@@ -32,9 +32,9 @@ read -r AWS_ACCESS_KEY_ID
 echo -n "AWS Secret Access Key: "
 read -rs AWS_SECRET_ACCESS_KEY
 echo ""
-echo -n "Default Region [us-west-2]: "
+echo -n "Default Region [ca-central-1]: "
 read -r AWS_REGION
-AWS_REGION=${AWS_REGION:-us-west-2}
+AWS_REGION=${AWS_REGION:-ca-central-1}
 
 # Write credentials file
 cat > ~/.aws/credentials << EOF

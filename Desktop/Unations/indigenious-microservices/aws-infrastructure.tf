@@ -10,9 +10,40 @@ terraform {
   }
 }
 
-# Configure AWS Provider (GovCloud region)
+# Configure AWS Provider (Canadian region for Indigenous data sovereignty)
 provider "aws" {
-  region = "us-gov-west-1"  # AWS GovCloud (US-West)
+  region = var.aws_region
+  
+  default_tags {
+    tags = {
+      DataSovereignty = "Indigenous-Canada"
+      OCAP            = "Compliant"  # Ownership, Control, Access, Possession
+      Environment     = var.environment
+      Project         = "Indigenous-Digital-Forest"
+    }
+  }
+}
+
+# Variables for region selection
+variable "aws_region" {
+  description = "AWS region for deployment"
+  type        = string
+  default     = "ca-central-1"  # Montreal, Canada - Protected B certified
+  
+  validation {
+    condition = contains([
+      "ca-central-1",    # Canada (Montreal) - RECOMMENDED
+      "us-gov-west-1",   # US GovCloud (if required)
+      "us-west-2"        # US West (for testing only)
+    ], var.aws_region)
+    error_message = "Must use Canadian region for Indigenous data sovereignty."
+  }
+}
+
+variable "environment" {
+  description = "Deployment environment"
+  type        = string
+  default     = "production"
 }
 
 # VPC for network isolation
