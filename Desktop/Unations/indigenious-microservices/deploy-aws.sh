@@ -7,7 +7,17 @@ set -e
 
 echo "🌲 ===========================================" 
 echo "🌲 INDIGENOUS DIGITAL FOREST"
-echo "🌲 AWS GovCloud Deployment"
+echo "🌲 Complete Procurement Platform (49 Services)"
+echo "🌲 AWS Canada Deployment (ca-central-1)"
+echo "🌲 ==========================================="
+echo ""
+echo "📦 This deploys the ENTIRE platform:"
+echo "   - RFQ Marketplace"
+echo "   - Business Directory" 
+echo "   - Payment Processing"
+echo "   - Document Management"
+echo "   - AI Bid Assistance"
+echo "   - And 44 more services..."
 echo "🌲 ==========================================="
 echo ""
 
