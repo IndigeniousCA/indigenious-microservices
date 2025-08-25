@@ -1,4 +1,16 @@
-FROM node:20-alpine
+FROM node:20-slim
+
+# Install system dependencies for Canvas
+RUN apt-get update && apt-get install -y \
+    python3 \
+    make \
+    g++ \
+    libcairo2-dev \
+    libpango1.0-dev \
+    libjpeg-dev \
+    libgif-dev \
+    librsvg2-dev \
+    && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
 
@@ -7,7 +19,7 @@ COPY package*.json ./
 COPY prisma ./prisma/
 
 # Install dependencies
-RUN npm ci --only=production && \
+RUN npm ci && \
     npx prisma generate
 
 # Copy application code
