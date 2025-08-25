@@ -20,6 +20,8 @@ provider "aws" {
       OCAP            = "Compliant"  # Ownership, Control, Access, Possession
       Environment     = var.environment
       Project         = "Indigenous-Digital-Forest"
+      Platform        = "Complete-Procurement-System"
+      Services        = "49-Microservices"
     }
   }
 }

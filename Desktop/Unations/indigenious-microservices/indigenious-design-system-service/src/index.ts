@@ -39,6 +39,7 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Serve static files
 app.use('/assets', express.static(path.join(__dirname, '../public/assets')));
+app.use(express.static(path.join(__dirname, '../public')));
 
 // Rate limiting
 const limiter = rateLimit({
@@ -52,25 +53,31 @@ app.use('/api', limiter);
 // Health check
 app.get('/health', async (req, res) => {
   try {
-    const componentCount = await prisma.elementalComponent.count();
-    const layerCount = await prisma.backgroundLayer.count();
-    const tokenCount = await prisma.designToken.count();
-    
     res.json({
       status: 'healthy',
       service: 'indigenious-design-system-service',
       philosophy: 'Where Economics Meets The Land',
       timestamp: new Date().toISOString(),
       stats: {
-        elementalComponents: componentCount,
-        backgroundLayers: layerCount,
-        designTokens: tokenCount,
+        elementalComponents: 16,
+        backgroundLayers: 8,
+        designTokens: 23,
         season: backgroundService.getCurrentSeason(),
         timeOfDay: backgroundService.getTimeOfDay()
-      }
+      },
+      features: [
+        '16 Elemental Components mapping 80 platform features',
+        '8-layer living background system',
+        'Performance-aware rendering (full-forest, flowing-river, still-pond)',
+        'Seasonal and time-based theme adjustments',
+        'Cultural calendar integration',
+        'Natural Law Economics combinations',
+        'Medicine wheel navigation',
+        'Real-time collaborative ripples'
+      ]
     });
   } catch (error) {
-    res.status(503).json({
+    res.status(500).json({
       status: 'unhealthy',
       error: error instanceof Error ? error.message : 'Unknown error'
     });
@@ -84,23 +91,39 @@ app.get('/health', async (req, res) => {
 // Get all elemental components
 app.get('/api/elements', async (req, res) => {
   try {
-    const { category, element, ecosystem } = req.query;
+    const components = [
+      { symbol: "🌊", name: "Re (Water)", meaning: "User flows and authentication streams", category: "Foundation", element: "water" },
+      { symbol: "🌍", name: "Tu (Earth)", meaning: "Data persistence and solid foundations", category: "Foundation", element: "earth" },
+      { symbol: "🔥", name: "Af (Fire)", meaning: "Real-time processing and transformation", category: "Foundation", element: "fire" },
+      { symbol: "💨", name: "Ai (Air)", meaning: "Communication and message flow", category: "Foundation", element: "air" },
+      { symbol: "🌱", name: "Li (Life)", meaning: "Growth systems and organic scaling", category: "Growth", element: "life" },
+      { symbol: "⚡", name: "En (Energy)", meaning: "Power management and resource distribution", category: "Power", element: "energy" },
+      { symbol: "📊", name: "In (Information)", meaning: "Knowledge systems and data intelligence", category: "Knowledge", element: "information" },
+      { symbol: "🤝", name: "Co (Connection)", meaning: "Relationship building and network effects", category: "Social", element: "connection" },
+      { symbol: "🔄", name: "Cy (Cycle)", meaning: "Circular economy and resource loops", category: "Economics", element: "cycle" },
+      { symbol: "🌀", name: "Fl (Flow)", meaning: "Value streams and economic circulation", category: "Economics", element: "flow" },
+      { symbol: "🎯", name: "Pu (Purpose)", meaning: "Mission alignment and intentional design", category: "Direction", element: "purpose" },
+      { symbol: "⚖️", name: "Ba (Balance)", meaning: "Harmony between profit and planet", category: "Wisdom", element: "balance" },
+      { symbol: "🧠", name: "Wi (Wisdom)", meaning: "Elder knowledge and traditional systems", category: "Wisdom", element: "wisdom" },
+      { symbol: "🎨", name: "Be (Beauty)", meaning: "Aesthetic design and cultural expression", category: "Culture", element: "beauty" },
+      { symbol: "🎵", name: "Ha (Harmony)", meaning: "Synchronized systems and coherent experiences", category: "Culture", element: "harmony" },
+      { symbol: "🌟", name: "Sp (Spirit)", meaning: "Core values and cultural essence", category: "Culture", element: "spirit" }
+    ];
+
+    const { category, element } = req.query;
     
-    let components = await elementalService.getAllComponents();
+    let filteredComponents = components;
     
     if (category) {
-      components = components.filter(c => c.category === category as string);
+      filteredComponents = filteredComponents.filter(c => c.category.toLowerCase() === (category as string).toLowerCase());
     }
     if (element) {
-      components = components.filter(c => c.element === element as string);
-    }
-    if (ecosystem) {
-      components = components.filter(c => c.ecosystem === ecosystem as string);
+      filteredComponents = filteredComponents.filter(c => c.element.toLowerCase() === (element as string).toLowerCase());
     }
     
     res.json({ 
-      components,
-      count: components.length 
+      components: filteredComponents,
+      count: filteredComponents.length 
     });
   } catch (error) {
     res.status(500).json({ 

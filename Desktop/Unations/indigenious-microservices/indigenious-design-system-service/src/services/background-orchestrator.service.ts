@@ -156,7 +156,9 @@ export class BackgroundOrchestratorService extends EventEmitter {
           blendMode: config.blendMode,
           fullForestEnabled: true,
           flowingRiverEnabled: this.shouldEnableInFlowingRiver(config.name),
-          stillPondEnabled: this.shouldEnableInStillPond(config.name)
+          stillPondEnabled: this.shouldEnableInStillPond(config.name),
+          easing: 'ease-in-out',
+          infinite: true
         },
         create: {
           name: config.name,
@@ -169,7 +171,9 @@ export class BackgroundOrchestratorService extends EventEmitter {
           blendMode: config.blendMode,
           fullForestEnabled: true,
           flowingRiverEnabled: this.shouldEnableInFlowingRiver(config.name),
-          stillPondEnabled: this.shouldEnableInStillPond(config.name)
+          stillPondEnabled: this.shouldEnableInStillPond(config.name),
+          easing: 'ease-in-out',
+          infinite: true
         }
       });
     } catch (error) {
