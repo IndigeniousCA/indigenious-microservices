@@ -1,43 +1,33 @@
 # Dependencies
 node_modules/
 */node_modules/
-*/*/node_modules/
 
 # Build outputs
 dist/
 build/
 *.log
+.DS_Store
 
 # Environment files
 .env
 .env.local
 .env.*.local
+config/.env
 
-# IDE files
+# IDE
 .vscode/
 .idea/
 *.swp
 *.swo
-.DS_Store
 
-# Test coverage
-coverage/
-.nyc_output/
+# AWS
+.aws/
+*.pem
 
-# Temporary files
-tmp/
-temp/
-*.tmp
-
-# Package manager locks (keep only one)
-# Keep package-lock.json, ignore yarn.lock and pnpm-lock.yaml
-yarn.lock
-pnpm-lock.yaml
-
-# Docker
-*.pid
-*.seed
-*.pid.lock
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
 
 # Logs
 logs/
@@ -45,7 +35,12 @@ logs/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-lerna-debug.log*
 
 # OS files
+.DS_Store
 Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
