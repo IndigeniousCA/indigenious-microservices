@@ -1,0 +1,183 @@
+version: '3.8'
+
+services:
+  payment-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: indigenious-payment-service
+    restart: unless-stopped
+    ports:
+      - "3005:3005"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3005
+      DATABASE_URL: postgresql://payment_user:payment_pass@postgres:5432/payment_db
+      REDIS_URL: redis://redis:6379
+      
+      # Payment provider keys (use test keys in development)
+      STRIPE_SECRET_KEY: ${STRIPE_SECRET_KEY:-sk_test_51234567890}
+      STRIPE_PUBLISHABLE_KEY: ${STRIPE_PUBLISHABLE_KEY:-pk_test_51234567890}
+      STRIPE_WEBHOOK_SECRET: ${STRIPE_WEBHOOK_SECRET:-whsec_test123}
+      
+      INTERAC_MERCHANT_ID: ${INTERAC_MERCHANT_ID:-test_merchant}
+      INTERAC_API_KEY: ${INTERAC_API_KEY:-test_api_key}
+      INTERAC_SECRET_KEY: ${INTERAC_SECRET_KEY:-test_secret}
+      INTERAC_WEBHOOK_SECRET: ${INTERAC_WEBHOOK_SECRET:-test_webhook}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-development_jwt_secret_change_in_production}
+      ENCRYPTION_KEY: ${ENCRYPTION_KEY:-development_encryption_key_change_in_production}
+      
+      # Application URLs
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000,http://localhost:3001}
+      
+      # Monitoring
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      ENABLE_METRICS: ${ENABLE_METRICS:-true}
+      METRICS_PORT: 9090
+    depends_on:
+      - postgres
+      - redis
+      - stripe-cli
+    networks:
+      - payment-network
+    volumes:
+      - ./logs:/app/logs
+      - ./prisma:/app/prisma
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3005/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: payment-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: payment_user
+      POSTGRES_PASSWORD: payment_pass
+      POSTGRES_DB: payment_db
+      POSTGRES_HOST_AUTH_METHOD: scram-sha-256
+      POSTGRES_INITDB_ARGS: --auth-host=scram-sha-256
+    ports:
+      - "5433:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./scripts/init-db.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U payment_user -d payment_db"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:7-alpine
+    container_name: payment-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes --requirepass redis_password
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - payment-network
+    healthcheck:
+      test: ["CMD", "redis-cli", "--raw", "incr", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Stripe CLI for testing webhooks locally
+  stripe-cli:
+    image: stripe/stripe-cli:latest
+    container_name: payment-stripe-cli
+    command: listen --forward-to payment-service:3005/webhook/stripe --skip-verify
+    environment:
+      STRIPE_API_KEY: ${STRIPE_SECRET_KEY:-sk_test_51234567890}
+    networks:
+      - payment-network
+    depends_on:
+      - payment-service
+
+  # Mock Interac service for testing
+  mock-interac:
+    image: mockserver/mockserver:latest
+    container_name: payment-mock-interac
+    ports:
+      - "1080:1080"
+    environment:
+      MOCKSERVER_PROPERTY_FILE: /config/mockserver.properties
+      MOCKSERVER_INITIALIZATION_JSON_PATH: /config/interac-mocks.json
+    volumes:
+      - ./tests/mocks/interac-config:/config
+    networks:
+      - payment-network
+
+  # PGAdmin for database management (development only)
+  pgadmin:
+    image: dpage/pgadmin4:latest
+    container_name: payment-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@indigenous.ca
+      PGADMIN_DEFAULT_PASSWORD: admin_password
+      PGADMIN_CONFIG_SERVER_MODE: 'False'
+    ports:
+      - "5050:80"
+    networks:
+      - payment-network
+    profiles:
+      - development
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: payment-prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./monitoring/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus_data:/prometheus
+    networks:
+      - payment-network
+    profiles:
+      - monitoring
+
+  # Grafana for metrics visualization
+  grafana:
+    image: grafana/grafana:latest
+    container_name: payment-grafana
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin_password
+      GF_INSTALL_PLUGINS: redis-datasource
+    ports:
+      - "3006:3000"
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./monitoring/grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./monitoring/grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - payment-network
+    depends_on:
+      - prometheus
+    profiles:
+      - monitoring
+
+networks:
+  payment-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  prometheus_data:
+  grafana_data:

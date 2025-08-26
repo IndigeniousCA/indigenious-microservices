@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  vendor-service:
+    build: .
+    ports:
+      - "3030:3030"
+    environment:
+      - NODE_ENV=production
+      - PORT=3030
+      - DATABASE_URL=postgresql://vendor_user:vendor_pass@vendor-db:5432/indigenous_vendor_db
+      - REDIS_URL=redis://vendor-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      - vendor-db
+      - vendor-redis
+    networks:
+      - vendor-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3030/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  vendor-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_vendor_db
+      - POSTGRES_USER=vendor_user
+      - POSTGRES_PASSWORD=vendor_pass
+    volumes:
+      - vendor-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5436:5432"
+    networks:
+      - vendor-network
+    restart: unless-stopped
+
+  vendor-redis:
+    image: redis:7-alpine
+    ports:
+      - "6385:6379"
+    volumes:
+      - vendor-redis-data:/data
+    networks:
+      - vendor-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  vendor-db-data:
+    driver: local
+  vendor-redis-data:
+    driver: local
+
+networks:
+  vendor-network:
+    driver: bridge
+  microservices-network:
+    external: true

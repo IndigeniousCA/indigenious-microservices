@@ -1,0 +1,1432 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Supplier {
+  id                    String                  @id @default(uuid())
+  supplierId            String                  @unique
+  supplierNumber        String                  @unique
+  
+  // Basic information
+  companyName           String
+  legalName             String
+  businessNumber        String?
+  tradeName             String?
+  
+  // Contact information
+  primaryContact        Json                    // Contact person details
+  email                 String
+  phone                 String
+  alternatePhone        String?
+  website               String?
+  
+  // Address information
+  headOfficeAddress     Json
+  warehouseAddresses    Json[]                  // Multiple warehouse locations
+  billingAddress        Json?
+  shippingAddress       Json?
+  
+  // Business details
+  businessType          BusinessType
+  industryCategory      String[]
+  supplierCategory      SupplierCategory
+  supplierTier          SupplierTier
+  
+  // Indigenous supplier details
+  isIndigenousSupplier  Boolean                 @default(false)
+  indigenousClassification IndigenousClassification?
+  bandNumber            String?
+  treatyNumber          String?
+  traditionTerritory    String?
+  statusCardValidated   Boolean                 @default(false)
+  
+  // Ownership and certification
+  indigenousOwnership   Decimal?                @db.Decimal(5, 2) // Percentage
+  womenOwnership        Decimal?                @db.Decimal(5, 2)
+  minorityOwnership     Decimal?                @db.Decimal(5, 2)
+  veteranOwnership      Decimal?                @db.Decimal(5, 2)
+  
+  // Diversity certifications
+  diversityCertifications DiversityCertification[]
+  
+  // Financial information
+  annualRevenue         Decimal?                @db.Decimal(19, 4)
+  employeeCount         Int?
+  creditRating          CreditRating?
+  paymentTerms          PaymentTerms            @default(NET_30)
+  currency              String                  @default("CAD")
+  
+  // Product and service categories
+  productCategories     ProductCategory[]
+  serviceOfferings      ServiceOffering[]
+  
+  // Capabilities and capacity
+  capabilities          SupplierCapability[]
+  capacity              Json?                   // Production/service capacity
+  leadTimes             Json?                   // Lead times by product/service
+  moq                   Json?                   // Minimum order quantities
+  
+  // Geographic reach
+  serviceRegions        String[]
+  distributionCenters   Json[]
+  globalPresence        Boolean                 @default(false)
+  
+  // Quality and compliance
+  qualityRating         Decimal?                @db.Decimal(5, 2)
+  certifications        Certification[]
+  complianceStatus      ComplianceStatus        @default(PENDING)
+  auditDate             DateTime?
+  nextAuditDate         DateTime?
+  
+  // Performance metrics
+  performanceMetrics    SupplierPerformance[]
+  
+  // Sustainability
+  sustainabilityRating  Decimal?                @db.Decimal(5, 2)
+  environmentalCertifications String[]
+  carbonFootprint       Json?
+  sustainabilityPractices Json?
+  
+  // Indigenous specific features
+  traditionalProducts   Boolean                 @default(false)
+  culturalProducts      Boolean                 @default(false)
+  communitySupplier     Boolean                 @default(false)
+  elderSupervision      Boolean                 @default(false)
+  traditionalKnowledge  Boolean                 @default(false)
+  
+  // Risk assessment
+  riskLevel             RiskLevel               @default(LOW)
+  riskFactors           Json?
+  riskMitigation        Json?
+  
+  // Relationships
+  parentCompany         String?
+  subsidiaries          String[]
+  partnerships          SupplierPartnership[]
+  subSuppliers          SupplierRelationship[]  @relation("PrimarySupplier")
+  primarySuppliers      SupplierRelationship[]  @relation("SubSupplier")
+  
+  // Contracts and agreements
+  contracts             SupplierContract[]
+  masterAgreements      MasterAgreement[]
+  
+  // Orders and fulfillment
+  purchaseOrders        PurchaseOrder[]
+  fulfillmentHistory    FulfillmentRecord[]
+  
+  // Documents
+  documents             SupplierDocument[]
+  
+  // Communication preferences
+  communicationPrefs    Json?
+  languagePreference    String                  @default("English")
+  
+  // Status and approval
+  status                SupplierStatus          @default(PENDING)
+  approvalStatus        ApprovalStatus          @default(PENDING)
+  onboardingStatus      OnboardingStatus        @default(NOT_STARTED)
+  
+  // Important dates
+  registeredDate        DateTime?
+  approvedDate          DateTime?
+  lastOrderDate         DateTime?
+  lastPaymentDate       DateTime?
+  contractRenewalDate   DateTime?
+  
+  // Metadata
+  tags                  String[]
+  notes                 String?
+  metadata              Json?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([supplierNumber])
+  @@index([companyName])
+  @@index([supplierCategory])
+  @@index([isIndigenousSupplier])
+  @@index([status])
+  @@index([approvalStatus])
+  @@index([qualityRating])
+  @@index([riskLevel])
+}
+
+model ProductCategory {
+  id                    String                  @id @default(uuid())
+  categoryId            String                  @unique
+  supplierId            String
+  
+  // Category details
+  name                  String
+  description           String?
+  commodityCode         String?
+  
+  // Product specifications
+  specifications        Json
+  variants              Json?
+  
+  // Pricing
+  priceRange            Json?                   // Min/max pricing
+  volumeDiscounts       Json?
+  
+  // Indigenous products
+  isIndigenousProduct   Boolean                 @default(false)
+  traditionalMethods    Boolean                 @default(false)
+  culturalSignificance  String?
+  originCommunity       String?
+  
+  // Availability
+  availability          AvailabilityStatus
+  seasonality           Json?
+  leadTime              Int?                    // Days
+  
+  // Quality standards
+  qualityStandards      String[]
+  certifications        String[]
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@index([supplierId])
+  @@index([name])
+  @@index([commodityCode])
+}
+
+model ServiceOffering {
+  id                    String                  @id @default(uuid())
+  serviceId             String                  @unique
+  supplierId            String
+  
+  // Service details
+  name                  String
+  description           String
+  serviceType           ServiceType
+  
+  // Service specifications
+  specifications        Json
+  deliverables          Json
+  
+  // Pricing model
+  pricingModel          PricingModel
+  priceStructure        Json
+  
+  // Indigenous services
+  isIndigenousService   Boolean                 @default(false)
+  incorporatesTraditionalKnowledge Boolean     @default(false)
+  culturalConsultation  Boolean                 @default(false)
+  elderInvolvement      Boolean                 @default(false)
+  
+  // Capacity and availability
+  capacity              Json
+  availability          Json
+  responseTime          Int?                    // Hours
+  
+  // Geographic scope
+  serviceAreas          String[]
+  remoteCapable         Boolean                 @default(false)
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@index([supplierId])
+  @@index([name])
+  @@index([serviceType])
+}
+
+model SupplierCapability {
+  id                    String                  @id @default(uuid())
+  supplierId            String
+  
+  // Capability details
+  category              CapabilityCategory
+  subcategory           String
+  description           String
+  
+  // Competency
+  proficiencyLevel      ProficiencyLevel
+  experienceYears       Int?
+  capacity              Json?
+  
+  // Indigenous capabilities
+  indigenousCapability  Boolean                 @default(false)
+  traditionalMethods    Boolean                 @default(false)
+  communityBased        Boolean                 @default(false)
+  
+  // Certification
+  certified             Boolean                 @default(false)
+  certificationDetails  Json?
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@index([supplierId])
+  @@index([category])
+}
+
+model DiversityCertification {
+  id                    String                  @id @default(uuid())
+  certificationId       String                  @unique
+  supplierId            String
+  
+  // Certification details
+  type                  DiversityType
+  issuingOrganization   String
+  certificationNumber   String
+  
+  // Validity
+  issueDate             DateTime
+  expiryDate            DateTime?
+  isActive              Boolean                 @default(true)
+  
+  // Verification
+  verificationStatus    VerificationStatus
+  verifiedBy            String?
+  verificationDate      DateTime?
+  
+  // Indigenous specific certifications
+  indigenousCertification Boolean               @default(false)
+  recognizedByGovernment Boolean                @default(false)
+  
+  // Document
+  documentUrl           String?
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@index([supplierId])
+  @@index([type])
+  @@index([expiryDate])
+}
+
+model Certification {
+  id                    String                  @id @default(uuid())
+  certificationId       String                  @unique
+  supplierId            String
+  
+  // Certification details
+  name                  String
+  type                  CertificationType
+  issuingBody           String
+  
+  // Validity
+  issueDate             DateTime
+  expiryDate            DateTime?
+  isActive              Boolean                 @default(true)
+  
+  // Scope
+  scope                 String?
+  applicableProducts    String[]
+  applicableServices    String[]
+  
+  // Verification
+  verificationNumber    String?
+  verificationUrl       String?
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@index([supplierId])
+  @@index([type])
+  @@index([expiryDate])
+}
+
+model SupplierPerformance {
+  id                    String                  @id @default(uuid())
+  performanceId         String                  @unique
+  supplierId            String
+  
+  // Performance period
+  periodStart           DateTime
+  periodEnd             DateTime
+  
+  // Overall scores
+  overallScore          Decimal                 @db.Decimal(5, 2)
+  qualityScore          Decimal                 @db.Decimal(5, 2)
+  deliveryScore         Decimal                 @db.Decimal(5, 2)
+  serviceScore          Decimal                 @db.Decimal(5, 2)
+  innovationScore       Decimal?                @db.Decimal(5, 2)
+  
+  // Indigenous performance metrics
+  indigenousEmployment  Decimal?                @db.Decimal(5, 2)
+  localSourcing         Decimal?                @db.Decimal(5, 2)
+  communityBenefit      Decimal?                @db.Decimal(5, 2)
+  culturalSensitivity   Decimal?                @db.Decimal(5, 2)
+  traditionalKnowledgeUse Decimal?              @db.Decimal(5, 2)
+  
+  // KPIs
+  onTimeDeliveryRate    Decimal                 @db.Decimal(5, 2)
+  qualityAcceptanceRate Decimal                 @db.Decimal(5, 2)
+  costPerformance       Decimal?                @db.Decimal(5, 2)
+  responsiveness        Decimal?                @db.Decimal(5, 2)
+  
+  // Volume metrics
+  totalOrders           Int                     @default(0)
+  ordersFulfilled       Int                     @default(0)
+  totalSpend            Decimal                 @db.Decimal(19, 4) @default(0)
+  
+  // Issues and improvements
+  issuesReported        Int                     @default(0)
+  correctiveActions     Json?
+  improvements          Json?
+  
+  // Evaluation details
+  evaluatedBy           String
+  evaluationMethod      EvaluationMethod
+  evaluationDate        DateTime                @default(now())
+  
+  // Recommendations
+  recommendations       Json?
+  riskAssessment        Json?
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@unique([supplierId, periodStart, periodEnd])
+  @@index([supplierId])
+  @@index([overallScore])
+  @@index([evaluationDate])
+}
+
+model SupplierPartnership {
+  id                    String                  @id @default(uuid())
+  partnershipId         String                  @unique
+  
+  // Partnership details
+  primarySupplierId     String
+  partnerSupplierId     String
+  
+  // Partnership type and terms
+  type                  PartnershipType
+  description           String
+  objectives            Json
+  
+  // Agreement terms
+  revenueSharing        Json?
+  responsibilities      Json
+  exclusivity           Boolean                 @default(false)
+  
+  // Indigenous partnership benefits
+  isIndigenousPartnership Boolean               @default(false)
+  indigenousBenefits    Json?
+  capacityBuilding      Json?
+  knowledgeSharing      Json?
+  
+  // Duration and status
+  startDate             DateTime
+  endDate               DateTime?
+  status                PartnershipStatus
+  
+  // Performance
+  performanceMetrics    Json?
+  benefits              Json?
+  
+  primarySupplier       Supplier                @relation(fields: [primarySupplierId], references: [id])
+  
+  @@index([primarySupplierId])
+  @@index([type])
+  @@index([status])
+}
+
+model SupplierRelationship {
+  id                    String                  @id @default(uuid())
+  relationshipId        String                  @unique
+  
+  // Relationship parties
+  primarySupplierId     String
+  subSupplierId         String
+  
+  // Relationship details
+  type                  RelationshipType
+  description           String?
+  category              String[]
+  
+  // Terms
+  terms                 Json?
+  paymentTerms          PaymentTerms?
+  
+  // Performance requirements
+  performanceStandards  Json?
+  complianceRequirements Json?
+  
+  // Duration
+  effectiveDate         DateTime
+  expiryDate            DateTime?
+  
+  // Status
+  status                RelationshipStatus
+  
+  primarySupplier       Supplier                @relation("PrimarySupplier", fields: [primarySupplierId], references: [id])
+  subSupplier           Supplier                @relation("SubSupplier", fields: [subSupplierId], references: [id])
+  
+  @@unique([primarySupplierId, subSupplierId])
+  @@index([primarySupplierId])
+  @@index([type])
+}
+
+model SupplierContract {
+  id                    String                  @id @default(uuid())
+  contractId            String                  @unique
+  supplierId            String
+  
+  // Contract details
+  contractNumber        String                  @unique
+  title                 String
+  type                  ContractType
+  
+  // Terms
+  value                 Decimal                 @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  startDate             DateTime
+  endDate               DateTime?
+  paymentTerms          PaymentTerms
+  
+  // Indigenous contract provisions
+  isIndigenousContract  Boolean                 @default(false)
+  mandateContribution   Decimal?                @db.Decimal(19, 4)
+  indigenousContent     Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Performance metrics
+  deliverables          Json
+  milestones            Json?
+  sla                   Json?                   // Service level agreements
+  
+  // Status
+  status                ContractStatus
+  
+  // Key dates
+  signedDate            DateTime?
+  effectiveDate         DateTime?
+  lastAmendedDate       DateTime?
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  purchaseOrders        PurchaseOrder[]
+  
+  @@index([supplierId])
+  @@index([contractNumber])
+  @@index([status])
+  @@index([startDate])
+}
+
+model MasterAgreement {
+  id                    String                  @id @default(uuid())
+  agreementId           String                  @unique
+  supplierId            String
+  
+  // Agreement details
+  agreementNumber       String                  @unique
+  title                 String
+  type                  AgreementType
+  
+  // Terms
+  framework             Json                    // Framework terms
+  pricingStructure      Json
+  paymentTerms          PaymentTerms
+  
+  // Scope
+  productCategories     String[]
+  serviceCategories     String[]
+  geographicScope       String[]
+  
+  // Volume commitments
+  minimumSpend          Decimal?                @db.Decimal(19, 4)
+  maximumSpend          Decimal?                @db.Decimal(19, 4)
+  volumeDiscounts       Json?
+  
+  // Duration
+  effectiveDate         DateTime
+  expiryDate            DateTime
+  autoRenewal           Boolean                 @default(false)
+  renewalTerms          Json?
+  
+  // Performance requirements
+  kpis                  Json
+  penalties             Json?
+  incentives            Json?
+  
+  // Indigenous provisions
+  indigenousParticipation Json?
+  communityBenefits     Json?
+  
+  // Status
+  status                AgreementStatus
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@index([supplierId])
+  @@index([agreementNumber])
+  @@index([status])
+}
+
+model PurchaseOrder {
+  id                    String                  @id @default(uuid())
+  poNumber              String                  @unique
+  supplierId            String
+  contractId            String?
+  
+  // Order details
+  orderType             OrderType
+  priority              OrderPriority
+  description           String?
+  
+  // Financial
+  subtotal              Decimal                 @db.Decimal(19, 4)
+  taxAmount             Decimal                 @db.Decimal(19, 4) @default(0)
+  totalAmount           Decimal                 @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  
+  // Line items
+  lineItems             OrderLineItem[]
+  
+  // Delivery
+  requestedDeliveryDate DateTime
+  confirmedDeliveryDate DateTime?
+  actualDeliveryDate    DateTime?
+  deliveryLocation      Json
+  shippingMethod        String?
+  
+  // Terms
+  paymentTerms          PaymentTerms
+  paymentDueDate        DateTime?
+  
+  // Indigenous procurement tracking
+  isIndigenousProcurement Boolean               @default(false)
+  mandateContribution   Decimal?                @db.Decimal(19, 4)
+  
+  // Status tracking
+  status                OrderStatus
+  
+  // Approval workflow
+  approvalStatus        ApprovalStatus
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Communications
+  communications        OrderCommunication[]
+  
+  // Key dates
+  orderDate             DateTime                @default(now())
+  acknowledgedDate      DateTime?
+  shippedDate           DateTime?
+  receivedDate          DateTime?
+  invoicedDate          DateTime?
+  paidDate              DateTime?
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  contract              SupplierContract?       @relation(fields: [contractId], references: [id])
+  fulfillmentRecords    FulfillmentRecord[]
+  
+  orderedBy             String
+  
+  @@index([poNumber])
+  @@index([supplierId])
+  @@index([status])
+  @@index([orderDate])
+  @@index([requestedDeliveryDate])
+}
+
+model OrderLineItem {
+  id                    String                  @id @default(uuid())
+  poId                  String
+  
+  // Item details
+  lineNumber            Int
+  productCode           String?
+  description           String
+  
+  // Quantity and pricing
+  quantity              Decimal                 @db.Decimal(10, 3)
+  unitOfMeasure         String
+  unitPrice             Decimal                 @db.Decimal(19, 4)
+  totalPrice            Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous content
+  isIndigenousProduct   Boolean                 @default(false)
+  indigenousContent     Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Specifications
+  specifications        Json?
+  qualityRequirements   Json?
+  
+  // Delivery
+  requestedDelivery     DateTime?
+  promisedDelivery      DateTime?
+  actualDelivery        DateTime?
+  
+  // Status
+  status                LineItemStatus
+  quantityReceived      Decimal                 @db.Decimal(10, 3) @default(0)
+  quantityAccepted      Decimal                 @db.Decimal(10, 3) @default(0)
+  quantityRejected      Decimal                 @db.Decimal(10, 3) @default(0)
+  
+  purchaseOrder         PurchaseOrder           @relation(fields: [poId], references: [id])
+  
+  @@index([poId])
+  @@index([lineNumber])
+}
+
+model FulfillmentRecord {
+  id                    String                  @id @default(uuid())
+  fulfillmentId         String                  @unique
+  supplierId            String
+  poId                  String
+  
+  // Fulfillment details
+  shipmentNumber        String?
+  trackingNumber        String?
+  carrier               String?
+  
+  // Delivery
+  shippedDate           DateTime?
+  deliveredDate         DateTime?
+  deliveryMethod        String
+  
+  // Quantities
+  quantityShipped       Decimal                 @db.Decimal(10, 3)
+  quantityDelivered     Decimal                 @db.Decimal(10, 3)
+  quantityDamaged       Decimal?                @db.Decimal(10, 3)
+  
+  // Quality control
+  qualityCheck          Boolean                 @default(false)
+  qualityScore          Decimal?                @db.Decimal(5, 2)
+  qualityNotes          String?
+  
+  // Performance metrics
+  onTimeDelivery        Boolean
+  deliveryPerformance   Decimal?                @db.Decimal(5, 2)
+  
+  // Issues
+  issues                Json?
+  resolutionActions     Json?
+  
+  // Status
+  status                FulfillmentStatus
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  purchaseOrder         PurchaseOrder           @relation(fields: [poId], references: [id])
+  
+  receivedBy            String?
+  createdAt             DateTime                @default(now())
+  
+  @@index([supplierId])
+  @@index([poId])
+  @@index([shippedDate])
+}
+
+model OrderCommunication {
+  id                    String                  @id @default(uuid())
+  communicationId       String                  @unique
+  poId                  String
+  
+  // Communication details
+  type                  CommunicationType
+  direction             CommunicationDirection
+  subject               String
+  message               String                  @db.Text
+  
+  // Participants
+  fromEmail             String
+  toEmail               String
+  ccEmails              String[]
+  
+  // Status
+  status                CommunicationStatus
+  
+  // Attachments
+  attachments           Json?
+  
+  // Timestamps
+  sentAt                DateTime?
+  receivedAt            DateTime?
+  readAt                DateTime?
+  
+  purchaseOrder         PurchaseOrder           @relation(fields: [poId], references: [id])
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([poId])
+  @@index([type])
+  @@index([sentAt])
+}
+
+model SupplierDocument {
+  id                    String                  @id @default(uuid())
+  documentId            String                  @unique
+  supplierId            String
+  
+  // Document details
+  name                  String
+  type                  DocumentType
+  category              String
+  
+  // File information
+  fileUrl               String
+  fileSize              Int
+  mimeType              String
+  
+  // Version control
+  version               String                  @default("1.0")
+  isLatest              Boolean                 @default(true)
+  
+  // Validity
+  issueDate             DateTime?
+  expiryDate            DateTime?
+  isValid               Boolean                 @default(true)
+  
+  // Indigenous documents
+  isIndigenousDocument  Boolean                 @default(false)
+  culturalSensitive     Boolean                 @default(false)
+  requiresElderApproval Boolean                 @default(false)
+  
+  // Security
+  confidentialityLevel  ConfidentialityLevel
+  accessRestrictions    Json?
+  
+  // Verification
+  verified              Boolean                 @default(false)
+  verifiedBy            String?
+  verificationDate      DateTime?
+  
+  uploadedBy            String
+  uploadedAt            DateTime                @default(now())
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id])
+  
+  @@index([supplierId])
+  @@index([type])
+  @@index([expiryDate])
+}
+
+model SupplierInvitation {
+  id                    String                  @id @default(uuid())
+  invitationId          String                  @unique
+  
+  // Invitation details
+  companyName           String
+  contactEmail          String
+  contactName           String?
+  phone                 String?
+  
+  // Invitation context
+  invitationType        InvitationType
+  opportunityId         String?
+  category              String?
+  
+  // Indigenous focus
+  indigenousSpecific    Boolean                 @default(false)
+  targetClassification  IndigenousClassification?
+  mandateOpportunity    Boolean                 @default(false)
+  
+  // Message
+  customMessage         String?
+  requirements          Json?
+  
+  // Tracking
+  status                InvitationStatus
+  sentAt                DateTime                @default(now())
+  openedAt              DateTime?
+  respondedAt           DateTime?
+  
+  // Response
+  response              InvitationResponse?
+  responseNotes         String?
+  
+  // Follow-up
+  remindersSent         Int                     @default(0)
+  lastReminderAt        DateTime?
+  
+  sentBy                String
+  
+  @@index([contactEmail])
+  @@index([status])
+  @@index([invitationType])
+}
+
+model SupplierAssessment {
+  id                    String                  @id @default(uuid())
+  assessmentId          String                  @unique
+  supplierId            String
+  
+  // Assessment details
+  type                  AssessmentType
+  category              String
+  description           String
+  
+  // Scoring framework
+  scoringCriteria       Json
+  weightings            Json
+  
+  // Scores
+  totalScore            Decimal                 @db.Decimal(5, 2)
+  maxScore              Decimal                 @db.Decimal(5, 2)
+  percentage            Decimal                 @db.Decimal(5, 2)
+  
+  // Category scores
+  technicalScore        Decimal?                @db.Decimal(5, 2)
+  qualityScore          Decimal?                @db.Decimal(5, 2)
+  financialScore        Decimal?                @db.Decimal(5, 2)
+  deliveryScore         Decimal?                @db.Decimal(5, 2)
+  sustainabilityScore   Decimal?                @db.Decimal(5, 2)
+  
+  // Indigenous assessment
+  indigenousScore       Decimal?                @db.Decimal(5, 2)
+  culturalCompetency    Decimal?                @db.Decimal(5, 2)
+  communityEngagement   Decimal?                @db.Decimal(5, 2)
+  traditionalKnowledge  Decimal?                @db.Decimal(5, 2)
+  
+  // Results
+  recommendation        AssessmentResult
+  grade                 AssessmentGrade
+  tier                  SupplierTier
+  
+  // Findings
+  strengths             Json?
+  weaknesses            Json?
+  improvementPlan       Json?
+  
+  // Validity
+  assessmentDate        DateTime
+  validUntil            DateTime?
+  
+  // Assessor
+  assessorId            String
+  assessorName          String
+  assessmentMethod      AssessmentMethod
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id], name: "SupplierAssessments")
+  
+  @@index([supplierId])
+  @@index([type])
+  @@index([assessmentDate])
+}
+
+model SupplyChainMap {
+  id                    String                  @id @default(uuid())
+  mapId                 String                  @unique
+  supplierId            String
+  
+  // Supply chain details
+  tier                  Int                     // 1 = direct, 2 = tier 2, etc.
+  category              String
+  
+  // Sub-supplier information
+  subSupplierId         String?
+  subSupplierName       String
+  subSupplierLocation   Json
+  
+  // Product/service mapping
+  products              String[]
+  services              String[]
+  
+  // Indigenous content tracking
+  indigenousContent     Boolean                 @default(false)
+  indigenousPercentage  Decimal?                @db.Decimal(5, 2)
+  communitySource       String?
+  traditionalMethods    Boolean                 @default(false)
+  
+  // Risk assessment
+  riskLevel             RiskLevel
+  riskFactors           Json?
+  
+  // Verification
+  verified              Boolean                 @default(false)
+  verificationDate      DateTime?
+  verificationMethod    String?
+  
+  // Mapping details
+  mappedBy              String
+  mappedAt              DateTime                @default(now())
+  
+  supplier              Supplier                @relation(fields: [supplierId], references: [id], name: "SupplyChainMaps")
+  
+  @@index([supplierId])
+  @@index([tier])
+  @@index([subSupplierId])
+}
+
+model IndigenousSupplierNetwork {
+  id                    String                  @id @default(uuid())
+  networkId             String                  @unique
+  
+  // Network details
+  name                  String
+  description           String
+  networkType           NetworkType
+  
+  // Leadership
+  coordinatorId         String
+  coordinatorName       String
+  elderAdvisor          String?
+  
+  // Geographic scope
+  region                String
+  territories           String[]
+  communities           String[]
+  
+  // Membership
+  members               Json[]                  // Supplier IDs and details
+  memberCount           Int                     @default(0)
+  
+  // Objectives
+  objectives            Json
+  focusAreas            String[]
+  
+  // Programs
+  capacityBuilding      Json?
+  mentorship            Json?
+  businessDevelopment   Json?
+  marketAccess          Json?
+  
+  // Performance
+  totalContracts        Decimal                 @db.Decimal(19, 4) @default(0)
+  mandateContribution   Decimal                 @db.Decimal(19, 4) @default(0)
+  
+  // Events and activities
+  events                Json?
+  training              Json?
+  certificationPrograms Json?
+  
+  // Status
+  status                NetworkStatus
+  
+  // Key dates
+  establishedDate       DateTime
+  lastActivityDate      DateTime?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([networkType])
+  @@index([region])
+  @@index([status])
+}
+
+// Enums
+enum BusinessType {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  CORPORATION
+  COOPERATIVE
+  NON_PROFIT
+  GOVERNMENT_ENTITY
+  INDIGENOUS_CORPORATION
+}
+
+enum SupplierCategory {
+  MANUFACTURER
+  DISTRIBUTOR
+  WHOLESALER
+  RETAILER
+  SERVICE_PROVIDER
+  CONTRACTOR
+  CONSULTANT
+  RAW_MATERIALS
+  INDIGENOUS_ARTISAN
+}
+
+enum SupplierTier {
+  TIER_1
+  TIER_2
+  TIER_3
+  STRATEGIC
+  PREFERRED
+  APPROVED
+  PROBATIONARY
+}
+
+enum IndigenousClassification {
+  FIRST_NATIONS
+  METIS
+  INUIT
+  NATIVE_AMERICAN
+  ABORIGINAL
+  STATUS_INDIAN
+  NON_STATUS_INDIAN
+}
+
+enum DiversityType {
+  INDIGENOUS_OWNED
+  WOMEN_OWNED
+  MINORITY_OWNED
+  VETERAN_OWNED
+  DISABILITY_OWNED
+  LGBTQ_OWNED
+  SMALL_BUSINESS
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  EXPIRED
+  SUSPENDED
+}
+
+enum CertificationType {
+  QUALITY_MANAGEMENT
+  ENVIRONMENTAL
+  SAFETY
+  SECURITY
+  INDUSTRY_SPECIFIC
+  DIVERSITY
+  INDIGENOUS_BUSINESS
+}
+
+enum PaymentTerms {
+  COD
+  NET_15
+  NET_30
+  NET_60
+  NET_90
+  ADVANCE_PAYMENT
+  PROGRESS_BASED
+}
+
+enum CreditRating {
+  AAA
+  AA
+  A
+  BBB
+  BB
+  B
+  CCC
+  CC
+  C
+  D
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  PARTIALLY_COMPLIANT
+  UNDER_REVIEW
+  PENDING
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SupplierStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BLACKLISTED
+  UNDER_REVIEW
+  TERMINATED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONDITIONAL
+  SUSPENDED
+}
+
+enum OnboardingStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  DOCUMENTATION_PENDING
+  ASSESSMENT_PENDING
+  APPROVAL_PENDING
+  COMPLETED
+  REJECTED
+}
+
+enum AvailabilityStatus {
+  AVAILABLE
+  LIMITED
+  OUT_OF_STOCK
+  DISCONTINUED
+  SEASONAL
+}
+
+enum ServiceType {
+  CONSULTING
+  MAINTENANCE
+  SUPPORT
+  PROFESSIONAL
+  TECHNICAL
+  CULTURAL
+  TRADITIONAL
+}
+
+enum PricingModel {
+  FIXED_PRICE
+  HOURLY_RATE
+  UNIT_BASED
+  PROJECT_BASED
+  SUBSCRIPTION
+  PERFORMANCE_BASED
+}
+
+enum CapabilityCategory {
+  MANUFACTURING
+  DISTRIBUTION
+  LOGISTICS
+  CONSULTING
+  TECHNICAL_SERVICES
+  MAINTENANCE
+  CULTURAL_SERVICES
+  TRADITIONAL_CRAFTS
+}
+
+enum ProficiencyLevel {
+  BASIC
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+  MASTER_CRAFTSMAN
+}
+
+enum EvaluationMethod {
+  SCORECARD
+  AUDIT
+  SURVEY
+  INTERVIEW
+  SITE_VISIT
+  DOCUMENT_REVIEW
+}
+
+enum PartnershipType {
+  JOINT_VENTURE
+  STRATEGIC_ALLIANCE
+  SUBCONTRACTING
+  DISTRIBUTION
+  TECHNOLOGY_TRANSFER
+  MENTORSHIP
+  CAPACITY_BUILDING
+}
+
+enum PartnershipStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  TERMINATED
+  UNDER_NEGOTIATION
+}
+
+enum RelationshipType {
+  PRIME_CONTRACTOR
+  SUBCONTRACTOR
+  DISTRIBUTOR
+  AGENT
+  AFFILIATE
+  JOINT_VENTURE_PARTNER
+}
+
+enum RelationshipStatus {
+  ACTIVE
+  INACTIVE
+  PENDING_APPROVAL
+  TERMINATED
+  SUSPENDED
+}
+
+enum ContractType {
+  SUPPLY_AGREEMENT
+  SERVICE_AGREEMENT
+  MASTER_AGREEMENT
+  FRAMEWORK_AGREEMENT
+  PURCHASE_ORDER
+}
+
+enum ContractStatus {
+  DRAFT
+  PENDING_APPROVAL
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  SUSPENDED
+}
+
+enum AgreementType {
+  MASTER_SERVICE
+  FRAMEWORK
+  BLANKET_ORDER
+  STANDING_OFFER
+  SUPPLY_ARRANGEMENT
+}
+
+enum AgreementStatus {
+  DRAFT
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  UNDER_REVIEW
+}
+
+enum OrderType {
+  STANDARD
+  RUSH
+  BLANKET
+  STANDING
+  SPOT
+  EMERGENCY
+}
+
+enum OrderPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum OrderStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  SENT_TO_SUPPLIER
+  ACKNOWLEDGED
+  IN_PRODUCTION
+  SHIPPED
+  DELIVERED
+  COMPLETED
+  CANCELLED
+}
+
+enum LineItemStatus {
+  PENDING
+  CONFIRMED
+  IN_PRODUCTION
+  SHIPPED
+  DELIVERED
+  RECEIVED
+  ACCEPTED
+  REJECTED
+  CANCELLED
+}
+
+enum FulfillmentStatus {
+  PENDING
+  PROCESSING
+  SHIPPED
+  IN_TRANSIT
+  DELIVERED
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum CommunicationType {
+  ORDER_CONFIRMATION
+  DELIVERY_UPDATE
+  QUALITY_ISSUE
+  PAYMENT_INQUIRY
+  GENERAL_INQUIRY
+  CHANGE_REQUEST
+}
+
+enum CommunicationDirection {
+  INBOUND
+  OUTBOUND
+}
+
+enum CommunicationStatus {
+  DRAFT
+  SENT
+  DELIVERED
+  READ
+  REPLIED
+  CLOSED
+}
+
+enum DocumentType {
+  BUSINESS_LICENSE
+  INSURANCE_CERTIFICATE
+  FINANCIAL_STATEMENT
+  QUALITY_CERTIFICATE
+  SAFETY_CERTIFICATE
+  CAPABILITY_STATEMENT
+  REFERENCE_LETTER
+  CONTRACT
+  INVOICE
+  RECEIPT
+}
+
+enum ConfidentialityLevel {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+  SACRED
+}
+
+enum InvitationType {
+  RFP_INVITATION
+  RFQ_INVITATION
+  SUPPLIER_REGISTRATION
+  NETWORK_INVITATION
+  EVENT_INVITATION
+}
+
+enum InvitationStatus {
+  DRAFT
+  SENT
+  DELIVERED
+  OPENED
+  RESPONDED
+  ACCEPTED
+  DECLINED
+  EXPIRED
+  CANCELLED
+}
+
+enum InvitationResponse {
+  ACCEPTED
+  DECLINED
+  INTERESTED
+  MORE_INFO_NEEDED
+}
+
+enum AssessmentType {
+  INITIAL_ASSESSMENT
+  ANNUAL_REVIEW
+  PROJECT_SPECIFIC
+  COMPLIANCE_AUDIT
+  PERFORMANCE_REVIEW
+  RISK_ASSESSMENT
+}
+
+enum AssessmentResult {
+  APPROVED
+  CONDITIONALLY_APPROVED
+  IMPROVEMENT_REQUIRED
+  REJECTED
+  PENDING_REVIEW
+}
+
+enum AssessmentGrade {
+  A_PLUS
+  A
+  B_PLUS
+  B
+  C_PLUS
+  C
+  D
+  F
+}
+
+enum AssessmentMethod {
+  DESKTOP_REVIEW
+  SITE_VISIT
+  INTERVIEW
+  QUESTIONNAIRE
+  AUDIT
+  REFERENCE_CHECK
+}
+
+enum NetworkType {
+  REGIONAL
+  SECTORAL
+  COMMUNITY_BASED
+  COLLABORATIVE
+  MENTORSHIP
+  ADVOCACY
+}

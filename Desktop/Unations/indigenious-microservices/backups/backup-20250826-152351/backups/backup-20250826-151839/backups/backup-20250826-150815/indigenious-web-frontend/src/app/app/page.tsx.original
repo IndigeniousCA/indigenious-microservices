@@ -1,0 +1,192 @@
+import { detectUserType } from './actions/detect-user-type';
+import { ContentAdaptationEngine } from '@/lib/brand/content-strategy';
+import {
+  IndigiousLogo,
+  TrustSignals,
+  BrandCTA,
+  FeatureCard,
+  NetworkStrengthIndicator,
+  BrandFooter,
+  UserTypeIndicator,
+} from '@/lib/brand/brand-components';
+import { UserType } from '@/lib/brand/brand-config';
+import Link from 'next/link';
+import { Sparkles } from 'lucide-react';
+
+export default async function HomePage() {
+  // Detect user type server-side
+  const { userType, confidence } = await detectUserType();
+  
+  // Get adapted content for this user type
+  const content = ContentAdaptationEngine.getHomepageContent(userType);
+  
+  return (
+    <div className="min-h-screen">
+      {/* Development indicator */}
+      {process.env.NODE_ENV !== 'production' && (
+        <UserTypeIndicator userType={userType} confidence={confidence} />
+      )}
+      
+      {/* Header with Indigenious branding */}
+      <header className="fixed top-0 w-full bg-white/80 backdrop-blur-md z-50 border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+          <IndigiousLogo size="md" />
+          <nav className="hidden md:flex items-center gap-6">
+            <Link href="/solutions" className="text-gray-600 hover:text-gray-900">Solutions</Link>
+            <Link href="/network" className="text-gray-600 hover:text-gray-900">Network</Link>
+            <Link href="/standards" className="text-gray-600 hover:text-gray-900">Standards</Link>
+            <Link href="/about" className="text-gray-600 hover:text-gray-900">About</Link>
+          </nav>
+          <div className="flex items-center gap-4">
+            <Link href="/login" className="text-gray-600 hover:text-gray-900">Sign In</Link>
+            <BrandCTA href="/register" size="sm">Get Started</BrandCTA>
+          </div>
+        </div>
+      </header>
+      
+      {/* Hero Section - Adapted to user type */}
+      <section className="relative px-6 pt-32 pb-24 mx-auto max-w-7xl">
+        <div className="text-center max-w-4xl mx-auto">
+          {/* Urgency message if applicable */}
+          {content.urgency && (
+            <div className="inline-flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-full mb-6">
+              <Sparkles className="w-4 h-4" />
+              <span className="text-sm font-semibold">{content.urgency}</span>
+            </div>
+          )}
+          
+          <h1 className="text-5xl md:text-6xl font-bold text-gray-900 mb-6">
+            {content.headline}
+          </h1>
+          <p className="text-xl text-gray-600 mb-8">
+            {content.subheadline}
+          </p>
+          
+          <div className="flex gap-4 justify-center">
+            <BrandCTA
+              href={content.primaryCTA.href}
+              variant={content.primaryCTA.variant}
+              size="lg"
+              userType={userType}
+            >
+              {content.primaryCTA.text}
+            </BrandCTA>
+            {content.secondaryCTA && (
+              <BrandCTA
+                href={content.secondaryCTA.href}
+                variant="secondary"
+                size="lg"
+              >
+                {content.secondaryCTA.text}
+              </BrandCTA>
+            )}
+          </div>
+        </div>
+        
+        {/* Trust signals adapted to user type */}
+        <div className="mt-16">
+          <TrustSignals userType={userType} />
+        </div>
+      </section>
+      
+      {/* Features Section - Emphasized based on user type */}
+      <section className="px-6 py-16 bg-gray-50/50">
+        <div className="max-w-7xl mx-auto">
+          <h2 className="text-3xl font-bold text-center text-gray-900 mb-12">
+            Built for Your Success
+          </h2>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {content.features.map((feature, index) => (
+              <FeatureCard
+                key={index}
+                icon={feature.icon}
+                title={feature.title}
+                description={feature.description}
+                emphasized={feature.highlight}
+                userType={userType}
+              />
+            ))}
+          </div>
+        </div>
+      </section>
+      
+      {/* Testimonial Section */}
+      {content.testimonial && (
+        <section className="px-6 py-16">
+          <div className="max-w-4xl mx-auto">
+            <div className="bg-white rounded-2xl shadow-xl p-8 md:p-12">
+              <blockquote className="text-2xl font-medium text-gray-900 mb-6">
+                "{content.testimonial.quote}"
+              </blockquote>
+              <div className="flex items-center justify-between">
+                <div>
+                  <div className="font-semibold text-gray-900">{content.testimonial.author}</div>
+                  <div className="text-gray-600">{content.testimonial.role}, {content.testimonial.company}</div>
+                </div>
+                {content.testimonial.impact && (
+                  <div className="text-right">
+                    <div className="text-sm text-gray-500">Impact</div>
+                    <div className="font-semibold text-green-600">{content.testimonial.impact}</div>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </section>
+      )}
+      
+      {/* Network Effects Visualization */}
+      <section className="px-6 py-16 bg-gradient-to-br from-blue-50 to-purple-50">
+        <div className="max-w-7xl mx-auto">
+          <NetworkStrengthIndicator userType={userType} />
+        </div>
+      </section>
+      
+      {/* User Type Selector (Optional - for demo/testing) */}
+      {process.env.NODE_ENV !== 'production' && (
+        <section className="px-6 py-8 bg-gray-100">
+          <div className="max-w-4xl mx-auto text-center">
+            <p className="text-sm text-gray-600 mb-4">
+              Demo Mode: Select a user type to see how content adapts
+            </p>
+            <div className="flex flex-wrap gap-2 justify-center">
+              <BrandCTA href="/?type=indigenous_business" size="sm" variant="secondary">
+                Indigenous Business
+              </BrandCTA>
+              <BrandCTA href="/?type=government_procurement" size="sm" variant="secondary">
+                Government
+              </BrandCTA>
+              <BrandCTA href="/?type=mining_executive" size="sm" variant="secondary">
+                Mining Executive
+              </BrandCTA>
+              <BrandCTA href="/?type=law_firm" size="sm" variant="secondary">
+                Law Firm
+              </BrandCTA>
+              <BrandCTA href="/?type=construction" size="sm" variant="secondary">
+                Construction
+              </BrandCTA>
+            </div>
+          </div>
+        </section>
+      )}
+      
+      {/* CTA Section */}
+      <section className="px-6 py-16 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
+        <div className="max-w-4xl mx-auto text-center">
+          <h2 className="text-3xl font-bold mb-4">
+            Join the Network That's Transforming Indigenous Economic Participation
+          </h2>
+          <p className="text-xl mb-8 opacity-90">
+            Every day you wait is money left on the table
+          </p>
+          <BrandCTA href="/register" variant="secondary" size="lg">
+            Start Now - It's Free
+          </BrandCTA>
+        </div>
+      </section>
+      
+      {/* Footer */}
+      <BrandFooter userType={userType} />
+    </div>
+  );
+}

@@ -1,0 +1,172 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                String    @id @default(uuid())
+  email             String    @unique
+  name              String
+  username          String?   @unique
+  avatar            String?
+  role              String    @default("user")
+  lastSeen          DateTime?
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  sentMessages      Message[] @relation("SentMessages")
+  conversations     ConversationParticipant[]
+  reactions         MessageReaction[]
+  readMessages      MessageRead[]
+  uploadedFiles     File[]
+  indigenousBusiness IndigenousBusiness?
+}
+
+model IndigenousBusiness {
+  id         String  @id @default(uuid())
+  userId     String  @unique
+  name       String
+  bandNumber String?
+  verified   Boolean @default(false)
+  
+  user       User    @relation(fields: [userId], references: [id])
+}
+
+model Conversation {
+  id              String    @id @default(uuid())
+  name            String?
+  type            String    @default("direct") // direct, group, rfq_discussion
+  createdBy       String
+  lastMessageId   String?
+  lastActivityAt  DateTime  @default(now())
+  metadata        Json?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  participants    ConversationParticipant[]
+  messages        Message[]
+  files           File[]
+  lastMessage     Message?  @relation("LastMessage", fields: [lastMessageId], references: [id])
+}
+
+model ConversationParticipant {
+  id             String    @id @default(uuid())
+  conversationId String
+  userId         String
+  role           String    @default("member") // admin, member
+  joinedAt       DateTime  @default(now())
+  archived       Boolean   @default(false)
+  archivedAt     DateTime?
+  mutedUntil     DateTime?
+  
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  user           User         @relation(fields: [userId], references: [id])
+  
+  @@unique([conversationId, userId])
+  @@index([userId])
+}
+
+model Message {
+  id             String    @id @default(uuid())
+  conversationId String
+  senderId       String
+  content        String
+  type           String    @default("text") // text, file, image, system, rfq_update
+  status         String    @default("sent") // sent, delivered, read
+  metadata       Json?
+  replyToId      String?
+  edited         Boolean   @default(false)
+  editedAt       DateTime?
+  deleted        Boolean   @default(false)
+  deletedAt      DateTime?
+  deliveredAt    DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  sender         User         @relation("SentMessages", fields: [senderId], references: [id])
+  replyTo        Message?     @relation("MessageReplies", fields: [replyToId], references: [id])
+  replies        Message[]    @relation("MessageReplies")
+  reactions      MessageReaction[]
+  readBy         MessageRead[]
+  lastMessageFor Conversation[] @relation("LastMessage")
+  
+  @@index([conversationId, createdAt])
+  @@index([senderId])
+}
+
+model MessageReaction {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  emoji     String
+  createdAt DateTime @default(now())
+  
+  message   Message  @relation(fields: [messageId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@unique([messageId, userId, emoji])
+  @@index([messageId])
+}
+
+model MessageRead {
+  id        String   @id @default(uuid())
+  messageId String
+  userId    String
+  readAt    DateTime @default(now())
+  
+  message   Message  @relation(fields: [messageId], references: [id])
+  user      User     @relation(fields: [userId], references: [id])
+  
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+}
+
+model File {
+  id             String   @id @default(uuid())
+  conversationId String
+  fileName       String
+  mimeType       String
+  size           Int
+  s3Key          String
+  thumbnailUrl   String?
+  uploadedBy     String
+  metadata       Json?
+  createdAt      DateTime @default(now())
+  
+  conversation   Conversation @relation(fields: [conversationId], references: [id])
+  uploader       User         @relation(fields: [uploadedBy], references: [id])
+  
+  @@index([conversationId])
+}
+
+model RFQDocument {
+  id          String   @id @default(uuid())
+  rfqId       String
+  fileName    String
+  mimeType    String
+  size        Int
+  s3Key       String
+  uploadedBy  String
+  isBlueprint Boolean  @default(false)
+  metadata    Json?
+  createdAt   DateTime @default(now())
+  
+  @@index([rfqId])
+}
+
+model TypingIndicator {
+  id             String   @id @default(uuid())
+  conversationId String
+  userId         String
+  isTyping       Boolean  @default(false)
+  updatedAt      DateTime @updatedAt
+  
+  @@unique([conversationId, userId])
+  @@index([conversationId])
+}

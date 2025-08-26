@@ -1,0 +1,1087 @@
+# ======================================================================
+# SERVICE CATALOG - INDIGENOUS MICROSERVICES PLATFORM
+# ======================================================================
+# This file defines all 78 microservices with their configurations
+# ======================================================================
+
+services:
+  # ======================================================================
+  # TIER 1 - CORE INFRASTRUCTURE (Must be deployed first)
+  # ======================================================================
+  
+  indigenious-gateway-service:
+    tier: 1
+    type: api-gateway
+    port: 8080
+    cpu: 512
+    memory: 1024
+    min_instances: 2
+    max_instances: 10
+    health_check_path: /health
+    dependencies: []
+    environment:
+      - name: SERVICE_DISCOVERY_ENDPOINT
+        value: "cloudmap.indigenous.local"
+      - name: RATE_LIMIT_ENABLED
+        value: "true"
+    
+  indigenious-auth-service:
+    tier: 1
+    type: authentication
+    port: 3001
+    cpu: 256
+    memory: 512
+    min_instances: 2
+    max_instances: 5
+    health_check_path: /api/health
+    dependencies:
+      - database
+      - redis
+    environment:
+      - name: JWT_SECRET
+        valueFrom: secrets-manager
+      - name: TOKEN_EXPIRY
+        value: "3600"
+    
+  indigenious-web-frontend:
+    tier: 1
+    type: frontend
+    port: 3000
+    cpu: 512
+    memory: 1024
+    min_instances: 2
+    max_instances: 10
+    health_check_path: /api/health
+    dependencies:
+      - indigenious-gateway-service
+      - indigenious-auth-service
+    environment:
+      - name: NEXT_PUBLIC_API_URL
+        value: "https://api.indigenous.ca"
+
+  # ======================================================================
+  # TIER 2 - ESSENTIAL BUSINESS LOGIC
+  # ======================================================================
+  
+  indigenious-user-service:
+    tier: 2
+    type: business-logic
+    port: 3002
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+    environment:
+      - name: DATABASE_URL
+        valueFrom: secrets-manager
+  
+  indigenious-business-service:
+    tier: 2
+    type: business-logic
+    port: 3003
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+    environment:
+      - name: DATABASE_URL
+        valueFrom: secrets-manager
+  
+  indigenious-rfq-service:
+    tier: 2
+    type: business-logic
+    port: 3004
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-business-service
+      - database
+    environment:
+      - name: DATABASE_URL
+        valueFrom: secrets-manager
+      - name: ENABLE_COLLABORATIVE_BIDS
+        value: "true"
+  
+  indigenious-payment-service:
+    tier: 2
+    type: payment
+    port: 3005
+    cpu: 512
+    memory: 1024
+    min_instances: 2
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-user-service
+      - database
+    environment:
+      - name: STRIPE_SECRET_KEY
+        valueFrom: secrets-manager
+      - name: PAYMENT_GATEWAY
+        value: "stripe"
+  
+  indigenious-document-service:
+    tier: 2
+    type: document-management
+    port: 3006
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - s3
+    environment:
+      - name: S3_BUCKET
+        value: "indigenous-documents"
+      - name: MAX_FILE_SIZE
+        value: "104857600"  # 100MB
+
+  # ======================================================================
+  # TIER 3 - INTELLIGENCE LAYER
+  # ======================================================================
+  
+  indigenious-ai-orchestrator-service:
+    tier: 3
+    type: ai-ml
+    port: 3007
+    cpu: 2048
+    memory: 4096
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    gpu_enabled: true
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-user-service
+      - indigenious-business-service
+      - database
+      - redis
+    environment:
+      - name: OPENAI_API_KEY
+        valueFrom: secrets-manager
+      - name: ML_MODEL_PATH
+        value: "s3://indigenous-models/"
+      - name: ENABLE_UNIFIED_INTELLIGENCE
+        value: "true"
+      - name: ENABLE_AMBIENT_SERVICE
+        value: "true"
+  
+  indigenious-analytics-service:
+    tier: 3
+    type: analytics
+    port: 3008
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - database
+      - redis
+    environment:
+      - name: ANALYTICS_ENGINE
+        value: "elasticsearch"
+      - name: DATA_RETENTION_DAYS
+        value: "90"
+  
+  indigenious-notification-service:
+    tier: 3
+    type: communication
+    port: 3009
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-user-service
+    environment:
+      - name: SENDGRID_API_KEY
+        valueFrom: secrets-manager
+      - name: TWILIO_ACCOUNT_SID
+        valueFrom: secrets-manager
+  
+  indigenious-chat-service:
+    tier: 3
+    type: real-time
+    port: 3010
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    websocket_enabled: true
+    dependencies:
+      - indigenious-auth-service
+      - redis
+    environment:
+      - name: WEBSOCKET_PORT
+        value: "3011"
+      - name: ENABLE_MESSAGE_HISTORY
+        value: "true"
+
+  # ======================================================================
+  # TIER 4 - SUPPORTING SERVICES
+  # ======================================================================
+  
+  indigenious-admin-service:
+    tier: 4
+    type: administration
+    port: 3012
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-audit-service:
+    tier: 4
+    type: compliance
+    port: 3013
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-banking-service:
+    tier: 4
+    type: financial
+    port: 3014
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-payment-service
+      - database
+  
+  indigenious-blockchain-service:
+    tier: 4
+    type: blockchain
+    port: 3015
+    cpu: 1024
+    memory: 2048
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-calendar-service:
+    tier: 4
+    type: scheduling
+    port: 3016
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-compliance-service:
+    tier: 4
+    type: compliance
+    port: 3017
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-contract-service:
+    tier: 4
+    type: legal
+    port: 3018
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-document-service
+      - database
+  
+  indigenious-cultural-service:
+    tier: 4
+    type: cultural
+    port: 3019
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-dashboard-service:
+    tier: 4
+    type: visualization
+    port: 3020
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-analytics-service
+      - database
+  
+  indigenious-education-service:
+    tier: 4
+    type: education
+    port: 3021
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-email-service:
+    tier: 4
+    type: communication
+    port: 3022
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-notification-service
+  
+  indigenious-event-service:
+    tier: 4
+    type: event-management
+    port: 3023
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-file-storage-service:
+    tier: 4
+    type: storage
+    port: 3024
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - s3
+  
+  indigenious-forum-service:
+    tier: 4
+    type: community
+    port: 3025
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-grant-service:
+    tier: 4
+    type: grants
+    port: 3026
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-health-service:
+    tier: 4
+    type: healthcare
+    port: 3027
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-inventory-service:
+    tier: 4
+    type: inventory
+    port: 3028
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-invoice-service:
+    tier: 4
+    type: billing
+    port: 3029
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-payment-service
+      - database
+  
+  indigenious-legal-service:
+    tier: 4
+    type: legal
+    port: 3030
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-logistics-service:
+    tier: 4
+    type: logistics
+    port: 3031
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-marketplace-service:
+    tier: 4
+    type: marketplace
+    port: 3032
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-payment-service
+      - database
+  
+  indigenious-media-service:
+    tier: 4
+    type: media
+    port: 3033
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - s3
+  
+  indigenious-messaging-service:
+    tier: 4
+    type: messaging
+    port: 3034
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - redis
+  
+  indigenious-mobile-service:
+    tier: 4
+    type: mobile-backend
+    port: 3035
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-gateway-service
+  
+  indigenious-monitoring-service:
+    tier: 4
+    type: monitoring
+    port: 3036
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - database
+      - redis
+  
+  indigenious-order-service:
+    tier: 4
+    type: ordering
+    port: 3037
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-payment-service
+      - database
+  
+  indigenious-partner-service:
+    tier: 4
+    type: partnerships
+    port: 3038
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-policy-service:
+    tier: 4
+    type: policy
+    port: 3039
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-procurement-service:
+    tier: 4
+    type: procurement
+    port: 3040
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-rfq-service
+      - database
+  
+  indigenious-project-service:
+    tier: 4
+    type: project-management
+    port: 3041
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-queue-service:
+    tier: 4
+    type: queue-management
+    port: 3042
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - redis
+  
+  indigenious-registration-service:
+    tier: 4
+    type: registration
+    port: 3043
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-reporting-service:
+    tier: 4
+    type: reporting
+    port: 3044
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-analytics-service
+      - database
+  
+  indigenious-resource-service:
+    tier: 4
+    type: resource-management
+    port: 3045
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-search-service:
+    tier: 4
+    type: search
+    port: 3046
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - elasticsearch
+  
+  indigenious-security-service:
+    tier: 4
+    type: security
+    port: 3047
+    cpu: 512
+    memory: 1024
+    min_instances: 2
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-sms-service:
+    tier: 4
+    type: communication
+    port: 3048
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-notification-service
+  
+  indigenious-social-service:
+    tier: 4
+    type: social
+    port: 3049
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-subscription-service:
+    tier: 4
+    type: subscription
+    port: 3050
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-payment-service
+      - database
+  
+  indigenious-support-service:
+    tier: 4
+    type: support
+    port: 3051
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-survey-service:
+    tier: 4
+    type: survey
+    port: 3052
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-task-service:
+    tier: 4
+    type: task-management
+    port: 3053
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-tax-service:
+    tier: 4
+    type: taxation
+    port: 3054
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-team-service:
+    tier: 4
+    type: team-management
+    port: 3055
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-template-service:
+    tier: 4
+    type: templates
+    port: 3056
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-tracking-service:
+    tier: 4
+    type: tracking
+    port: 3057
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-training-service:
+    tier: 4
+    type: training
+    port: 3058
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-translation-service:
+    tier: 4
+    type: translation
+    port: 3059
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+  
+  indigenious-vendor-service:
+    tier: 4
+    type: vendor-management
+    port: 3060
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-verification-service:
+    tier: 4
+    type: verification
+    port: 3061
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-video-service:
+    tier: 4
+    type: video
+    port: 3062
+    cpu: 1024
+    memory: 2048
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - s3
+  
+  indigenious-voting-service:
+    tier: 4
+    type: voting
+    port: 3063
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-wallet-service:
+    tier: 4
+    type: wallet
+    port: 3064
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-payment-service
+      - database
+  
+  indigenious-warehouse-service:
+    tier: 4
+    type: warehouse
+    port: 3065
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  indigenious-workflow-service:
+    tier: 4
+    type: workflow
+    port: 3066
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+  
+  # Additional portal services
+  indigenious-admin-portal:
+    tier: 4
+    type: portal
+    port: 3067
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-admin-service
+  
+  indigenious-customer-portal:
+    tier: 4
+    type: portal
+    port: 3068
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-user-service
+  
+  indigenious-design-system-service:
+    tier: 4
+    type: design
+    port: 3069
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 2
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+  
+  indigenious-loan-service:
+    tier: 4
+    type: financial
+    port: 3070
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-banking-service
+      - database
+  
+  indigenious-mobile-registration-service:
+    tier: 4
+    type: mobile
+    port: 3071
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - indigenious-registration-service
+  
+  indigenious-wellness-service:
+    tier: 4
+    type: wellness
+    port: 3072
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_path: /health
+    dependencies:
+      - indigenious-auth-service
+      - database
+
+# ======================================================================
+# INFRASTRUCTURE DEPENDENCIES
+# ======================================================================
+
+infrastructure:
+  database:
+    type: aurora-serverless
+    engine: postgresql
+    version: "15.4"
+    min_capacity: 0.5
+    max_capacity: 4
+    
+  redis:
+    type: elasticache
+    engine: redis
+    version: "7.0"
+    node_type: cache.t3.micro
+    num_nodes: 2
+    
+  s3:
+    type: s3
+    buckets:
+      - indigenous-documents
+      - indigenous-media
+      - indigenous-models
+      - indigenous-backups
+    
+  elasticsearch:
+    type: opensearch
+    version: "2.11"
+    instance_type: t3.small.search
+    instance_count: 2
+    
+  cloudmap:
+    type: service-discovery
+    namespace: indigenous.local
+    
+  secrets-manager:
+    type: secrets
+    secrets:
+      - jwt-secret
+      - database-url
+      - stripe-api-key
+      - sendgrid-api-key
+      - twilio-credentials
+      - openai-api-key

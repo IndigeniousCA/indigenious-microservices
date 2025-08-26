@@ -1,0 +1,33 @@
+{
+  "name": "indigenous-platform",
+  "version": 2,
+  "public": false,
+  "builds": [
+    {
+      "src": "indigenious-gateway-service/package.json",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "/indigenious-gateway-service/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/indigenious-gateway-service/$1"
+    }
+  ],
+  "env": {
+    "NODE_ENV": "production",
+    "PLATFORM_NAME": "Indigenous Economic Platform",
+    "PHILOSOPHY": "Where Economics Meets The Land"
+  },
+  "regions": ["iad1"],
+  "functions": {
+    "indigenious-gateway-service/src/index.ts": {
+      "maxDuration": 30,
+      "memory": 1024
+    }
+  }
+}

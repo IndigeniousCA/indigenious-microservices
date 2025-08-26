@@ -1,0 +1,280 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id                        String                      @id @default(uuid())
+  email                     String                      @unique
+  phone                     String?
+  bandId                    String?
+  isActive                  Boolean                     @default(true)
+  createdAt                 DateTime                    @default(now())
+  updatedAt                 DateTime                    @updatedAt
+  
+  deviceTokens              DeviceToken[]
+  notificationPreferences   NotificationPreferences?
+  inAppNotifications        InAppNotification[]
+  notificationHistory       NotificationHistory[]
+  
+  @@index([bandId])
+  @@index([email])
+}
+
+model Band {
+  id              String            @id @default(uuid())
+  name            String
+  treatyNumber    String?
+  territory       String?
+  language        String?
+  createdAt       DateTime          @default(now())
+  
+  elderApprovals  ElderApproval[]
+  
+  @@index([name])
+}
+
+model NotificationTemplate {
+  id                String              @id @default(uuid())
+  name              String              @unique
+  category          String
+  channels          Json                // {email: {...}, sms: {...}, push: {...}, inApp: {...}}
+  variables         String[]
+  indigenousVersions Json?              // Language-specific versions
+  isActive          Boolean             @default(true)
+  createdAt         DateTime            @default(now())
+  updatedAt         DateTime            @updatedAt
+  
+  @@index([name])
+  @@index([category])
+}
+
+model NotificationPreferences {
+  id          String    @id @default(uuid())
+  userId      String    @unique
+  user        User      @relation(fields: [userId], references: [id])
+  
+  // Channel preferences
+  inApp       Boolean   @default(true)
+  email       Boolean   @default(true)
+  sms         Boolean   @default(false)
+  push        Boolean   @default(true)
+  
+  // Category preferences
+  categories  Json      @default("{}")  // {rfq: true, messages: true, system: true, indigenous: true}
+  
+  // Quiet hours
+  quietHours  Json?     // {enabled: boolean, start: "HH:MM", end: "HH:MM", timezone: string}
+  
+  // Language preference
+  language    String    @default("en")
+  
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  @@index([userId])
+}
+
+model DeviceToken {
+  id            String    @id @default(uuid())
+  userId        String
+  user          User      @relation(fields: [userId], references: [id])
+  token         String    @unique
+  platform      String    // ios, android, web
+  deviceInfo    Json?
+  isActive      Boolean   @default(true)
+  lastActive    DateTime  @default(now())
+  invalidatedAt DateTime?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  @@index([userId])
+  @@index([token])
+}
+
+model InAppNotification {
+  id                String    @id @default(uuid())
+  userId            String
+  user              User      @relation(fields: [userId], references: [id])
+  type              String    // info, success, warning, error, rfq, message, indigenous
+  title             String
+  body              String    @db.Text
+  data              Json?
+  actionUrl         String?
+  actionText        String?
+  icon              String?
+  image             String?
+  priority          String    @default("normal")
+  isRead            Boolean   @default(false)
+  isArchived        Boolean   @default(false)
+  readAt            DateTime?
+  archivedAt        DateTime?
+  expiresAt         DateTime?
+  indigenousMetadata Json?    // {language, bandId, culturalContext}
+  createdAt         DateTime  @default(now())
+  
+  @@index([userId, isRead, isArchived])
+  @@index([createdAt])
+}
+
+model NotificationHistory {
+  id          String    @id @default(uuid())
+  userId      String
+  user        User      @relation(fields: [userId], references: [id])
+  type        String    // email, sms, push, inApp
+  channel     String
+  subject     String?
+  content     String    @db.Text
+  metadata    Json?
+  status      String    // sent, failed, bounced, delivered
+  errorMessage String?
+  sentAt      DateTime  @default(now())
+  deliveredAt DateTime?
+  readAt      DateTime?
+  clickedAt   DateTime?
+  
+  @@index([userId])
+  @@index([sentAt])
+  @@index([status])
+}
+
+model EmailLog {
+  id          String    @id @default(uuid())
+  messageId   String    @unique
+  to          String[]
+  cc          String[]?
+  bcc         String[]?
+  subject     String
+  template    String?
+  status      String    // sent, partial, failed
+  accepted    String[]
+  rejected    String[]
+  response    String?
+  tags        String[]?
+  openedAt    DateTime?
+  clickedAt   DateTime?
+  createdAt   DateTime  @default(now())
+  
+  @@index([messageId])
+  @@index([createdAt])
+}
+
+model SMSLog {
+  id            String    @id @default(uuid())
+  messageId     String    @unique
+  to            String
+  message       String
+  status        String
+  errorCode     String?
+  errorMessage  String?
+  price         Float?
+  priceUnit     String?
+  isIndigenous  Boolean   @default(false)
+  language      String?
+  deliveredAt   DateTime?
+  createdAt     DateTime  @default(now())
+  
+  @@index([messageId])
+  @@index([to])
+  @@index([createdAt])
+}
+
+model PushNotificationLog {
+  id            String    @id @default(uuid())
+  messageId     String
+  token         String
+  title         String
+  body          String
+  data          Json?
+  platform      String
+  status        String
+  errorMessage  String?
+  isIndigenous  Boolean   @default(false)
+  language      String?
+  deliveredAt   DateTime?
+  openedAt      DateTime?
+  createdAt     DateTime  @default(now())
+  
+  @@index([messageId])
+  @@index([token])
+  @@index([createdAt])
+}
+
+model BulkNotificationLog {
+  id              String    @id @default(uuid())
+  title           String
+  body            String
+  totalRecipients Int
+  successCount    Int
+  failureCount    Int
+  channels        String[]
+  isIndigenous    Boolean   @default(false)
+  language        String?
+  completedAt     DateTime?
+  createdAt       DateTime  @default(now())
+  
+  @@index([createdAt])
+}
+
+model TopicNotificationLog {
+  id          String    @id @default(uuid())
+  messageId   String
+  topic       String
+  condition   String?
+  title       String
+  body        String
+  data        Json?
+  createdAt   DateTime  @default(now())
+  
+  @@index([topic])
+  @@index([createdAt])
+}
+
+model NotificationLog {
+  id                  String    @id @default(uuid())
+  userId              String?
+  channels            String[]
+  template            String
+  data                Json
+  results             Json
+  status              String    // sent, partial, failed, scheduled
+  isIndigenous        Boolean   @default(false)
+  indigenousMetadata  Json?
+  scheduledFor        DateTime?
+  sentAt              DateTime?
+  createdAt           DateTime  @default(now())
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ElderApproval {
+  id            String    @id @default(uuid())
+  bandId        String
+  band          Band      @relation(fields: [bandId], references: [id])
+  templateName  String
+  approvedBy    String    // Elder ID
+  isApproved    Boolean
+  comments      String?
+  expiresAt     DateTime
+  createdAt     DateTime  @default(now())
+  
+  @@index([bandId, templateName])
+  @@unique([bandId, templateName])
+}
+
+model DocumentAccess {
+  id          String    @id @default(uuid())
+  documentId  String
+  action      String
+  userId      String?
+  timestamp   DateTime  @default(now())
+  
+  @@index([documentId])
+  @@index([userId])
+}

@@ -1,0 +1,597 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Review {
+  id                    String                  @id @default(uuid())
+  reviewId              String                  @unique
+  
+  // Product/Service reference
+  productId             String?
+  serviceId             String?
+  vendorId              String?
+  orderId               String?
+  
+  // Reviewer information
+  customerId            String
+  customerName          String
+  isVerifiedPurchase    Boolean                 @default(false)
+  
+  // Indigenous reviewer features
+  indigenousReviewer    Boolean                 @default(false)
+  statusCardVerified    Boolean                 @default(false)
+  bandMembership        String?
+  treatyTerritory       String?
+  
+  // Elder review
+  elderReview           Boolean                 @default(false)
+  elderWisdom           String?                 // Special Elder insights
+  generationalImpact    String?                 // Seven generations perspective
+  
+  // Ratings
+  overallRating         Int                     // 1-5 stars
+  qualityRating         Int?
+  valueRating           Int?
+  authenticityRating    Int?                    // For Indigenous products
+  
+  // Cultural ratings
+  culturalAuthenticity  Int?                    // 1-5
+  respectfulPractices   Int?                    // 1-5
+  communityBenefit      Int?                    // 1-5
+  traditionHonored      Int?                    // 1-5
+  
+  // Review content
+  title                 String?
+  content               String
+  pros                  String[]
+  cons                  String[]
+  
+  // Story sharing (Indigenous tradition)
+  storyShared           Boolean                 @default(false)
+  story                 Story?
+  
+  // Media
+  photos                String[]                // S3 URLs
+  videos                String[]
+  audioReview           String?                 // For oral traditions
+  
+  // Language
+  language              String                  @default("en")
+  indigenousLanguage    String?
+  translatedContent     Json?
+  
+  // Community impact
+  communityImpact       CommunityImpact?
+  
+  // Verification
+  verified              Boolean                 @default(false)
+  verificationMethod    String?
+  
+  // Moderation
+  status                ReviewStatus            @default(PENDING)
+  moderatedBy           String?
+  moderatedAt           DateTime?
+  moderationNotes       String?
+  
+  // Helpful metrics
+  helpfulCount          Int                     @default(0)
+  notHelpfulCount       Int                     @default(0)
+  
+  // Responses
+  vendorResponse        VendorResponse?
+  communityResponses    CommunityResponse[]
+  
+  // Timestamps
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([productId])
+  @@index([vendorId])
+  @@index([customerId])
+  @@index([indigenousReviewer])
+  @@index([elderReview])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model Story {
+  id                    String                  @id @default(uuid())
+  storyId               String                  @unique
+  reviewId              String                  @unique
+  
+  // Story details
+  title                 String
+  content               String                  // The full story
+  
+  // Traditional story elements
+  teachingShared        Boolean                 @default(false)
+  teaching              String?                 // Traditional teaching
+  
+  // Medicine wheel alignment
+  medicineWheelDirection String?                // East, South, West, North
+  season                String?                 // Spring, Summer, Fall, Winter
+  element               String?                 // Earth, Air, Fire, Water
+  
+  // Cultural significance
+  culturalSignificance  String?
+  ceremonyRelated       Boolean                 @default(false)
+  sacredStory           Boolean                 @default(false)
+  
+  // Permissions
+  publicSharing         Boolean                 @default(true)
+  elderApproved         Boolean                 @default(false)
+  elderApprovedBy       String?
+  
+  // Audio/Video story
+  audioStory            String?                 // S3 URL
+  videoStory            String?                 // S3 URL
+  
+  review                Review                  @relation(fields: [reviewId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([reviewId])
+}
+
+model CommunityImpact {
+  id                    String                  @id @default(uuid())
+  impactId              String                  @unique
+  reviewId              String                  @unique
+  
+  // Economic impact
+  localJobsSupported    Int?
+  indigenousJobsCreated Int?
+  communityRevenue      Decimal?                @db.Decimal(19, 4)
+  
+  // Social impact
+  youthEngagement       Boolean                 @default(false)
+  elderInvolvement      Boolean                 @default(false)
+  culturalPreservation  Boolean                 @default(false)
+  languageRevitalization Boolean                @default(false)
+  
+  // Environmental impact
+  sustainablePractices  Boolean                 @default(false)
+  landStewardship       Boolean                 @default(false)
+  traditionalHarvesting Boolean                 @default(false)
+  
+  // Cultural impact
+  ceremonySupport       Boolean                 @default(false)
+  traditionalKnowledge  Boolean                 @default(false)
+  artisanSupport        Boolean                 @default(false)
+  
+  // Seven generations impact
+  sevenGenScore         Int?                    // 1-10 scale
+  futureImpact          String?
+  
+  // Community benefit percentage
+  communityBenefitRate  Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  review                Review                  @relation(fields: [reviewId], references: [id])
+  
+  @@index([reviewId])
+}
+
+model VendorResponse {
+  id                    String                  @id @default(uuid())
+  responseId            String                  @unique
+  reviewId              String                  @unique
+  
+  // Response details
+  content               String
+  
+  // Vendor info
+  vendorId              String
+  vendorName            String
+  respondedBy           String
+  
+  // Indigenous vendor features
+  indigenousVendor      Boolean                 @default(false)
+  elderResponse         Boolean                 @default(false)
+  
+  // Cultural acknowledgment
+  culturalAcknowledgment String?
+  commitmentMade        String?
+  
+  // Status
+  public                Boolean                 @default(true)
+  
+  review                Review                  @relation(fields: [reviewId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([reviewId])
+  @@index([vendorId])
+}
+
+model CommunityResponse {
+  id                    String                  @id @default(uuid())
+  responseId            String                  @unique
+  reviewId              String
+  
+  // Responder info
+  responderId           String
+  responderName         String
+  
+  // Community role
+  communityRole         CommunityRole?
+  bandMembership        String?
+  
+  // Response
+  content               String
+  
+  // Support/Agreement
+  agreesWithReview      Boolean?
+  supportsReviewer      Boolean                 @default(true)
+  
+  // Cultural validation
+  culturallyAccurate    Boolean?
+  traditionRespected    Boolean?
+  
+  review                Review                  @relation(fields: [reviewId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([reviewId])
+}
+
+model TalkingCircle {
+  id                    String                  @id @default(uuid())
+  circleId              String                  @unique
+  
+  // Circle details
+  topic                 String
+  description           String?
+  
+  // Type
+  circleType            CircleType
+  
+  // Product/Service focus
+  productId             String?
+  vendorId              String?
+  categoryFocus         String?
+  
+  // Facilitator (often an Elder)
+  facilitatorId         String
+  facilitatorName       String
+  isElder               Boolean                 @default(false)
+  
+  // Participants
+  participants          CircleParticipant[]
+  maxParticipants       Int                     @default(20)
+  
+  // Cultural protocols
+  smudgingCeremony      Boolean                 @default(true)
+  openingPrayer         Boolean                 @default(true)
+  eagleFeatherUsed      Boolean                 @default(false)
+  
+  // Schedule
+  scheduledDate         DateTime
+  duration              Int                     // minutes
+  
+  // Location (virtual or physical)
+  isVirtual             Boolean                 @default(false)
+  location              String?
+  virtualLink           String?
+  
+  // Outcomes
+  consensusReached      Boolean?
+  recommendations       String[]
+  actionItems           String[]
+  
+  // Recording (with permission)
+  recordingConsent      Boolean                 @default(false)
+  audioRecording        String?                 // S3 URL
+  transcript            String?
+  
+  // Status
+  status                CircleStatus
+  
+  createdAt             DateTime                @default(now())
+  completedAt           DateTime?
+  
+  @@index([circleType])
+  @@index([status])
+  @@index([scheduledDate])
+}
+
+model CircleParticipant {
+  id                    String                  @id @default(uuid())
+  participantId         String                  @unique
+  circleId              String
+  
+  // Participant info
+  userId                String
+  userName              String
+  
+  // Role in circle
+  role                  ParticipantRole
+  
+  // Indigenous status
+  indigenousParticipant Boolean                 @default(false)
+  bandMembership        String?
+  
+  // Contribution
+  spokeTurns            Int                     @default(0)
+  wisdomShared          String?
+  
+  // Attendance
+  attended              Boolean                 @default(false)
+  leftEarly             Boolean                 @default(false)
+  
+  circle                TalkingCircle           @relation(fields: [circleId], references: [id])
+  
+  joinedAt              DateTime                @default(now())
+  
+  @@index([circleId])
+  @@index([userId])
+}
+
+model SurveyResponse {
+  id                    String                  @id @default(uuid())
+  responseId            String                  @unique
+  surveyId              String
+  
+  // Respondent
+  respondentId          String
+  
+  // Indigenous respondent features
+  indigenousRespondent  Boolean                 @default(false)
+  ageGroup              String?
+  gender                String?
+  community             String?
+  
+  // Responses
+  responses             Json                    // Question-answer pairs
+  
+  // Cultural questions
+  culturalResponses     Json?
+  
+  // Open feedback
+  additionalComments    String?
+  
+  // Story contribution
+  storyContribution     String?
+  
+  // Consent
+  dataUseConsent        Boolean                 @default(true)
+  anonymousSubmission   Boolean                 @default(false)
+  
+  // Completion
+  completed             Boolean                 @default(false)
+  completionTime        Int?                    // seconds
+  
+  survey                Survey                  @relation(fields: [surveyId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  submittedAt           DateTime?
+  
+  @@index([surveyId])
+  @@index([respondentId])
+  @@index([indigenousRespondent])
+}
+
+model Survey {
+  id                    String                  @id @default(uuid())
+  surveyId              String                  @unique
+  
+  // Survey details
+  title                 String
+  description           String
+  purpose               String
+  
+  // Type
+  surveyType            SurveyType
+  
+  // Target audience
+  targetAudience        String[]
+  indigenousFocused     Boolean                 @default(false)
+  
+  // Questions
+  questions             Json                    // Array of questions
+  culturalQuestions     Json?                   // Indigenous-specific questions
+  
+  // Medicine wheel framework
+  medicineWheelAligned  Boolean                 @default(false)
+  wheelQuestions        Json?                   // Questions for each direction
+  
+  // Configuration
+  anonymous             Boolean                 @default(false)
+  requiresAuth          Boolean                 @default(true)
+  multipleSubmissions   Boolean                 @default(false)
+  
+  // Incentives
+  hasIncentive          Boolean                 @default(false)
+  incentiveType         String?
+  incentiveValue        Decimal?                @db.Decimal(10, 2)
+  
+  // Duration
+  startDate             DateTime
+  endDate               DateTime
+  
+  // Responses
+  responses             SurveyResponse[]
+  targetResponses       Int?
+  
+  // Analysis
+  analysisCompleted     Boolean                 @default(false)
+  insights              Json?
+  
+  // Status
+  status                SurveyStatus
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([surveyType])
+  @@index([indigenousFocused])
+  @@index([status])
+}
+
+model FeedbackAnalytics {
+  id                    String                  @id @default(uuid())
+  analyticsId           String                  @unique
+  
+  // Period
+  periodStart           DateTime
+  periodEnd             DateTime
+  
+  // Volume metrics
+  totalReviews          Int
+  totalRatings          Decimal                 @db.Decimal(10, 2)
+  avgRating             Decimal                 @db.Decimal(3, 2)
+  
+  // Indigenous metrics
+  indigenousReviews     Int
+  elderReviews          Int
+  indigenousAvgRating   Decimal?                @db.Decimal(3, 2)
+  
+  // Cultural metrics
+  avgCulturalScore      Decimal?                @db.Decimal(3, 2)
+  avgAuthenticityScore  Decimal?                @db.Decimal(3, 2)
+  avgCommunityBenefit   Decimal?                @db.Decimal(3, 2)
+  
+  // Story metrics
+  storiesShared         Int
+  teachingsShared       Int
+  
+  // Talking circles
+  circlesHeld           Int
+  circleParticipants    Int
+  consensusRate         Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Survey metrics
+  surveysCompleted      Int
+  surveyResponseRate    Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Sentiment analysis
+  positiveSentiment     Decimal                 @db.Decimal(5, 2) // Percentage
+  neutralSentiment      Decimal                 @db.Decimal(5, 2)
+  negativeSentiment     Decimal                 @db.Decimal(5, 2)
+  
+  // Impact metrics
+  communityImpactScore  Decimal?                @db.Decimal(5, 2) // 1-10
+  sevenGenAvgScore      Decimal?                @db.Decimal(5, 2) // 1-10
+  
+  // Response metrics
+  vendorResponseRate    Decimal                 @db.Decimal(5, 2) // Percentage
+  avgResponseTime       Int?                    // hours
+  
+  // Recommendations
+  keyInsights           Json?
+  recommendations       String[]
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([periodStart, periodEnd])
+}
+
+model BadgeEarned {
+  id                    String                  @id @default(uuid())
+  badgeId               String
+  userId                String
+  
+  // Badge type
+  badgeType             BadgeType
+  badgeName             String
+  
+  // Indigenous badges
+  indigenousBadge       Boolean                 @default(false)
+  culturalBadge         Boolean                 @default(false)
+  
+  // Achievement
+  achievementCriteria   String
+  evidenceUrl           String?
+  
+  // Elder validation
+  elderValidated        Boolean                 @default(false)
+  elderValidatedBy      String?
+  
+  earnedAt              DateTime                @default(now())
+  
+  @@unique([badgeId, userId])
+  @@index([userId])
+  @@index([badgeType])
+}
+
+// Enums
+enum ReviewStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  FLAGGED
+  HIDDEN
+}
+
+enum CommunityRole {
+  MEMBER
+  ELDER
+  YOUTH
+  LEADER
+  ARTISAN
+  KNOWLEDGE_KEEPER
+  LANGUAGE_SPEAKER
+  CULTURAL_ADVISOR
+}
+
+enum CircleType {
+  PRODUCT_FEEDBACK
+  SERVICE_REVIEW
+  COMMUNITY_IMPACT
+  CULTURAL_ASSESSMENT
+  VENDOR_EVALUATION
+  GENERAL_DISCUSSION
+  ELDER_WISDOM
+}
+
+enum CircleStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+enum ParticipantRole {
+  FACILITATOR
+  ELDER
+  SPEAKER
+  LISTENER
+  SCRIBE
+  KEEPER
+}
+
+enum SurveyType {
+  SATISFACTION
+  PRODUCT_FEEDBACK
+  SERVICE_QUALITY
+  CULTURAL_IMPACT
+  COMMUNITY_NEEDS
+  VENDOR_ASSESSMENT
+  MARKET_RESEARCH
+}
+
+enum SurveyStatus {
+  DRAFT
+  ACTIVE
+  CLOSED
+  ANALYZING
+  COMPLETED
+}
+
+enum BadgeType {
+  TRUSTED_REVIEWER
+  ELDER_REVIEWER
+  CULTURAL_EXPERT
+  COMMUNITY_VOICE
+  STORY_KEEPER
+  WISDOM_SHARER
+  HELPFUL_REVIEWER
+  VERIFIED_PURCHASER
+  INDIGENOUS_SUPPORTER
+  SEVEN_GEN_THINKER
+}

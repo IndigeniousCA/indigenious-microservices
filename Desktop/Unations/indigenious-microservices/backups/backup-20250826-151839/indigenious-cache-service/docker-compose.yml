@@ -1,0 +1,124 @@
+version: '3.8'
+
+services:
+  cache-service:
+    build: .
+    ports:
+      - "3040:3040"
+    environment:
+      - NODE_ENV=production
+      - PORT=3040
+      - DATABASE_URL=postgresql://cache_user:cache_pass@cache-db:5432/indigenous_cache_db
+      - REDIS_URL=redis://cache-redis:6379
+      - REDIS_HOST=cache-redis
+      - REDIS_PORT=6379
+      - REDIS_CLUSTER_NODES=cache-redis-1:6379,cache-redis-2:6379,cache-redis-3:6379
+      - REDIS_SENTINEL_NODES=sentinel-1:26379,sentinel-2:26379,sentinel-3:26379
+      - REDIS_MASTER_NAME=mymaster
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      - cache-db
+      - cache-redis
+      - cache-redis-slave
+    networks:
+      - cache-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3040/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cache-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_cache_db
+      - POSTGRES_USER=cache_user
+      - POSTGRES_PASSWORD=cache_pass
+    volumes:
+      - cache-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5446:5432"
+    networks:
+      - cache-network
+    restart: unless-stopped
+
+  cache-redis:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --appendonly yes
+      --save 60 1000
+      --save 300 10
+      --save 900 1
+    ports:
+      - "6395:6379"
+    volumes:
+      - cache-redis-data:/data
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+    networks:
+      - cache-network
+    restart: unless-stopped
+
+  cache-redis-slave:
+    image: redis:7-alpine
+    command: >
+      redis-server
+      --slaveof cache-redis 6379
+      --maxmemory 512mb
+      --maxmemory-policy allkeys-lru
+    depends_on:
+      - cache-redis
+    ports:
+      - "6396:6379"
+    volumes:
+      - cache-redis-slave-data:/data
+    networks:
+      - cache-network
+    restart: unless-stopped
+
+  redis-sentinel:
+    image: redis:7-alpine
+    command: redis-sentinel /etc/redis-sentinel/sentinel.conf
+    volumes:
+      - ./sentinel.conf:/etc/redis-sentinel/sentinel.conf
+    ports:
+      - "26379:26379"
+    networks:
+      - cache-network
+    depends_on:
+      - cache-redis
+      - cache-redis-slave
+    restart: unless-stopped
+
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    environment:
+      - REDIS_HOSTS=master:cache-redis:6379,slave:cache-redis-slave:6379
+    ports:
+      - "8081:8081"
+    networks:
+      - cache-network
+    depends_on:
+      - cache-redis
+      - cache-redis-slave
+    restart: unless-stopped
+
+volumes:
+  cache-db-data:
+    driver: local
+  cache-redis-data:
+    driver: local
+  cache-redis-slave-data:
+    driver: local
+
+networks:
+  cache-network:
+    driver: bridge
+  microservices-network:
+    external: true

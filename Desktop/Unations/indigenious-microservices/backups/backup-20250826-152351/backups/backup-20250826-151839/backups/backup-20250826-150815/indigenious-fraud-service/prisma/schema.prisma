@@ -1,0 +1,537 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model FraudCase {
+  id                    String                  @id @default(uuid())
+  caseNumber            String                  @unique
+  type                  FraudType
+  severity              Severity
+  status                CaseStatus
+  entityType            EntityType
+  entityId              String
+  entityName            String
+  description           String
+  detectionMethod       DetectionMethod
+  confidenceScore       Float                   // 0-100
+  riskScore             Float                   // 0-100
+  financialImpact       Float?
+  affectedRFQs          String[]
+  affectedEntities      String[]
+  evidence              Json
+  indicators            String[]
+  timeline              Json?
+  investigatorId        String?
+  investigatorNotes     String?
+  resolution            ResolutionType?
+  resolutionDate        DateTime?
+  resolutionDetails     String?
+  preventionMeasures    String[]
+  isPermanentBan        Boolean                 @default(false)
+  banDuration           Int?                    // Days
+  reportedBy            String?
+  reportedAt            DateTime?
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  alerts                FraudAlert[]
+  investigations        Investigation[]
+  sanctions             Sanction[]
+  
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+  @@index([entityId])
+}
+
+model IndigenousVerification {
+  id                    String                  @id @default(uuid())
+  businessId            String
+  businessName          String
+  claimedOwnership      Float                   // Percentage claimed
+  verifiedOwnership     Float?                  // Actual verified
+  claimedBand           String?
+  verifiedBand          String?
+  claimedNation         String?
+  verifiedNation        String?
+  verificationType      VerificationType
+  verificationMethod    String[]
+  documentsProvided     Json?
+  documentsVerified     Json?
+  contactsVerified      Json?                   // Band/nation contacts
+  registryChecked       Boolean                 @default(false)
+  registryResult        String?
+  communityConfirmation Boolean                 @default(false)
+  elderVerification     Boolean                 @default(false)
+  verificationScore     Float                   // 0-100
+  discrepancies         String[]
+  riskLevel             RiskLevel
+  status                VerificationStatus
+  notes                 String?
+  verifiedBy            String?
+  verificationDate      DateTime?
+  expiryDate            DateTime?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  alerts                FraudAlert[]
+  
+  @@unique([businessId])
+  @@index([status])
+  @@index([riskLevel])
+}
+
+model BidPattern {
+  id                    String                  @id @default(uuid())
+  rfqId                 String
+  bidderId              String
+  bidderName            String
+  bidAmount             Float
+  submissionTime        DateTime
+  timingPattern         String?                 // Early, last-minute, etc.
+  pricePattern          String?                 // Just below, round number, etc.
+  similarityScore       Float?                  // To other bids
+  anomalyScore          Float                   // 0-100
+  suspiciousIndicators  String[]
+  relatedBidders        Json?                   // Network analysis
+  ipAddress             String?
+  deviceFingerprint     String?
+  geoLocation           String?
+  documentHashes        String[]
+  textSimilarity        Json?                   // To other submissions
+  priceDeviation        Float?                  // From market average
+  winRate               Float?
+  historicalBehavior    Json?
+  riskScore             Float
+  flagged               Boolean                 @default(false)
+  investigationRequired Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  collusions            CollusionDetection[]
+  
+  @@index([rfqId])
+  @@index([bidderId])
+  @@index([anomalyScore])
+  @@index([flagged])
+}
+
+model CollusionDetection {
+  id                    String                  @id @default(uuid())
+  rfqId                 String
+  suspectedEntities     String[]                // Business IDs
+  collusionType         CollusionType
+  confidenceScore       Float                   // 0-100
+  evidence              Json
+  patterns              Json
+  communicationLinks    Json?                   // Email, phone patterns
+  ownershipLinks        Json?                   // Shared ownership
+  addressLinks          Json?                   // Shared addresses
+  documentSimilarity    Float?                  // Document fingerprinting
+  pricingCoordination   Json?
+  bidRotation           Json?
+  marketDivision        Json?
+  timingCoordination    Json?
+  historicalCollusion   Boolean                 @default(false)
+  networkAnalysis       Json?
+  riskLevel             RiskLevel
+  status                InvestigationStatus
+  investigatorAssigned  String?
+  actionTaken           String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  bidPatterns           BidPattern[]
+  
+  @@index([rfqId])
+  @@index([status])
+  @@index([riskLevel])
+}
+
+model DocumentVerification {
+  id                    String                  @id @default(uuid())
+  documentId            String
+  documentType          String
+  entityId              String
+  entityType            EntityType
+  fileName              String
+  fileHash              String
+  fileSize              Int
+  mimeType              String
+  uploadedAt            DateTime
+  uploadedBy            String
+  ocrExtracted          Boolean                 @default(false)
+  ocrText               String?
+  metadataExtracted     Json?
+  authenticityScore     Float                   // 0-100
+  tamperedIndicators    String[]
+  duplicateOf           String?                 // Another document ID
+  similarDocuments      String[]
+  anomalies             String[]
+  aiGeneratedProbability Float?                 // 0-1
+  templateMatch         String?                 // Known template ID
+  verificationStatus    DocumentStatus
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  rejectionReason       String?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@unique([fileHash])
+  @@index([documentId])
+  @@index([entityId])
+  @@index([verificationStatus])
+}
+
+model BehavioralProfile {
+  id                    String                  @id @default(uuid())
+  entityId              String
+  entityType            EntityType
+  normalBehavior        Json                    // Baseline patterns
+  currentBehavior       Json                    // Recent patterns
+  deviationScore        Float                   // 0-100
+  anomalies             Json[]
+  riskFactors           String[]
+  activityFrequency     Json
+  timePatterns          Json
+  geographicPatterns    Json
+  transactionPatterns   Json?
+  communicationPatterns Json?
+  lastActivityAt        DateTime
+  profileAccuracy       Float                   // 0-1
+  learningComplete      Boolean                 @default(false)
+  suspiciousActivities  Int                     @default(0)
+  falsePositives        Int                     @default(0)
+  truePositives         Int                     @default(0)
+  lastReviewedAt        DateTime?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@unique([entityId, entityType])
+  @@index([entityId])
+  @@index([deviationScore])
+}
+
+model FraudAlert {
+  id                    String                  @id @default(uuid())
+  alertType             AlertType
+  severity              Severity
+  entityId              String
+  entityType            EntityType
+  title                 String
+  description           String
+  details               Json
+  riskScore             Float
+  actionRequired        String[]
+  autoGenerated         Boolean                 @default(true)
+  acknowledgedBy        String?
+  acknowledgedAt        DateTime?
+  investigationId       String?
+  fraudCaseId           String?
+  verificationId        String?
+  resolved              Boolean                 @default(false)
+  resolvedBy            String?
+  resolvedAt            DateTime?
+  resolution            String?
+  falsePositive         Boolean                 @default(false)
+  escalated             Boolean                 @default(false)
+  escalatedTo           String?
+  escalatedAt           DateTime?
+  expiresAt             DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  fraudCase             FraudCase?              @relation(fields: [fraudCaseId], references: [id])
+  verification          IndigenousVerification? @relation(fields: [verificationId], references: [id])
+  
+  @@index([alertType])
+  @@index([severity])
+  @@index([entityId])
+  @@index([resolved])
+}
+
+model Investigation {
+  id                    String                  @id @default(uuid())
+  caseId                String
+  investigatorId        String
+  investigatorName      String
+  status                InvestigationStatus
+  priority              Priority
+  startDate             DateTime
+  endDate               DateTime?
+  methodology           String[]
+  findingSummary        String?
+  evidence              Json?
+  interviews            Json?
+  documentReview        Json?
+  dataAnalysis          Json?
+  conclusion            String?
+  recommendations       String[]
+  actionItems           String[]
+  followUpRequired      Boolean                 @default(false)
+  followUpDate          DateTime?
+  reportUrl             String?
+  approvedBy            String?
+  approvalDate          DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  fraudCase             FraudCase               @relation(fields: [caseId], references: [id])
+  
+  @@index([caseId])
+  @@index([investigatorId])
+  @@index([status])
+}
+
+model Sanction {
+  id                    String                  @id @default(uuid())
+  caseId                String
+  entityId              String
+  entityType            EntityType
+  sanctionType          SanctionType
+  description           String
+  startDate             DateTime
+  endDate               DateTime?
+  isPermanent           Boolean                 @default(false)
+  conditions            String[]
+  appealable            Boolean                 @default(true)
+  appealDeadline        DateTime?
+  appealStatus          AppealStatus?
+  appealNotes           String?
+  enforcedBy            String
+  enforcedAt            DateTime
+  liftedBy              String?
+  liftedAt              DateTime?
+  liftReason            String?
+  publicNotice          Boolean                 @default(false)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  fraudCase             FraudCase               @relation(fields: [caseId], references: [id])
+  
+  @@index([entityId])
+  @@index([sanctionType])
+  @@index([isActive])
+}
+
+model MLModel {
+  id                    String                  @id @default(uuid())
+  modelName             String                  @unique
+  modelType             ModelType
+  version               String
+  accuracy              Float
+  precision             Float
+  recall                Float
+  f1Score               Float
+  trainingDate          DateTime
+  trainingDataSize      Int
+  features              String[]
+  hyperparameters       Json
+  performanceMetrics    Json
+  confusionMatrix       Json?
+  thresholds            Json
+  modelPath             String
+  isActive              Boolean                 @default(true)
+  isDeployed            Boolean                 @default(false)
+  deployedAt            DateTime?
+  lastPredictionAt      DateTime?
+  predictionCount       Int                     @default(0)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([modelType])
+  @@index([isActive])
+}
+
+model AuditLog {
+  id                    String                  @id @default(uuid())
+  action                String
+  entityType            String
+  entityId              String
+  userId                String
+  userName              String
+  changes               Json?
+  reason                String?
+  ipAddress             String?
+  userAgent             String?
+  timestamp             DateTime                @default(now())
+  
+  @@index([entityId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+// Enums
+enum FraudType {
+  FALSE_INDIGENOUS_CLAIM
+  BID_RIGGING
+  COLLUSION
+  PRICE_FIXING
+  DOCUMENT_FORGERY
+  IDENTITY_THEFT
+  KICKBACK
+  CONFLICT_OF_INTEREST
+  PHANTOM_VENDOR
+  INVOICE_FRAUD
+  SUBSIDY_ABUSE
+  FALSE_CERTIFICATION
+  MONEY_LAUNDERING
+  BRIBERY
+  OTHER
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum CaseStatus {
+  REPORTED
+  UNDER_INVESTIGATION
+  VERIFIED
+  DISMISSED
+  RESOLVED
+  ESCALATED
+  LEGAL_ACTION
+}
+
+enum EntityType {
+  BUSINESS
+  USER
+  RFQ
+  BID
+  CONTRACT
+  INVOICE
+  DOCUMENT
+}
+
+enum DetectionMethod {
+  ML_MODEL
+  RULE_BASED
+  MANUAL_REPORT
+  AUTOMATED_SCAN
+  BEHAVIORAL_ANALYSIS
+  DOCUMENT_ANALYSIS
+  NETWORK_ANALYSIS
+  STATISTICAL_ANOMALY
+}
+
+enum ResolutionType {
+  WARNING_ISSUED
+  SUSPENDED
+  BANNED
+  LEGAL_REFERRAL
+  NO_ACTION
+  FALSE_POSITIVE
+}
+
+enum VerificationType {
+  INITIAL
+  PERIODIC
+  TRIGGERED
+  COMPLAINT_BASED
+}
+
+enum VerificationStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  FAILED
+  EXPIRED
+  SUSPENDED
+}
+
+enum RiskLevel {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+  CRITICAL
+}
+
+enum CollusionType {
+  BID_ROTATION
+  BID_SUPPRESSION
+  COMPLEMENTARY_BIDDING
+  MARKET_DIVISION
+  PRICE_FIXING
+  SUBCONTRACTING_ARRANGEMENT
+}
+
+enum InvestigationStatus {
+  INITIATED
+  EVIDENCE_GATHERING
+  ANALYSIS
+  REVIEW
+  CONCLUDED
+  ESCALATED
+}
+
+enum DocumentStatus {
+  PENDING
+  VERIFIED
+  SUSPICIOUS
+  REJECTED
+  EXPIRED
+}
+
+enum AlertType {
+  FRAUD_DETECTED
+  VERIFICATION_FAILED
+  SUSPICIOUS_ACTIVITY
+  COLLUSION_SUSPECTED
+  DOCUMENT_TAMPERED
+  HIGH_RISK_ENTITY
+  PATTERN_DETECTED
+  THRESHOLD_EXCEEDED
+}
+
+enum Priority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum SanctionType {
+  WARNING
+  TEMPORARY_SUSPENSION
+  PERMANENT_BAN
+  FINE
+  CONTRACT_TERMINATION
+  BLACKLIST
+  LEGAL_ACTION
+}
+
+enum AppealStatus {
+  PENDING
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  WITHDRAWN
+}
+
+enum ModelType {
+  FRAUD_DETECTION
+  COLLUSION_DETECTION
+  DOCUMENT_VERIFICATION
+  BEHAVIORAL_ANALYSIS
+  RISK_SCORING
+  INDIGENOUS_VERIFICATION
+}

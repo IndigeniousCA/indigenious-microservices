@@ -1,0 +1,115 @@
+version: '3.8'
+
+services:
+  # Canadian Verification Service
+  verification-service:
+    build:
+      context: ../../../..
+      dockerfile: src/features/canadian-verification/deployment/Dockerfile
+    container_name: canadian-verification
+    environment:
+      - NODE_ENV=production
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=${REDIS_PASSWORD}
+      # Provincial APIs
+      - BC_REGISTRY_API_KEY=${BC_REGISTRY_API_KEY}
+      - AB_REGISTRY_API_KEY=${AB_REGISTRY_API_KEY}
+      - ON_REGISTRY_API_KEY=${ON_REGISTRY_API_KEY}
+      - QC_REQ_API_KEY=${QC_REQ_API_KEY}
+      # Federal APIs
+      - CRA_API_KEY=${CRA_API_KEY}
+      - ISED_API_KEY=${ISED_API_KEY}
+      - ISC_API_KEY=${ISC_API_KEY}
+      # Security
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - VERIFICATION_PRIVATE_KEY=${VERIFICATION_PRIVATE_KEY}
+    ports:
+      - "3010:3000"
+    depends_on:
+      - redis
+      - prometheus
+    networks:
+      - verification-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: verification-redis
+    command: redis-server --requirepass ${REDIS_PASSWORD}
+    volumes:
+      - redis-data:/data
+    ports:
+      - "6379:6379"
+    networks:
+      - verification-network
+    restart: unless-stopped
+
+  # Prometheus Monitoring
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: verification-prometheus
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    networks:
+      - verification-network
+    restart: unless-stopped
+
+  # Grafana Dashboard
+  grafana:
+    image: grafana/grafana:latest
+    container_name: verification-grafana
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+      - ./grafana/provisioning:/etc/grafana/provisioning
+    ports:
+      - "3001:3000"
+    networks:
+      - verification-network
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:alpine
+    container_name: verification-nginx
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./ssl:/etc/nginx/ssl:ro
+    ports:
+      - "443:443"
+      - "80:80"
+    networks:
+      - verification-network
+    depends_on:
+      - verification-service
+    restart: unless-stopped
+
+volumes:
+  redis-data:
+  prometheus-data:
+  grafana-data:
+
+networks:
+  verification-network:
+    driver: bridge

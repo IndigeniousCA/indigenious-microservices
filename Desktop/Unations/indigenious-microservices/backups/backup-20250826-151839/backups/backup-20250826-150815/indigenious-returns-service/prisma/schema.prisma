@@ -1,0 +1,718 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Return {
+  id                    String                  @id @default(uuid())
+  returnId              String                  @unique
+  rmaNumber             String                  @unique
+  
+  // Order reference
+  orderId               String
+  orderNumber           String
+  customerId            String
+  
+  // Return type
+  returnType            ReturnType
+  returnReason          ReturnReason
+  reasonDetails         String?
+  
+  // Indigenous return features
+  indigenousReturn      Boolean                 @default(false)
+  ceremonyReturn        Boolean                 @default(false)
+  sacredItemReturn      Boolean                 @default(false)
+  traditionalMedicine   Boolean                 @default(false)
+  
+  // Elder approval for cultural items
+  elderApprovalRequired Boolean                 @default(false)
+  elderApproved         Boolean?
+  elderApprovedBy       String?
+  elderApprovalDate     DateTime?
+  elderNotes            String?
+  
+  // Cultural protocols
+  purificationRequired  Boolean                 @default(false)
+  smudgingCompleted     Boolean                 @default(false)
+  ceremonyReturnWindow  Json?                   // Specific dates for ceremony items
+  moonPhaseReturn       String?                 // Some items must be returned during specific moon phases
+  
+  // Items
+  items                 ReturnItem[]
+  totalItems            Int
+  totalValue            Decimal                 @db.Decimal(19, 4)
+  
+  // Return method
+  returnMethod          ReturnMethod
+  pickupRequested       Boolean                 @default(false)
+  dropOffLocation       String?
+  
+  // Community return center
+  communityCenter       String?
+  communityCoordinator  String?
+  bandOfficeReturn      Boolean                 @default(false)
+  
+  // Remote returns
+  remoteReturn          Boolean                 @default(false)
+  winterRoadReturn      Boolean                 @default(false)
+  floatPlaneReturn      Boolean                 @default(false)
+  lastMileMethod        String?
+  
+  // Shipping
+  returnLabel           ReturnLabel?
+  trackingNumber        String?
+  carrier               String?
+  shippingCost          Decimal?                @db.Decimal(10, 2)
+  indigenousShippingDiscount Decimal?           @db.Decimal(5, 2)
+  
+  // Processing
+  receivedDate          DateTime?
+  inspectionDate        DateTime?
+  processedDate         DateTime?
+  
+  // Quality inspection
+  inspectionRequired    Boolean                 @default(true)
+  inspectionStatus      InspectionStatus?
+  inspectionNotes       String?
+  inspectedBy           String?
+  
+  // Refund/Exchange
+  refundAmount          Decimal?                @db.Decimal(19, 4)
+  refundMethod          RefundMethod?
+  refundProcessedDate   DateTime?
+  exchangeOrderId       String?
+  creditIssued          Decimal?                @db.Decimal(19, 4)
+  
+  // Restocking
+  restockingFee         Decimal?                @db.Decimal(10, 2)
+  restockingWaived      Boolean                 @default(false)
+  waivedReason          String?
+  
+  // Environmental
+  recyclingRequired     Boolean                 @default(false)
+  recyclableComponents  Json?
+  disposalMethod        String?
+  
+  // Status
+  status                ReturnStatus
+  statusHistory         ReturnStatusHistory[]
+  
+  // Communication
+  customerNotified      Boolean                 @default(false)
+  notifications         ReturnNotification[]
+  
+  // Timestamps
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  completedAt           DateTime?
+  
+  createdBy             String
+  
+  @@index([rmaNumber])
+  @@index([orderId])
+  @@index([customerId])
+  @@index([status])
+  @@index([indigenousReturn])
+  @@index([createdAt])
+}
+
+model ReturnItem {
+  id                    String                  @id @default(uuid())
+  returnItemId          String                  @unique
+  returnId              String
+  
+  // Product details
+  productId             String
+  productName           String
+  sku                   String
+  
+  // Quantities
+  orderedQuantity       Int
+  returnQuantity        Int
+  receivedQuantity      Int?
+  acceptedQuantity      Int?
+  
+  // Pricing
+  originalPrice         Decimal                 @db.Decimal(19, 4)
+  refundAmount          Decimal?                @db.Decimal(19, 4)
+  
+  // Condition
+  condition             ItemCondition
+  conditionNotes        String?
+  
+  // Indigenous item features
+  ceremonyItem          Boolean                 @default(false)
+  sacredItem            Boolean                 @default(false)
+  medicineItem          Boolean                 @default(false)
+  craftItem             Boolean                 @default(false)
+  
+  // Cultural handling
+  elderInspection       Boolean                 @default(false)
+  culturalSignificance  String?
+  specialHandling       Json?
+  
+  // Quality check
+  qualityCheckPassed    Boolean?
+  defectType            DefectType?
+  defectDescription     String?
+  photos                String[]                // S3 URLs
+  
+  // Disposition
+  disposition           ItemDisposition?
+  dispositionNotes      String?
+  
+  // Resale
+  resaleable            Boolean                 @default(false)
+  resaleValue           Decimal?                @db.Decimal(19, 4)
+  
+  // Recycling
+  recyclable            Boolean                 @default(false)
+  recyclingCategory     String?
+  
+  return                Return                  @relation(fields: [returnId], references: [id])
+  
+  @@index([returnId])
+  @@index([productId])
+}
+
+model ReturnLabel {
+  id                    String                  @id @default(uuid())
+  labelId               String                  @unique
+  returnId              String                  @unique
+  
+  // Label details
+  labelNumber           String                  @unique
+  labelType             LabelType
+  
+  // Shipping information
+  carrier               String
+  service               String
+  trackingNumber        String?
+  
+  // Addresses
+  fromAddress           Json                    // Customer address
+  toAddress             Json                    // Return center address
+  
+  // Indigenous shipping
+  indigenousRate        Boolean                 @default(false)
+  communityPickup       Boolean                 @default(false)
+  bandOfficeDropoff     Boolean                 @default(false)
+  
+  // Remote logistics
+  specialInstructions   String?
+  winterRoadInstructions String?
+  floatPlaneRequired    Boolean                 @default(false)
+  
+  // Label generation
+  generatedAt           DateTime                @default(now())
+  expiresAt             DateTime?
+  labelUrl              String?                 // S3 URL or base64
+  qrCode                String?                 // QR code for mobile scanning
+  
+  // Cost
+  shippingCost          Decimal                 @db.Decimal(10, 2)
+  prepaid               Boolean                 @default(true)
+  
+  // Usage
+  used                  Boolean                 @default(false)
+  usedAt                DateTime?
+  
+  return                Return                  @relation(fields: [returnId], references: [id])
+  
+  @@index([returnId])
+  @@index([labelNumber])
+  @@index([trackingNumber])
+}
+
+model ReturnCenter {
+  id                    String                  @id @default(uuid())
+  centerId              String                  @unique
+  centerCode            String                  @unique
+  
+  // Center details
+  name                  String
+  type                  CenterType
+  description           String?
+  
+  // Location
+  address               Json
+  coordinates           Json?                   // GPS coordinates
+  region                String
+  
+  // Indigenous center features
+  indigenousOperated    Boolean                 @default(false)
+  bandNumber            String?
+  treatyTerritory       String?
+  onReserve             Boolean                 @default(false)
+  
+  // Community features
+  communityCenter       Boolean                 @default(false)
+  elderSupervision      Boolean                 @default(false)
+  culturalProcessing    Boolean                 @default(false)
+  
+  // Capabilities
+  processReturns        Boolean                 @default(true)
+  processExchanges      Boolean                 @default(true)
+  issueRefunds          Boolean                 @default(false)
+  qualityInspection     Boolean                 @default(true)
+  
+  // Special handling
+  ceremonyItems         Boolean                 @default(false)
+  traditionalMedicine   Boolean                 @default(false)
+  sacredItems           Boolean                 @default(false)
+  
+  // Capacity
+  dailyCapacity         Int?
+  storageCapacity       Decimal?                @db.Decimal(10, 2)
+  currentUtilization    Decimal?                @db.Decimal(5, 2)
+  
+  // Operating hours
+  operatingHours        Json
+  seasonalHours         Json?
+  holidaySchedule       Json?
+  
+  // Contact
+  manager               String
+  managerEmail          String
+  managerPhone          String
+  supportEmail          String?
+  
+  // Remote access
+  winterRoadAccess      Boolean                 @default(false)
+  airAccess             Boolean                 @default(false)
+  waterAccess           Boolean                 @default(false)
+  
+  // Environmental
+  recyclingFacility     Boolean                 @default(false)
+  eWasteProcessing      Boolean                 @default(false)
+  compostingAvailable   Boolean                 @default(false)
+  
+  // Certifications
+  certifications        Json?
+  indigenousCertified   Boolean                 @default(false)
+  
+  // Status
+  status                CenterStatus            @default(ACTIVE)
+  
+  // Policies
+  policies              ReturnPolicy[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([centerCode])
+  @@index([region])
+  @@index([indigenousOperated])
+  @@index([status])
+}
+
+model ReturnPolicy {
+  id                    String                  @id @default(uuid())
+  policyId              String                  @unique
+  centerId              String?
+  
+  // Policy details
+  policyName            String
+  policyType            PolicyType
+  description           String
+  
+  // Time windows
+  standardReturnWindow  Int                     @default(30) // days
+  extendedReturnWindow  Int?                    // days for special cases
+  
+  // Indigenous policies
+  indigenousReturnWindow Int?                   @default(60) // Extended for remote communities
+  ceremonyItemPolicy    Json?                   // Special rules for ceremony items
+  elderApprovalRequired Boolean                 @default(false)
+  
+  // Seasonal policies
+  seasonalWindows       Json?                   // Different windows by season
+  winterRoadWindow      Json?                   // Special window for winter road communities
+  
+  // Conditions
+  conditionsAccepted    String[]                // NEW, LIKE_NEW, USED, etc.
+  originalPackaging     Boolean                 @default(false)
+  proofOfPurchase       Boolean                 @default(true)
+  
+  // Fees
+  restockingFee         Decimal?                @db.Decimal(5, 2) // Percentage
+  returnShippingPaid    String                  @default("CUSTOMER") // CUSTOMER, MERCHANT, SPLIT
+  
+  // Exceptions
+  exceptions            Json?                   // Product categories with different rules
+  
+  // Refund methods
+  refundMethods         String[]                // ORIGINAL, CREDIT, EXCHANGE
+  
+  // Environmental
+  recyclingRequired     Boolean                 @default(false)
+  disposalFee           Decimal?                @db.Decimal(10, 2)
+  
+  // Status
+  active                Boolean                 @default(true)
+  effectiveDate         DateTime
+  expiryDate            DateTime?
+  
+  center                ReturnCenter?           @relation(fields: [centerId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([centerId])
+  @@index([policyType])
+  @@index([active])
+}
+
+model ReturnStatusHistory {
+  id                    String                  @id @default(uuid())
+  historyId             String                  @unique
+  returnId              String
+  
+  // Status change
+  fromStatus            ReturnStatus?
+  toStatus              ReturnStatus
+  
+  // Details
+  notes                 String?
+  reason                String?
+  
+  // Location
+  location              String?
+  
+  // Who made the change
+  changedBy             String
+  changeType            ChangeType
+  
+  // Timestamp
+  timestamp             DateTime                @default(now())
+  
+  return                Return                  @relation(fields: [returnId], references: [id])
+  
+  @@index([returnId])
+  @@index([timestamp])
+}
+
+model ReturnNotification {
+  id                    String                  @id @default(uuid())
+  notificationId        String                  @unique
+  returnId              String
+  
+  // Notification details
+  type                  NotificationType
+  channel               NotificationChannel
+  
+  // Recipient
+  recipientEmail        String?
+  recipientPhone        String?
+  recipientId           String?
+  
+  // Content
+  subject               String?
+  message               String
+  templateUsed          String?
+  
+  // Indigenous communication
+  languageCode          String?                 // Indigenous language code
+  communityRadio        Boolean                 @default(false)
+  elderNotification     Boolean                 @default(false)
+  
+  // Status
+  status                NotificationStatus
+  sentAt                DateTime?
+  deliveredAt           DateTime?
+  readAt                DateTime?
+  failureReason         String?
+  
+  // Retry
+  retryCount            Int                     @default(0)
+  maxRetries            Int                     @default(3)
+  
+  return                Return                  @relation(fields: [returnId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([returnId])
+  @@index([status])
+}
+
+model ReturnAnalytics {
+  id                    String                  @id @default(uuid())
+  analyticsId           String                  @unique
+  
+  // Period
+  periodStart           DateTime
+  periodEnd             DateTime
+  
+  // Volume metrics
+  totalReturns          Int
+  totalItems            Int
+  totalValue            Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous metrics
+  indigenousReturns     Int
+  ceremonyReturns       Int
+  elderApprovals        Int
+  remoteReturns         Int
+  
+  // Reason breakdown
+  reasonBreakdown       Json                    // Count by reason
+  
+  // Processing metrics
+  avgProcessingTime     Decimal                 @db.Decimal(10, 2) // hours
+  avgRefundTime         Decimal                 @db.Decimal(10, 2) // hours
+  
+  // Quality metrics
+  inspectionPassRate    Decimal                 @db.Decimal(5, 2) // percentage
+  resaleRate            Decimal                 @db.Decimal(5, 2) // percentage
+  recyclingRate         Decimal                 @db.Decimal(5, 2) // percentage
+  
+  // Cost metrics
+  totalShippingCost     Decimal                 @db.Decimal(19, 4)
+  totalRefunds          Decimal                 @db.Decimal(19, 4)
+  totalRestockingFees   Decimal                 @db.Decimal(19, 4)
+  
+  // Customer satisfaction
+  customerSatisfaction  Decimal?                @db.Decimal(3, 2) // 1-5 rating
+  
+  // Environmental impact
+  itemsRecycled         Int
+  itemsResold           Int
+  wasteReduced          Decimal?                @db.Decimal(10, 2) // kg
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([periodStart, periodEnd])
+}
+
+model RecyclingRecord {
+  id                    String                  @id @default(uuid())
+  recordId              String                  @unique
+  
+  // Item reference
+  returnItemId          String?
+  
+  // Recycling details
+  category              RecyclingCategory
+  material              String
+  weight                Decimal                 @db.Decimal(10, 3) // kg
+  
+  // Processing
+  processor             String
+  processingDate        DateTime
+  processingMethod      String
+  
+  // Indigenous recycling
+  traditionalMethod     Boolean                 @default(false)
+  communityProgram      Boolean                 @default(false)
+  
+  // Environmental impact
+  co2Saved              Decimal?                @db.Decimal(10, 2) // kg
+  energySaved           Decimal?                @db.Decimal(10, 2) // kWh
+  
+  // Certification
+  certificateNumber     String?
+  certificateUrl        String?
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([category])
+  @@index([processingDate])
+}
+
+// Enums
+enum ReturnType {
+  STANDARD
+  EXCHANGE
+  WARRANTY
+  DEFECTIVE
+  DAMAGED
+  WRONG_ITEM
+  NOT_AS_DESCRIBED
+  CEREMONY_RETURN
+  SEASONAL_RETURN
+  GIFT_RETURN
+}
+
+enum ReturnReason {
+  DEFECTIVE
+  DAMAGED
+  WRONG_ITEM
+  NOT_AS_DESCRIBED
+  NO_LONGER_NEEDED
+  BETTER_PRICE
+  ARRIVED_LATE
+  CULTURAL_INAPPROPRIATE
+  CEREMONY_ENDED
+  ELDER_REJECTION
+  QUALITY_ISSUE
+  OTHER
+}
+
+enum ReturnMethod {
+  MAIL
+  DROPOFF
+  PICKUP
+  COMMUNITY_CENTER
+  BAND_OFFICE
+  ELDER_CENTER
+  WINTER_ROAD
+  FLOAT_PLANE
+  BOAT
+}
+
+enum ReturnStatus {
+  INITIATED
+  APPROVED
+  LABEL_SENT
+  IN_TRANSIT
+  RECEIVED
+  INSPECTING
+  PROCESSING
+  REFUND_PENDING
+  REFUNDED
+  EXCHANGED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum InspectionStatus {
+  PENDING
+  IN_PROGRESS
+  PASSED
+  FAILED
+  PARTIAL_PASS
+  ELDER_REVIEW
+}
+
+enum RefundMethod {
+  ORIGINAL_PAYMENT
+  STORE_CREDIT
+  BANK_TRANSFER
+  CHECK
+  CASH
+  E_TRANSFER
+  COMMUNITY_CREDIT
+}
+
+enum ItemCondition {
+  NEW
+  LIKE_NEW
+  GOOD
+  FAIR
+  POOR
+  DAMAGED
+  DEFECTIVE
+}
+
+enum DefectType {
+  MANUFACTURING
+  SHIPPING_DAMAGE
+  WEAR_AND_TEAR
+  MISSING_PARTS
+  MALFUNCTION
+  COSMETIC
+  OTHER
+}
+
+enum ItemDisposition {
+  RESTOCK
+  LIQUIDATE
+  DONATE
+  RECYCLE
+  DESTROY
+  RETURN_TO_VENDOR
+  REPAIR
+  ELDER_REVIEW
+}
+
+enum LabelType {
+  PREPAID
+  COLLECT
+  DIGITAL
+  PHYSICAL
+  QR_CODE
+}
+
+enum CenterType {
+  MAIN
+  REGIONAL
+  COMMUNITY
+  BAND_OFFICE
+  POPUP
+  SEASONAL
+}
+
+enum CenterStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  SEASONAL_CLOSED
+  PERMANENTLY_CLOSED
+}
+
+enum PolicyType {
+  STANDARD
+  EXTENDED
+  WARRANTY
+  INDIGENOUS
+  CEREMONY
+  SEASONAL
+  PROMOTIONAL
+}
+
+enum ChangeType {
+  SYSTEM
+  CUSTOMER
+  AGENT
+  MANAGER
+  ELDER
+  AUTOMATED
+}
+
+enum NotificationType {
+  RMA_CREATED
+  LABEL_READY
+  RECEIVED
+  INSPECTION_COMPLETE
+  REFUND_PROCESSED
+  EXCHANGE_SHIPPED
+  REJECTED
+  ELDER_APPROVAL_NEEDED
+}
+
+enum NotificationChannel {
+  EMAIL
+  SMS
+  PHONE
+  WHATSAPP
+  COMMUNITY_RADIO
+  POSTAL
+  COORDINATOR
+}
+
+enum NotificationStatus {
+  PENDING
+  SENT
+  DELIVERED
+  READ
+  FAILED
+  BOUNCED
+}
+
+enum RecyclingCategory {
+  ELECTRONICS
+  PLASTICS
+  METALS
+  TEXTILES
+  ORGANICS
+  BATTERIES
+  HAZARDOUS
+  PAPER
+  GLASS
+  TRADITIONAL_MATERIALS
+}

@@ -1,0 +1,288 @@
+version: '3.8'
+
+services:
+  cdn-service:
+    build: .
+    ports:
+      - "3048:3048"
+    environment:
+      - NODE_ENV=production
+      - PORT=3048
+      - DATABASE_URL=postgresql://cdn_user:cdn_pass@cdn-db:5432/indigenous_cdn_db
+      - REDIS_URL=redis://cdn-redis:6379
+      - REDIS_HOST=cdn-redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      # CDN Providers
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - CLOUDFLARE_API_KEY=${CLOUDFLARE_API_KEY}
+      - CLOUDFLARE_ZONE_ID=${CLOUDFLARE_ZONE_ID}
+      - AZURE_CDN_ENDPOINT=${AZURE_CDN_ENDPOINT}
+      - FASTLY_API_KEY=${FASTLY_API_KEY}
+      - AKAMAI_CLIENT_TOKEN=${AKAMAI_CLIENT_TOKEN}
+      # Indigenous CDN
+      - INDIGENOUS_CDN_ENABLED=${INDIGENOUS_CDN_ENABLED}
+      - CDN_BASE_URL=https://cdn.indigenous.ca
+      # CORS
+      - CORS_ORIGIN=${CORS_ORIGIN}
+    depends_on:
+      - cdn-db
+      - cdn-redis
+      - varnish
+    networks:
+      - cdn-network
+      - microservices-network
+    volumes:
+      - ./logs:/app/logs
+      - cdn-cache:/app/cache
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3048/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  cdn-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_cdn_db
+      - POSTGRES_USER=cdn_user
+      - POSTGRES_PASSWORD=cdn_pass
+    volumes:
+      - cdn-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5454:5432"
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  cdn-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 2gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6404:6379"
+    volumes:
+      - cdn-redis-data:/data
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # Varnish Cache for edge caching
+  varnish:
+    image: varnish:7-alpine
+    ports:
+      - "8083:80"
+    volumes:
+      - ./varnish/default.vcl:/etc/varnish/default.vcl:ro
+    environment:
+      - VARNISH_SIZE=2G
+    command: |
+      -F -f /etc/varnish/default.vcl
+      -s malloc,2G
+      -a :80
+      -T :6082
+      -p default_ttl=3600
+      -p default_grace=3600
+    depends_on:
+      - cdn-service
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # Bull Board for queue monitoring
+  bull-board:
+    image: deadly0/bull-board:latest
+    environment:
+      - REDIS_HOST=cdn-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    ports:
+      - "3055:3000"
+    depends_on:
+      - cdn-redis
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # Nginx for load balancing and caching
+  nginx:
+    image: nginx:alpine
+    ports:
+      - "8084:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/sites:/etc/nginx/sites-enabled:ro
+      - ./ssl:/etc/nginx/ssl:ro
+      - nginx-cache:/var/cache/nginx
+    depends_on:
+      - cdn-service
+      - varnish
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9095:9090"
+    volumes:
+      - ./prometheus/cdn-prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # Grafana for monitoring
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource,postgres-datasource
+    ports:
+      - "3056:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - cdn-db
+      - cdn-redis
+      - prometheus
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # GeoIP service for location detection
+  geoip:
+    image: maxmindinc/geoipupdate:latest
+    environment:
+      - GEOIPUPDATE_ACCOUNT_ID=${MAXMIND_ACCOUNT_ID}
+      - GEOIPUPDATE_LICENSE_KEY=${MAXMIND_LICENSE_KEY}
+      - GEOIPUPDATE_EDITION_IDS=GeoLite2-City GeoLite2-Country
+    volumes:
+      - geoip-data:/usr/share/GeoIP
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # Edge simulator for Toronto (YYZ)
+  edge-yyz:
+    build: .
+    command: ["node", "dist/workers/edge-worker.js"]
+    environment:
+      - NODE_ENV=production
+      - EDGE_LOCATION=YYZ
+      - EDGE_NAME=Toronto
+      - INDIGENOUS_TERRITORY=Mississaugas of the Credit
+      - DATABASE_URL=postgresql://cdn_user:cdn_pass@cdn-db:5432/indigenous_cdn_db
+      - REDIS_URL=redis://cdn-redis:6379
+    depends_on:
+      - cdn-db
+      - cdn-redis
+    networks:
+      - cdn-network
+    volumes:
+      - edge-yyz-cache:/app/cache
+    restart: unless-stopped
+
+  # Edge simulator for Vancouver (YVR)
+  edge-yvr:
+    build: .
+    command: ["node", "dist/workers/edge-worker.js"]
+    environment:
+      - NODE_ENV=production
+      - EDGE_LOCATION=YVR
+      - EDGE_NAME=Vancouver
+      - INDIGENOUS_TERRITORY=Musqueam, Squamish, Tsleil-Waututh
+      - DATABASE_URL=postgresql://cdn_user:cdn_pass@cdn-db:5432/indigenous_cdn_db
+      - REDIS_URL=redis://cdn-redis:6379
+    depends_on:
+      - cdn-db
+      - cdn-redis
+    networks:
+      - cdn-network
+    volumes:
+      - edge-yvr-cache:/app/cache
+    restart: unless-stopped
+
+  # Analytics worker
+  analytics-worker:
+    build: .
+    command: ["node", "dist/workers/analytics-worker.js"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://cdn_user:cdn_pass@cdn-db:5432/indigenous_cdn_db
+      - REDIS_URL=redis://cdn-redis:6379
+    depends_on:
+      - cdn-db
+      - cdn-redis
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # Purge worker
+  purge-worker:
+    build: .
+    command: ["node", "dist/workers/purge-worker.js"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://cdn_user:cdn_pass@cdn-db:5432/indigenous_cdn_db
+      - REDIS_URL=redis://cdn-redis:6379
+    depends_on:
+      - cdn-db
+      - cdn-redis
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+  # HAProxy for advanced load balancing
+  haproxy:
+    image: haproxy:alpine
+    ports:
+      - "8085:80"
+      - "8407:8404"
+    volumes:
+      - ./haproxy/haproxy-cdn.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - cdn-service
+      - varnish
+      - nginx
+    networks:
+      - cdn-network
+    restart: unless-stopped
+
+volumes:
+  cdn-db-data:
+    driver: local
+  cdn-redis-data:
+    driver: local
+  cdn-cache:
+    driver: local
+  nginx-cache:
+    driver: local
+  geoip-data:
+    driver: local
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  edge-yyz-cache:
+    driver: local
+  edge-yvr-cache:
+    driver: local
+
+networks:
+  cdn-network:
+    driver: bridge
+  microservices-network:
+    external: true

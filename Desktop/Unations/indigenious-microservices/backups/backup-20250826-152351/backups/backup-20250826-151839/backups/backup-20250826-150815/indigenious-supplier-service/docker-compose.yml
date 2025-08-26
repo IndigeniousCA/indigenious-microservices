@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  supplier-service:
+    build: .
+    ports:
+      - "3031:3031"
+    environment:
+      - NODE_ENV=production
+      - PORT=3031
+      - DATABASE_URL=postgresql://supplier_user:supplier_pass@supplier-db:5432/indigenous_supplier_db
+      - REDIS_URL=redis://supplier-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      - supplier-db
+      - supplier-redis
+    networks:
+      - supplier-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3031/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  supplier-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_supplier_db
+      - POSTGRES_USER=supplier_user
+      - POSTGRES_PASSWORD=supplier_pass
+    volumes:
+      - supplier-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5437:5432"
+    networks:
+      - supplier-network
+    restart: unless-stopped
+
+  supplier-redis:
+    image: redis:7-alpine
+    ports:
+      - "6386:6379"
+    volumes:
+      - supplier-redis-data:/data
+    networks:
+      - supplier-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  supplier-db-data:
+    driver: local
+  supplier-redis-data:
+    driver: local
+
+networks:
+  supplier-network:
+    driver: bridge
+  microservices-network:
+    external: true

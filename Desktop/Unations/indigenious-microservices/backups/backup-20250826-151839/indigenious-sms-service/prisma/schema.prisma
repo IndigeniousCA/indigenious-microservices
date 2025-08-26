@@ -1,0 +1,564 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// SMS management system
+model SMSMessage {
+  id                    String   @id @default(uuid())
+  messageId            String   @unique // Unique message identifier
+  
+  // Recipient information
+  toPhoneNumber        String
+  toName               String?
+  countryCode          String?  // ISO country code
+  
+  // Sender information
+  fromPhoneNumber      String?  // Sender phone number
+  fromName             String?  // Sender name/short code
+  
+  // Message content
+  message              String   @db.Text
+  messageLength        Int      // Character count
+  smsCount             Int      @default(1) // Number of SMS parts
+  
+  // Template reference
+  templateId           String?
+  template             SMSTemplate? @relation(fields: [templateId], references: [id])
+  templateVariables    Json?    // Variables used in template
+  
+  // Indigenous context
+  indigenousMessage    Boolean  @default(false)
+  elderRecipient       Boolean  @default(false) // Sent to Elder
+  ceremonyMessage      Boolean  @default(false) // Ceremony-related content
+  emergencyMessage     Boolean  @default(false) // Emergency alert
+  communityBroadcast   Boolean  @default(false) // Community-wide broadcast
+  culturallySensitive  Boolean  @default(false) // Culturally sensitive content
+  traditionalKnowledge Boolean  @default(false) // Contains traditional knowledge
+  nation               String?  // Recipient's nation
+  territory            String?  // Recipient's territory
+  language             String   @default("en") // Message language
+  indigenousLanguage   String?  // Indigenous language used
+  
+  // Priority and urgency
+  priority             String   @default("NORMAL") // HIGH, NORMAL, LOW, ELDER_URGENT, EMERGENCY
+  urgentFlag           Boolean  @default(false)
+  elderPriority        Boolean  @default(false) // Elder priority delivery
+  ceremonyUrgent       Boolean  @default(false) // Ceremony-urgent delivery
+  emergencyLevel       String?  // CRITICAL, HIGH, MEDIUM, LOW
+  
+  // Delivery tracking
+  status               String   @default("PENDING") // PENDING, SENT, DELIVERED, FAILED, BOUNCED
+  sentAt               DateTime?
+  deliveredAt          DateTime?
+  failedAt             DateTime?
+  errorMessage         String?
+  
+  // Provider information
+  provider             String?  // TWILIO, AWS_SNS, NEXMO, PLIVO, CLICKSEND, MESSAGEBIRD
+  providerMessageId    String?  // Provider's message ID
+  providerResponse     Json?    // Provider response data
+  cost                 Float?   // Message cost
+  
+  // Retry logic
+  retryCount           Int      @default(0)
+  maxRetries           Int      @default(3)
+  nextRetryAt          DateTime?
+  
+  // Security and compliance
+  encrypted            Boolean  @default(false)
+  encryptionKey        String?  // Encryption key reference
+  dataClassification   String   @default("PUBLIC") // PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED
+  retentionPeriod      Int      @default(90) // Days
+  
+  // Indigenous data protection
+  sovereigntyCompliant Boolean  @default(true)
+  dataLocation         String?  // Data residency location
+  accessRestrictions   Json?    // Access control rules
+  elderApprovalRequired Boolean @default(false)
+  
+  // User tracking
+  userId               String?  // Sender user ID
+  recipientUserId      String?  // Recipient user ID if internal
+  
+  // Campaign tracking
+  campaignId           String?  // SMS campaign ID
+  segmentId            String?  // Recipient segment ID
+  
+  // Delivery reports
+  deliveryReport       Json?    // Detailed delivery information
+  
+  // Metadata
+  metadata             Json?    // Additional metadata
+  tags                 String[] // Message tags
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  deliveryReports      SMSDeliveryReport[]
+  
+  @@index([toPhoneNumber])
+  @@index([status])
+  @@index([priority])
+  @@index([elderRecipient])
+  @@index([ceremonyMessage])
+  @@index([emergencyMessage])
+  @@index([createdAt])
+  @@index([sentAt])
+}
+
+model SMSTemplate {
+  id                    String   @id @default(uuid())
+  templateName         String   @unique
+  message              String   @db.Text
+  description          String?
+  
+  // Template metadata
+  category             String   // NOTIFICATION, ALERT, EMERGENCY, CEREMONY, ELDER
+  version              String   @default("1.0")
+  maxLength            Int      @default(160) // Character limit
+  
+  // Indigenous customization
+  indigenousTemplate   Boolean  @default(false)
+  elderTemplate        Boolean  @default(false) // Elder-friendly version
+  ceremonyTemplate     Boolean  @default(false) // Ceremony-related
+  emergencyTemplate    Boolean  @default(false) // Emergency alert template
+  nation               String?  // Nation-specific template
+  language             String   @default("en") // Template language
+  indigenousLanguage   String?  // Cree, Ojibwe, etc.
+  
+  // Cultural considerations
+  culturalContext      Json?    // Cultural context and meaning
+  traditionalGreeting  String?  // Traditional greeting in Indigenous language
+  respectfulTone       Boolean  @default(true) // Respectful communication tone
+  culturalSymbols      Json?    // Text-based cultural symbols
+  
+  // Template variables
+  variables            Json?    // Template placeholder variables
+  requiredFields       String[] // Required data fields
+  
+  // Approval workflow
+  needsElderApproval   Boolean  @default(false)
+  approvedBy           String?  // Elder who approved
+  approvedAt           DateTime?
+  culturalReview       Boolean  @default(false) // Cultural appropriateness review
+  reviewedBy           String?  // Cultural advisor who reviewed
+  reviewedAt           DateTime?
+  
+  // Usage restrictions
+  emergencyOnly        Boolean  @default(false) // Only for emergencies
+  elderOnly            Boolean  @default(false) // Only for Elder communications
+  ceremonyOnly         Boolean  @default(false) // Only for ceremony communications
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  messages             SMSMessage[]
+}
+
+model SMSDeliveryReport {
+  id                    String   @id @default(uuid())
+  
+  messageId            String
+  message              SMSMessage @relation(fields: [messageId], references: [id])
+  
+  // Delivery status
+  status               String   // DELIVERED, FAILED, UNDELIVERED, UNKNOWN
+  statusDescription    String?  // Detailed status description
+  
+  // Timing
+  reportedAt           DateTime @default(now())
+  deliveredAt          DateTime?
+  
+  // Provider details
+  provider             String
+  providerReportId     String?
+  providerData         Json?
+  
+  // Error information
+  errorCode            String?
+  errorMessage         String?
+  errorType            String?  // PERMANENT, TEMPORARY, UNKNOWN
+  
+  // Network information
+  networkCode          String?  // Mobile network code
+  carrierName          String?  // Mobile carrier name
+  
+  // Indigenous tracking
+  elderDelivery        Boolean  @default(false) // Delivery to Elder
+  ceremonyImpact       Boolean  @default(false) // Affects ceremony communications
+  emergencyDelivery    Boolean  @default(false) // Emergency message delivery
+  
+  @@index([status])
+  @@index([reportedAt])
+  @@index([elderDelivery])
+}
+
+model SMSProvider {
+  id                    String   @id @default(uuid())
+  providerName         String   @unique
+  providerType         String   // API, WEBHOOK
+  
+  // Provider configuration
+  configuration        Json     // Provider-specific config
+  
+  // Authentication
+  apiKey               String?
+  apiSecret            String?
+  accountSid           String?  // Twilio SID
+  authToken            String?  // Auth token
+  
+  // Provider features
+  supportsDeliveryReports Boolean @default(false)
+  supportsUnicode      Boolean  @default(true)
+  supportsLongMessages Boolean  @default(true)
+  maxMessageLength     Int      @default(160)
+  
+  // Rate limits and costs
+  dailyLimit           Int?
+  monthlyLimit         Int?
+  costPerMessage       Float?   // Cost in cents
+  
+  // Supported countries
+  supportedCountries   String[] // ISO country codes
+  
+  // Indigenous data compliance
+  dataResidency        String?  // Required for Indigenous data
+  sovereigntyCompliant Boolean  @default(false)
+  elderApproved        Boolean  @default(false) // Approved for Elder communications
+  emergencyCapable     Boolean  @default(false) // Can handle emergency messages
+  
+  // Usage tracking
+  dailyUsage           Int      @default(0)
+  monthlyUsage         Int      @default(0)
+  lastResetDate        DateTime @default(now())
+  
+  // Performance metrics
+  deliveryRate         Float    @default(0) // Percentage
+  averageDeliveryTime  Int      @default(0) // Seconds
+  
+  // Priority and fallback
+  priority             Int      @default(1) // Lower number = higher priority
+  fallbackProvider     String?  // Fallback provider ID
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model SMSContact {
+  id                    String   @id @default(uuid())
+  
+  // Contact information
+  phoneNumber          String   @unique
+  name                 String?
+  countryCode          String?  // ISO country code
+  
+  // Indigenous contact data
+  indigenousContact    Boolean  @default(false)
+  isElder              Boolean  @default(false)
+  nation               String?
+  territory            String?
+  traditionalName      String?  // Traditional Indigenous name
+  preferredLanguage    String   @default("en")
+  indigenousLanguage   String?  // Preferred Indigenous language
+  
+  // Contact preferences
+  allowsSMS            Boolean  @default(true)
+  allowsMarketing      Boolean  @default(false)
+  allowsEmergency      Boolean  @default(true)
+  allowsCeremony       Boolean  @default(false) // Ceremony notifications
+  allowsElder          Boolean  @default(false) // Communications from Elders
+  
+  // Communication preferences
+  timeZone             String   @default("America/Toronto")
+  quietHours           Json?    // Do not disturb hours
+  preferredContactTime Json?    // Preferred contact time windows
+  
+  // Cultural preferences
+  culturalContent      Boolean  @default(true) // Wants cultural content
+  ceremonyNotifications Boolean @default(false) // Ceremony notifications
+  elderCommunications  Boolean  @default(false) // Communications from Elders
+  traditionalCalendar  Boolean  @default(false) // Traditional calendar events
+  culturalLanguage     String?  // Preferred cultural communication language
+  
+  // Verification and consent
+  verified             Boolean  @default(false)
+  verificationCode     String?
+  verifiedAt           DateTime?
+  consentGiven         Boolean  @default(false)
+  consentDate          DateTime?
+  
+  // Opt-out management
+  optedOut             Boolean  @default(false)
+  optOutDate           DateTime?
+  optOutReason         String?
+  
+  // Indigenous data protection
+  dataClassification   String   @default("PERSONAL") // PERSONAL, CULTURAL, RESTRICTED
+  elderDataProtection  Boolean  @default(false) // Enhanced protection for Elder data
+  culturalDataProtection Boolean @default(false) // Cultural data protection
+  
+  // Metadata
+  customFields         Json?    // Additional custom fields
+  tags                 String[] // Contact tags
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  subscriptions        SMSSubscription[]
+  
+  @@index([phoneNumber])
+  @@index([isElder])
+  @@index([nation])
+  @@index([indigenousContact])
+}
+
+model SMSList {
+  id                    String   @id @default(uuid())
+  listName             String   @unique
+  description          String?
+  
+  // List type and permissions
+  listType             String   // GENERAL, ELDERS, CEREMONY, EMERGENCY, COMMUNITY, NATION
+  accessLevel          String   @default("PUBLIC") // PUBLIC, PRIVATE, RESTRICTED
+  
+  // Indigenous list management
+  indigenousList       Boolean  @default(false)
+  eldersList           Boolean  @default(false) // Elder-only communications
+  ceremonyList         Boolean  @default(false) // Ceremony participants
+  emergencyList        Boolean  @default(false) // Emergency notifications
+  nationSpecific       Boolean  @default(false) // Nation-specific list
+  nation               String?  // Specific nation
+  territory            String?  // Territory/region
+  
+  // List settings
+  doubleOptIn          Boolean  @default(true)
+  moderatedJoin        Boolean  @default(false) // Requires approval to join
+  elderModerated       Boolean  @default(false) // Requires Elder approval
+  culturalGuidelines   String?  @db.Text // Cultural communication guidelines
+  
+  // List management
+  ownerId              String   // List owner/manager
+  moderators           String[] // List moderators
+  elderModerators      String[] // Elder moderators
+  
+  // Subscription settings
+  allowUnsubscribe     Boolean  @default(true)
+  maxSubscribers       Int?     // Maximum number of subscribers
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  subscriptions        SMSSubscription[]
+  campaigns            SMSCampaign[]
+}
+
+model SMSSubscription {
+  id                    String   @id @default(uuid())
+  
+  listId               String
+  list                 SMSList @relation(fields: [listId], references: [id])
+  
+  contactId            String
+  contact              SMSContact @relation(fields: [contactId], references: [id])
+  
+  // Subscription status
+  status               String   @default("ACTIVE") // ACTIVE, PAUSED, UNSUBSCRIBED
+  subscribedAt         DateTime @default(now())
+  unsubscribedAt       DateTime?
+  
+  // Indigenous subscription preferences
+  ceremonyNotifications Boolean  @default(false)
+  elderMessages        Boolean  @default(false)
+  emergencyAlerts      Boolean  @default(true)
+  culturalUpdates      Boolean  @default(false)
+  traditionalCalendar  Boolean  @default(false)
+  
+  // Subscription metadata
+  subscriptionSource   String?  // How they subscribed
+  customPreferences    Json?    // Additional preferences
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([listId, contactId])
+  @@index([status])
+}
+
+model SMSCampaign {
+  id                    String   @id @default(uuid())
+  campaignName         String   @unique
+  description          String?
+  
+  // Campaign configuration
+  templateId           String?
+  listIds              String[] // Target lists
+  message              String   @db.Text
+  
+  // Campaign content
+  fromName             String?
+  
+  // Indigenous campaign settings
+  indigenousCampaign   Boolean  @default(false)
+  elderCampaign        Boolean  @default(false) // Elder-specific campaign
+  ceremonyCampaign     Boolean  @default(false) // Ceremony-related
+  emergencyCampaign    Boolean  @default(false) // Emergency broadcast
+  communityCampaign    Boolean  @default(false) // Community-wide
+  nationCampaign       String?  // Nation-specific
+  
+  // Cultural considerations
+  culturalReview       Boolean  @default(false) // Needs cultural review
+  elderApproval        Boolean  @default(false) // Needs Elder approval
+  reviewedBy           String?  // Who reviewed
+  approvedBy           String?  // Elder who approved
+  reviewedAt           DateTime?
+  approvedAt           DateTime?
+  
+  // Scheduling
+  scheduledAt          DateTime?
+  sentAt               DateTime?
+  completedAt          DateTime?
+  
+  // Campaign stats
+  totalRecipients      Int      @default(0)
+  sentCount            Int      @default(0)
+  deliveredCount       Int      @default(0)
+  failedCount          Int      @default(0)
+  
+  // Indigenous metrics
+  elderRecipients      Int      @default(0)
+  elderDelivered       Int      @default(0)
+  ceremonyEngagement   Float?   // Ceremony-related engagement
+  
+  // Campaign settings
+  status               String   @default("DRAFT") // DRAFT, SCHEDULED, SENDING, SENT, PAUSED, CANCELLED
+  priority             String   @default("NORMAL") // HIGH, NORMAL, LOW, EMERGENCY
+  
+  // Cost tracking
+  estimatedCost        Float?   // Estimated campaign cost
+  actualCost           Float?   // Actual campaign cost
+  
+  createdBy            String   // User who created the campaign
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  lists                SMSList[]
+}
+
+model SMSQuota {
+  id                    String   @id @default(uuid())
+  
+  // Quota identification
+  quotaType            String   // USER, ORGANIZATION, CAMPAIGN, ELDER, EMERGENCY
+  referenceId          String   // User ID, Org ID, etc.
+  
+  // Quota limits
+  dailyLimit           Int      @default(100)
+  monthlyLimit         Int      @default(1000)
+  
+  // Indigenous quotas
+  elderDailyLimit      Int?     // Special limits for Elder communications
+  emergencyLimit       Int?     // Emergency message limits
+  ceremonyLimit        Int?     // Ceremony-related SMS limits
+  
+  // Current usage
+  dailyUsage           Int      @default(0)
+  monthlyUsage         Int      @default(0)
+  
+  // Reset tracking
+  dailyResetAt         DateTime @default(now())
+  monthlyResetAt       DateTime @default(now())
+  
+  // Overage handling
+  allowOverage         Boolean  @default(false)
+  overageUsage         Int      @default(0)
+  overageRate          Float?   // Cost per overage message
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([quotaType, referenceId])
+}
+
+model SMSKeyword {
+  id                    String   @id @default(uuid())
+  
+  // Keyword details
+  keyword              String   @unique
+  shortCode            String?  // Associated short code
+  
+  // Response configuration
+  responseMessage      String   @db.Text
+  autoReply            Boolean  @default(true)
+  
+  // Indigenous keywords
+  indigenousKeyword    Boolean  @default(false)
+  ceremonyKeyword      Boolean  @default(false) // Ceremony-related keyword
+  elderKeyword         Boolean  @default(false) // Elder-specific keyword
+  emergencyKeyword     Boolean  @default(false) // Emergency keyword
+  nation               String?  // Nation-specific keyword
+  indigenousLanguage   String?  // Indigenous language keyword
+  
+  // Actions
+  subscribeToList      String?  // Auto-subscribe to list ID
+  triggerWebhook       String?  // Webhook URL to trigger
+  forwardToNumber      String?  // Phone number to forward to
+  
+  // Cultural handling
+  culturalResponse     String?  @db.Text // Cultural-appropriate response
+  traditionalGreeting  String?  // Traditional greeting
+  respectfulTone       Boolean  @default(true)
+  
+  // Usage tracking
+  usageCount           Int      @default(0)
+  lastUsed             DateTime?
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([keyword])
+  @@index([shortCode])
+  @@index([indigenousKeyword])
+}
+
+model SMSWebhook {
+  id                    String   @id @default(uuid())
+  
+  // Webhook details
+  webhookUrl           String
+  webhookSecret        String?
+  
+  // Event types
+  eventTypes           String[] // sent, delivered, failed, etc.
+  
+  // Indigenous event types
+  elderEvents          Boolean  @default(false) // Elder-related events
+  ceremonyEvents       Boolean  @default(false) // Ceremony events
+  emergencyEvents      Boolean  @default(false) // Emergency events
+  
+  // Provider
+  provider             String   // Which SMS provider
+  providerId           String?  // Provider's webhook ID
+  
+  // Status
+  active               Boolean  @default(true)
+  verified             Boolean  @default(false)
+  lastTriggered        DateTime?
+  
+  // Security
+  ipWhitelist          String[] // Allowed IP addresses
+  userAgent            String?  // Expected user agent
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}

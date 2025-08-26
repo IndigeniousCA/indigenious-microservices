@@ -1,0 +1,215 @@
+/* Indigenous Badge Widget Styles */
+
+.indigenous-badge-container {
+  position: relative;
+  display: inline-block;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+}
+
+/* Size variations */
+.indigenous-badge-small {
+  width: 100px;
+  height: 100px;
+}
+
+.indigenous-badge-medium {
+  width: 200px;
+  height: 200px;
+}
+
+.indigenous-badge-large {
+  width: 300px;
+  height: 300px;
+}
+
+/* SVG container */
+.indigenous-badge-svg {
+  width: 100%;
+  height: 100%;
+  transition: transform 0.3s ease;
+}
+
+.indigenous-badge-container:hover .indigenous-badge-svg {
+  transform: scale(1.05);
+}
+
+/* Loading state */
+.indigenous-badge-loading {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.05);
+  border-radius: 50%;
+}
+
+.indigenous-badge-spinner {
+  width: 40px;
+  height: 40px;
+  border: 3px solid rgba(0, 0, 0, 0.1);
+  border-top-color: #3b82f6;
+  border-radius: 50%;
+  animation: indigenous-badge-spin 1s linear infinite;
+}
+
+@keyframes indigenous-badge-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Error state */
+.indigenous-badge-error {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(239, 68, 68, 0.1);
+  border-radius: 12px;
+  padding: 16px;
+  text-align: center;
+}
+
+.indigenous-badge-error span {
+  color: #dc2626;
+  font-size: 14px;
+}
+
+/* Verify button */
+.indigenous-badge-verify {
+  position: absolute;
+  top: 0;
+  right: 0;
+  transform: translate(25%, -25%);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #6b7280;
+  color: white;
+  border: 2px solid white;
+  font-size: 12px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.indigenous-badge-verify:hover {
+  transform: translate(25%, -25%) scale(1.1);
+  background: #4b5563;
+}
+
+.indigenous-badge-verify.verified {
+  background: #10b981;
+}
+
+/* Tooltip */
+.indigenous-badge-tooltip {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(-8px);
+  background: rgba(0, 0, 0, 0.9);
+  color: white;
+  padding: 12px 16px;
+  border-radius: 8px;
+  white-space: nowrap;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: 1000;
+  font-size: 14px;
+  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+.indigenous-badge-container:hover .indigenous-badge-tooltip {
+  opacity: 1;
+}
+
+.indigenous-badge-tooltip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 6px solid transparent;
+  border-top-color: rgba(0, 0, 0, 0.9);
+}
+
+.indigenous-badge-tooltip-title {
+  font-weight: 600;
+  margin-bottom: 8px;
+  font-size: 16px;
+}
+
+.indigenous-badge-tooltip-metrics {
+  font-size: 12px;
+  opacity: 0.9;
+  line-height: 1.4;
+}
+
+.indigenous-badge-tooltip-metrics > div {
+  margin-bottom: 2px;
+}
+
+/* Theme variations */
+.indigenous-badge-container.dark {
+  background: rgba(0, 0, 0, 0.1);
+  border-radius: 16px;
+  padding: 8px;
+}
+
+.indigenous-badge-container.dark .indigenous-badge-verify {
+  border-color: #1f2937;
+}
+
+/* Responsive adjustments */
+@media (max-width: 640px) {
+  .indigenous-badge-large {
+    width: 200px;
+    height: 200px;
+  }
+  
+  .indigenous-badge-medium {
+    width: 150px;
+    height: 150px;
+  }
+  
+  .indigenous-badge-tooltip {
+    position: fixed;
+    bottom: auto;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+  }
+  
+  .indigenous-badge-tooltip::after {
+    display: none;
+  }
+}
+
+/* Animation effects for different stages */
+.indigenous-badge-stage-1 .indigenous-badge-svg {
+  filter: none;
+}
+
+.indigenous-badge-stage-2 .indigenous-badge-svg {
+  filter: drop-shadow(0 0 20px rgba(0, 255, 0, 0.5));
+}
+
+.indigenous-badge-stage-3 .indigenous-badge-svg {
+  filter: drop-shadow(0 0 30px rgba(255, 215, 0, 0.7));
+}
+
+.indigenous-badge-stage-4 .indigenous-badge-svg {
+  filter: drop-shadow(0 0 40px rgba(255, 0, 255, 0.9));
+  animation: indigenous-badge-legendary 2s ease-in-out infinite;
+}
+
+@keyframes indigenous-badge-legendary {
+  0% { filter: drop-shadow(0 0 40px rgba(255, 0, 255, 0.9)) hue-rotate(0deg); }
+  100% { filter: drop-shadow(0 0 40px rgba(0, 255, 255, 0.9)) hue-rotate(360deg); }
+}

@@ -1,0 +1,104 @@
+version: '3.8'
+
+services:
+  search-service:
+    build: .
+    ports:
+      - "3039:3039"
+    environment:
+      - NODE_ENV=production
+      - PORT=3039
+      - DATABASE_URL=postgresql://search_user:search_pass@search-db:5432/indigenous_search_db
+      - REDIS_URL=redis://search-redis:6379
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+      - MEILISEARCH_URL=http://meilisearch:7700
+      - MEILISEARCH_API_KEY=masterKey
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - TRANSLATION_API_KEY=${TRANSLATION_API_KEY}
+      - SPEECH_TO_TEXT_API=${SPEECH_TO_TEXT_API}
+      - IMAGE_ANALYSIS_API=${IMAGE_ANALYSIS_API}
+    depends_on:
+      - search-db
+      - search-redis
+      - elasticsearch
+      - meilisearch
+    networks:
+      - search-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3039/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  search-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_search_db
+      - POSTGRES_USER=search_user
+      - POSTGRES_PASSWORD=search_pass
+    volumes:
+      - search-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5445:5432"
+    networks:
+      - search-network
+    restart: unless-stopped
+
+  search-redis:
+    image: redis:7-alpine
+    ports:
+      - "6394:6379"
+    volumes:
+      - search-redis-data:/data
+    networks:
+      - search-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch:8.11.1
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - search-network
+    restart: unless-stopped
+
+  meilisearch:
+    image: getmeili/meilisearch:v1.5
+    environment:
+      - MEILI_MASTER_KEY=masterKey
+      - MEILI_ENV=production
+    ports:
+      - "7700:7700"
+    volumes:
+      - meilisearch-data:/meili_data
+    networks:
+      - search-network
+    restart: unless-stopped
+
+volumes:
+  search-db-data:
+    driver: local
+  search-redis-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+  meilisearch-data:
+    driver: local
+
+networks:
+  search-network:
+    driver: bridge
+  microservices-network:
+    external: true

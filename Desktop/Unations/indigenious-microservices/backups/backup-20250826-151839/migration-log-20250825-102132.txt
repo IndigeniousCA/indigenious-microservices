@@ -1,0 +1,197 @@
+
+[0;34mPHASE 1: FRONTEND MIGRATION[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+📱 Migrating Next.js App Routes...
+  [0;32m✓[0m Migrated: app → web-frontend
+🎨 Migrating Components...
+  [0;32m✓[0m Migrated: components → web-frontend
+  [0;32m✓[0m Migrated: components → web-frontend
+🎣 Migrating Hooks...
+  [0;32m✓[0m Migrated: hooks → web-frontend
+🎨 Migrating Styles...
+  [0;32m✓[0m Migrated: styles → web-frontend
+  [0;32m✓[0m Migrated: styles → web-frontend
+  [0;32m✓[0m Migrated: globals.css → web-frontend
+📦 Migrating Public Assets...
+  [0;32m✓[0m Migrated: public → web-frontend
+⚙️ Migrating Frontend Configs...
+  [0;32m✓[0m Migrated: next.config.js → web-frontend
+  [0;32m✓[0m Migrated: tailwind.config.js → web-frontend
+  [0;32m✓[0m Migrated: postcss.config.js → web-frontend
+  [0;32m✓[0m Migrated: tsconfig.json → web-frontend
+  [0;32m✓[0m Migrated: components.json → web-frontend
+📦 Updating Frontend package.json...
+  [0;32m✓[0m Frontend package.json migrated
+
+[0;34mPHASE 2: AI/ML & AMBIENT INTELLIGENCE[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+🧠 Migrating Core AI Systems...
+  [0;32m✓[0m Migrated: ai-integration → ai-orchestrator
+  [0;32m✓[0m Migrated: ambient-intelligence → ai-orchestrator
+  [0;32m✓[0m Migrated: ai-ml → ai-orchestrator
+  [0;32m✓[0m Migrated: ai-assistant → ai-orchestrator
+  [0;32m✓[0m Migrated: ai-bid-assistant → ai-orchestrator
+  [0;32m✓[0m Migrated: ai-rfq-matching → ai-orchestrator
+  [0;32m✓[0m Migrated: ai-intelligence → ai-orchestrator
+  [0;32m✓[0m Migrated: predictive-analytics → ai-orchestrator
+  [0;32m✓[0m Migrated: intelligence-aggregation → ai-orchestrator
+
+[0;34mPHASE 3: MIGRATING ALL 83 FEATURES[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+📂 Scanning and migrating all features...
+📂 Migrating admin → indigenious-admin-service
+  [0;32m✓[0m Migrated: admin → indigenious-admin-service
+📂 Migrating admin-dashboard → indigenious-admin-portal
+  [0;32m✓[0m Migrated: admin-dashboard → indigenious-admin-portal
+📂 Migrating advanced-analytics → indigenious-analytics-service
+  [0;32m✓[0m Migrated: advanced-analytics → indigenious-analytics-service
+📂 Migrating advanced-financial → indigenious-payment-service
+  [0;32m✓[0m Migrated: advanced-financial → indigenious-payment-service
+📂 Migrating agent-monitoring → indigenious-agent-monitoring-service
+  [0;32m✓[0m Migrated: agent-monitoring → indigenious-agent-monitoring-service
+  [1;33m⚠[0m No mapping for feature: ai-assistant
+  [1;33m⚠[0m No mapping for feature: ai-bid-assistant
+  [1;33m⚠[0m No mapping for feature: ai-integration
+  [1;33m⚠[0m No mapping for feature: ai-intelligence
+  [1;33m⚠[0m No mapping for feature: ai-ml
+  [1;33m⚠[0m No mapping for feature: ai-rfq-matching
+  [1;33m⚠[0m No mapping for feature: ambient-intelligence
+📂 Migrating analytics → indigenious-analytics-service
+  [0;32m✓[0m Migrated: analytics → indigenious-analytics-service
+📂 Migrating api-marketplace → indigenious-api-marketplace-service
+  [0;32m✓[0m Migrated: api-marketplace → indigenious-api-marketplace-service
+📂 Migrating auth → indigenious-auth-service
+  [0;32m✓[0m Migrated: auth → indigenious-auth-service
+📂 Migrating bank-integration → indigenious-banking-service
+  [0;32m✓[0m Migrated: bank-integration → indigenious-banking-service
+📂 Migrating bid-submission → indigenious-rfq-service
+  [0;32m✓[0m Migrated: bid-submission → indigenious-rfq-service
+📂 Migrating blockchain → indigenious-blockchain-service
+  [0;32m✓[0m Migrated: blockchain → indigenious-blockchain-service
+📂 Migrating blockchain-audit → indigenious-blockchain-service
+  [0;32m✓[0m Migrated: blockchain-audit → indigenious-blockchain-service
+📂 Migrating bonding-marketplace → indigenious-bonding-service
+  [0;32m✓[0m Migrated: bonding-marketplace → indigenious-bonding-service
+📂 Migrating boq-management → indigenious-boq-service
+  [0;32m✓[0m Migrated: boq-management → indigenious-boq-service
+📂 Migrating business-directory → indigenious-business-service
+  [0;32m✓[0m Migrated: business-directory → indigenious-business-service
+📂 Migrating business-registration → indigenious-business-service
+  [0;32m✓[0m Migrated: business-registration → indigenious-business-service
+📂 Migrating c5-compliance → indigenious-compliance-service
+  [0;32m✓[0m Migrated: c5-compliance → indigenious-compliance-service
+📂 Migrating canadian-business-api → indigenious-canadian-api-service
+  [0;32m✓[0m Migrated: canadian-business-api → indigenious-canadian-api-service
+📂 Migrating capital-leverage → indigenious-capital-service
+  [0;32m✓[0m Migrated: capital-leverage → indigenious-capital-service
+📂 Migrating chat → indigenious-chat-service
+  [0;32m✓[0m Migrated: chat → indigenious-chat-service
+  [1;33m⚠[0m No mapping for feature: collaboration
+📂 Migrating collaborative-bid → indigenious-rfq-service
+  [0;32m✓[0m Migrated: collaborative-bid → indigenious-rfq-service
+📂 Migrating communication → indigenious-chat-service
+  [0;32m✓[0m Migrated: communication → indigenious-chat-service
+📂 Migrating community-engagement → indigenious-community-service
+  [0;32m✓[0m Migrated: community-engagement → indigenious-community-service
+📂 Migrating community-governance → indigenious-community-service
+  [0;32m✓[0m Migrated: community-governance → indigenious-community-service
+📂 Migrating compliance-checker → indigenious-compliance-service
+  [0;32m✓[0m Migrated: compliance-checker → indigenious-compliance-service
+📂 Migrating compliance-engine → indigenious-compliance-service
+  [0;32m✓[0m Migrated: compliance-engine → indigenious-compliance-service
+📂 Migrating consortium-matching → indigenious-rfq-service
+  [0;32m✓[0m Migrated: consortium-matching → indigenious-rfq-service
+📂 Migrating context-help → indigenious-help-service
+  [0;32m✓[0m Migrated: context-help → indigenious-help-service
+📂 Migrating directory-api → indigenious-api-marketplace-service
+  [0;32m✓[0m Migrated: directory-api → indigenious-api-marketplace-service
+📂 Migrating document-management → indigenious-document-service
+  [0;32m✓[0m Migrated: document-management → indigenious-document-service
+📂 Migrating email → indigenious-email-service
+  [0;32m✓[0m Migrated: email → indigenious-email-service
+📂 Migrating evaluation-scoring → indigenious-evaluation-service
+  [0;32m✓[0m Migrated: evaluation-scoring → indigenious-evaluation-service
+📂 Migrating failure-testing → indigenious-testing-service
+  [0;32m✓[0m Migrated: failure-testing → indigenious-testing-service
+📂 Migrating feature-discovery → indigenious-help-service
+  [0;32m✓[0m Migrated: feature-discovery → indigenious-help-service
+📂 Migrating financial-integration → indigenious-payment-service
+  [0;32m✓[0m Migrated: financial-integration → indigenious-payment-service
+📂 Migrating fraud-prevention → indigenious-fraud-service
+  [0;32m✓[0m Migrated: fraud-prevention → indigenious-fraud-service
+📂 Migrating geographic-community → indigenious-community-service
+  [0;32m✓[0m Migrated: geographic-community → indigenious-community-service
+📂 Migrating government-integration → indigenious-procurement-service
+  [0;32m✓[0m Migrated: government-integration → indigenious-procurement-service
+📂 Migrating i18n → indigenious-cultural-service
+  [0;32m✓[0m Migrated: i18n → indigenious-cultural-service
+📂 Migrating indigenious-design-system-service → indigenious-design-system-service
+  [0;32m✓[0m Migrated: indigenious-design-system-service → indigenious-design-system-service
+📂 Migrating intelligence-aggregation → indigenious-market-intelligence-service
+  [0;32m✓[0m Migrated: intelligence-aggregation → indigenious-market-intelligence-service
+📂 Migrating market-intelligence → indigenious-market-intelligence-service
+  [0;32m✓[0m Migrated: market-intelligence → indigenious-market-intelligence-service
+📂 Migrating mobile-registration → indigenious-mobile-registration-service
+  [0;32m✓[0m Migrated: mobile-registration → indigenious-mobile-registration-service
+📂 Migrating mobile-responsive → indigenious-mobile-app
+  [0;32m✓[0m Migrated: mobile-responsive → indigenious-mobile-app
+📂 Migrating model-viewer → indigenious-document-service
+  [0;32m✓[0m Migrated: model-viewer → indigenious-document-service
+📂 Migrating multi-language → indigenious-cultural-service
+  [0;32m✓[0m Migrated: multi-language → indigenious-cultural-service
+📂 Migrating network-visualization → indigenious-network-effects-service
+  [0;32m✓[0m Migrated: network-visualization → indigenious-network-effects-service
+📂 Migrating next-gen-tech → indigenious-nextgen-service
+  [0;32m✓[0m Migrated: next-gen-tech → indigenious-nextgen-service
+📂 Migrating operations-dashboard → indigenious-operations-service
+  [0;32m✓[0m Migrated: operations-dashboard → indigenious-operations-service
+📂 Migrating opportunity-matching → indigenious-opportunity-service
+  [0;32m✓[0m Migrated: opportunity-matching → indigenious-opportunity-service
+📂 Migrating payment-rails → indigenious-payment-service
+  [0;32m✓[0m Migrated: payment-rails → indigenious-payment-service
+📂 Migrating peer-help → indigenious-help-service
+  [0;32m✓[0m Migrated: peer-help → indigenious-help-service
+📂 Migrating pipeline-tracker → indigenious-pipeline-service
+  [0;32m✓[0m Migrated: pipeline-tracker → indigenious-pipeline-service
+📂 Migrating pr-automation → indigenious-pr-automation-service
+  [0;32m✓[0m Migrated: pr-automation → indigenious-pr-automation-service
+📂 Migrating predictive-analytics → indigenious-analytics-service
+  [0;32m✓[0m Migrated: predictive-analytics → indigenious-analytics-service
+📂 Migrating price-transparency → indigenious-price-service
+  [0;32m✓[0m Migrated: price-transparency → indigenious-price-service
+📂 Migrating professional-marketplace → indigenious-professional-service
+  [0;32m✓[0m Migrated: professional-marketplace → indigenious-professional-service
+📂 Migrating queue → indigenious-queue-service
+  [0;32m✓[0m Migrated: queue → indigenious-queue-service
+📂 Migrating rfq-system → indigenious-rfq-service
+  [0;32m✓[0m Migrated: rfq-system → indigenious-rfq-service
+📂 Migrating security-compliance → indigenious-compliance-service
+  [0;32m✓[0m Migrated: security-compliance → indigenious-compliance-service
+📂 Migrating showcase → indigenious-showcase-service
+  [0;32m✓[0m Migrated: showcase → indigenious-showcase-service
+📂 Migrating simplified-interfaces → indigenious-design-system-service
+  [0;32m✓[0m Migrated: simplified-interfaces → indigenious-design-system-service
+📂 Migrating sms → indigenious-sms-service
+  [0;32m✓[0m Migrated: sms → indigenious-sms-service
+📂 Migrating strategic-investments → indigenious-capital-service
+  [0;32m✓[0m Migrated: strategic-investments → indigenious-capital-service
+📂 Migrating testing-qa → indigenious-testing-service
+  [0;32m✓[0m Migrated: testing-qa → indigenious-testing-service
+📂 Migrating unified-platform → indigenious-gateway-service
+  [0;32m✓[0m Migrated: unified-platform → indigenious-gateway-service
+📂 Migrating universal-request-engine → indigenious-gateway-service
+  [0;32m✓[0m Migrated: universal-request-engine → indigenious-gateway-service
+📂 Migrating user-authentication → indigenious-auth-service
+  [0;32m✓[0m Migrated: user-authentication → indigenious-auth-service
+📂 Migrating vendor-performance → indigenious-vendor-service
+  [0;32m✓[0m Migrated: vendor-performance → indigenious-vendor-service
+📂 Migrating verification-badges → indigenious-verification-service
+  [0;32m✓[0m Migrated: verification-badges → indigenious-verification-service
+📂 Migrating verification-monopoly → indigenious-verification-service
+  [0;32m✓[0m Migrated: verification-monopoly → indigenious-verification-service
+📂 Migrating video-consultations → indigenious-video-service
+  [0;32m✓[0m Migrated: video-consultations → indigenious-video-service
+
+[0;34mPHASE 4: DATABASE & CONFIGURATION[0m
+[0;34m━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[0m
+🗄️ Migrating Database Schemas...

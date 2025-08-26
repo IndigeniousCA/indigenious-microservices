@@ -1,0 +1,72 @@
+version: '3.8'
+
+services:
+  recommendation-service:
+    build: .
+    ports:
+      - "3038:3038"
+    environment:
+      - NODE_ENV=production
+      - PORT=3038
+      - DATABASE_URL=postgresql://recommendation_user:recommendation_pass@recommendation-db:5432/indigenous_recommendation_db
+      - REDIS_URL=redis://recommendation-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - ELDER_WISDOM_API=${ELDER_WISDOM_API}
+      - MEDICINE_WHEEL_API=${MEDICINE_WHEEL_API}
+      - CEREMONY_CALENDAR_API=${CEREMONY_CALENDAR_API}
+      - SEVEN_GENERATIONS_API=${SEVEN_GENERATIONS_API}
+      - TENSORFLOW_MODEL_PATH=/app/models
+    depends_on:
+      - recommendation-db
+      - recommendation-redis
+    networks:
+      - recommendation-network
+      - microservices-network
+    volumes:
+      - ./models:/app/models
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3038/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  recommendation-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_recommendation_db
+      - POSTGRES_USER=recommendation_user
+      - POSTGRES_PASSWORD=recommendation_pass
+    volumes:
+      - recommendation-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5444:5432"
+    networks:
+      - recommendation-network
+    restart: unless-stopped
+
+  recommendation-redis:
+    image: redis:7-alpine
+    ports:
+      - "6393:6379"
+    volumes:
+      - recommendation-redis-data:/data
+    networks:
+      - recommendation-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  recommendation-db-data:
+    driver: local
+  recommendation-redis-data:
+    driver: local
+
+networks:
+  recommendation-network:
+    driver: bridge
+  microservices-network:
+    external: true

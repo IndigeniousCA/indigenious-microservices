@@ -1,0 +1,1614 @@
+// Indigenous Procurement Platform Database Schema
+// This file defines the data model for Prisma ORM
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ==========================================
+// USER & AUTHENTICATION
+// ==========================================
+
+model User {
+  id                String    @id @default(cuid())
+  email             String    @unique
+  emailVerified     Boolean   @default(false)
+  emailVerifiedAt   DateTime?
+  password          String?   // Hashed password
+  firstName         String?
+  lastName          String?
+  phone             String?
+  phoneVerified     Boolean   @default(false)
+  role              UserRole  @default(USER)
+  status            UserStatus @default(ACTIVE)
+  
+  // 2FA/MFA
+  mfaEnabled        Boolean   @default(false)
+  mfaSecret         String?   // Encrypted TOTP secret
+  mfaBackupCodes    String[]  // Encrypted backup codes
+  
+  // Profile
+  avatar            String?
+  bio               String?
+  preferredLanguage String    @default("en")
+  timezone          String    @default("America/Toronto")
+  
+  // Metadata
+  lastLoginAt       DateTime?
+  lastLoginIp       String?
+  loginCount        Int       @default(0)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  deletedAt         DateTime? // Soft delete
+  
+  // Relations
+  businesses        BusinessMember[]
+  sessions          Session[]
+  refreshTokens     RefreshToken[]
+  accounts          Account[]
+  auditLogs         AuditLog[]
+  notifications     Notification[]
+  detectionHistory  UserTypeDetection[]
+  
+  @@index([email])
+  @@index([status])
+}
+
+enum UserRole {
+  USER
+  BUSINESS_OWNER
+  GOVERNMENT_OFFICER
+  BAND_ADMIN
+  ELDER
+  ADMIN
+  SUPER_ADMIN
+}
+
+enum UserStatus {
+  ACTIVE
+  SUSPENDED
+  BANNED
+  PENDING
+}
+
+model Session {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  ipAddress    String?
+  userAgent    String?
+  expiresAt    DateTime
+  createdAt    DateTime @default(now())
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+}
+
+model RefreshToken {
+  id           String   @id @default(cuid())
+  userId       String
+  token        String   @unique
+  expiresAt    DateTime
+  usedAt       DateTime?
+  revokedAt    DateTime?
+  createdAt    DateTime @default(now())
+  
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([token])
+}
+
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
+}
+
+// ==========================================
+// BUSINESS
+// ==========================================
+
+model Business {
+  id                        String    @id @default(cuid())
+  name                      String
+  legalName                 String?
+  businessNumber            String?   @unique
+  description               String?
+  
+  // Indigenous Information
+  indigenousOwnership       Float     // Percentage
+  nation                    String
+  territory                 String
+  bandNumber                String?
+  
+  // Verification
+  verificationStatus        VerificationStatus @default(PENDING)
+  verifiedAt                DateTime?
+  verificationDocuments     Document[] @relation("VerificationDocuments")
+  verificationNotes         String?
+  
+  // Contact
+  email                     String
+  phone                     String
+  website                   String?
+  
+  // Address
+  streetAddress             String
+  city                      String
+  province                  String
+  postalCode                String
+  country                   String    @default("CA")
+  
+  // Business Details
+  yearEstablished           Int?
+  employeeCount             Int?
+  indigenousEmployeeCount   Int?
+  annualRevenue             String?   // Revenue range
+  industries                String[]
+  certifications            String[]
+  naicsCode                 String[]
+  
+  // Capabilities
+  capabilities              String[]
+  serviceAreas              String[]  // Geographic areas served
+  
+  // Status
+  status                    BusinessStatus @default(ACTIVE)
+  createdAt                 DateTime  @default(now())
+  updatedAt                 DateTime  @updatedAt
+  deletedAt                 DateTime?
+  
+  // Relations
+  members                   BusinessMember[]
+  rfqs                      RFQ[]
+  bids                      Bid[]
+  contracts                 Contract[]
+  invoices                  Invoice[]
+  documents                 Document[] @relation("BusinessDocuments")
+  reviews                   Review[]
+  badge                     Badge?
+  
+  @@index([verificationStatus])
+  @@index([status])
+  @@index([nation])
+  @@index([territory])
+}
+
+enum VerificationStatus {
+  PENDING
+  VERIFIED
+  REJECTED
+  SUSPENDED
+  EXPIRED
+}
+
+enum BusinessStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BANNED
+}
+
+model BusinessMember {
+  id           String   @id @default(cuid())
+  businessId   String
+  userId       String
+  role         BusinessRole @default(MEMBER)
+  permissions  String[]
+  joinedAt     DateTime @default(now())
+  
+  business     Business @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([businessId, userId])
+  @@index([businessId])
+  @@index([userId])
+}
+
+enum BusinessRole {
+  OWNER
+  ADMIN
+  MEMBER
+  VIEWER
+}
+
+// ==========================================
+// RFQ & BIDDING
+// ==========================================
+
+model RFQ {
+  id                String    @id @default(cuid())
+  referenceNumber   String    @unique @default(cuid())
+  title             String
+  description       String
+  
+  // Classification
+  category          String
+  subcategory       String?
+  commodityCode     String?
+  
+  // Requirements
+  requirements      String
+  deliverables      String[]
+  timeline          String
+  
+  // Budget
+  budgetMin         Float?
+  budgetMax         Float?
+  budgetType        BudgetType @default(FIXED)
+  
+  // Dates
+  publishedAt       DateTime?
+  deadlineDate      DateTime
+  questionDeadline  DateTime?
+  
+  // Location
+  deliveryLocation  String?
+  remoteAllowed     Boolean   @default(false)
+  
+  // Posting Organization
+  postedBy          PostedBy
+  organizationId    String?
+  organizationName  String
+  contactName       String
+  contactEmail      String
+  contactPhone      String?
+  
+  // Preferences
+  indigenousOnly    Boolean   @default(false)
+  securityClearance String?
+  languages         String[]
+  
+  // Scoring
+  scoringCriteria   Json?     // Community-defined weights
+  
+  // Status
+  status            RFQStatus @default(DRAFT)
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  closedAt          DateTime?
+  awardedAt         DateTime?
+  
+  // Relations
+  business          Business? @relation(fields: [organizationId], references: [id])
+  bids              Bid[]
+  documents         Document[]
+  questions         RFQQuestion[]
+  amendments        RFQAmendment[]
+  evaluations       Evaluation[]
+  contract          Contract?
+  
+  @@index([status])
+  @@index([deadlineDate])
+  @@index([category])
+  @@index([postedBy])
+}
+
+enum PostedBy {
+  GOVERNMENT
+  BAND_COUNCIL
+  INDIGENOUS_ORG
+}
+
+enum BudgetType {
+  FIXED
+  HOURLY
+  NOT_DISCLOSED
+}
+
+enum RFQStatus {
+  DRAFT
+  PUBLISHED
+  ACTIVE
+  CLOSED
+  EVALUATING
+  AWARDED
+  CANCELLED
+  EXPIRED
+}
+
+model Bid {
+  id               String    @id @default(cuid())
+  rfqId            String
+  businessId       String
+  
+  // Bid Details
+  amount           Float
+  timeline         String
+  proposal         String    // Rich text proposal
+  
+  // Technical Response
+  technicalScore   Float?
+  priceScore       Float?
+  totalScore       Float?
+  ranking          Int?
+  
+  // Status
+  status           BidStatus @default(DRAFT)
+  submittedAt      DateTime?
+  withdrawnAt      DateTime?
+  
+  // Metadata
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  rfq              RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  business         Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  documents        Document[]
+  evaluations      Evaluation[]
+  
+  @@unique([rfqId, businessId])
+  @@index([rfqId])
+  @@index([businessId])
+  @@index([status])
+}
+
+enum BidStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  SHORTLISTED
+  AWARDED
+  REJECTED
+  WITHDRAWN
+}
+
+// ==========================================
+// CONTRACTS & PAYMENTS
+// ==========================================
+
+model Contract {
+  id               String    @id @default(cuid())
+  contractNumber   String    @unique @default(cuid())
+  rfqId            String    @unique
+  businessId       String
+  
+  // Contract Details
+  title            String
+  description      String
+  value            Float
+  startDate        DateTime
+  endDate          DateTime
+  
+  // Terms
+  paymentTerms     String
+  deliverables     String[]
+  milestones       Json?     // Array of milestones with dates and payments
+  
+  // Status
+  status           ContractStatus @default(DRAFT)
+  signedAt         DateTime?
+  completedAt      DateTime?
+  
+  // Metadata
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  rfq              RFQ       @relation(fields: [rfqId], references: [id])
+  business         Business  @relation(fields: [businessId], references: [id])
+  invoices         Invoice[]
+  documents        Document[]
+  
+  @@index([businessId])
+  @@index([status])
+}
+
+enum ContractStatus {
+  DRAFT
+  PENDING_SIGNATURE
+  ACTIVE
+  COMPLETED
+  TERMINATED
+  DISPUTED
+}
+
+model Invoice {
+  id               String    @id @default(cuid())
+  invoiceNumber    String    @unique @default(cuid())
+  contractId       String?
+  businessId       String
+  
+  // Invoice Details
+  amount           Float
+  tax              Float
+  total            Float
+  currency         String    @default("CAD")
+  
+  // Dates
+  issueDate        DateTime  @default(now())
+  dueDate          DateTime
+  paidAt           DateTime?
+  
+  // Payment
+  paymentMethod    String?
+  paymentReference String?
+  
+  // Status
+  status           InvoiceStatus @default(DRAFT)
+  
+  // Metadata
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  // Relations
+  contract         Contract? @relation(fields: [contractId], references: [id])
+  business         Business  @relation(fields: [businessId], references: [id])
+  lineItems        InvoiceLineItem[]
+  payments         Payment[]
+  
+  @@index([businessId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+enum InvoiceStatus {
+  DRAFT
+  SENT
+  VIEWED
+  PARTIALLY_PAID
+  PAID
+  OVERDUE
+  CANCELLED
+  REFUNDED
+}
+
+model InvoiceLineItem {
+  id          String   @id @default(cuid())
+  invoiceId   String
+  description String
+  quantity    Float
+  unitPrice   Float
+  amount      Float
+  
+  invoice     Invoice  @relation(fields: [invoiceId], references: [id], onDelete: Cascade)
+  
+  @@index([invoiceId])
+}
+
+model Payment {
+  id               String    @id @default(cuid())
+  invoiceId        String
+  amount           Float
+  currency         String    @default("CAD")
+  
+  // Payment Details
+  method           PaymentMethod
+  status           PaymentStatus @default(PENDING)
+  reference        String?   // External payment ID
+  
+  // Processing
+  processedAt      DateTime?
+  failureReason    String?
+  
+  // Metadata
+  createdAt        DateTime  @default(now())
+  
+  // Relations
+  invoice          Invoice   @relation(fields: [invoiceId], references: [id])
+  
+  @@index([invoiceId])
+  @@index([status])
+}
+
+enum PaymentMethod {
+  CREDIT_CARD
+  DEBIT_CARD
+  BANK_TRANSFER
+  E_TRANSFER
+  CHEQUE
+  WIRE_TRANSFER
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  CANCELLED
+  REFUNDED
+}
+
+// ==========================================
+// DOCUMENTS
+// ==========================================
+
+model Document {
+  id               String    @id @default(cuid())
+  name             String
+  type             DocumentType
+  mimeType         String
+  size             Int       // In bytes
+  
+  // Storage
+  path             String    // S3 path or local path
+  url              String?   // Public URL if available
+  
+  // Security
+  isPublic         Boolean   @default(false)
+  encryptionKey    String?   // For encrypted documents
+  virusScanStatus  ScanStatus @default(PENDING)
+  virusScanResult  String?
+  
+  // Metadata
+  uploadedBy       String
+  createdAt        DateTime  @default(now())
+  expiresAt        DateTime?
+  
+  // Relations
+  businessId       String?
+  business         Business? @relation("BusinessDocuments", fields: [businessId], references: [id])
+  verificationBusinessId String?
+  verificationBusiness Business? @relation("VerificationDocuments", fields: [verificationBusinessId], references: [id])
+  rfqId            String?
+  rfq              RFQ?      @relation(fields: [rfqId], references: [id])
+  bidId            String?
+  bid              Bid?      @relation(fields: [bidId], references: [id])
+  contractId       String?
+  contract         Contract? @relation(fields: [contractId], references: [id])
+  
+  @@index([businessId])
+  @@index([verificationBusinessId])
+  @@index([rfqId])
+  @@index([type])
+}
+
+enum DocumentType {
+  BUSINESS_LICENSE
+  INDIGENOUS_VERIFICATION
+  FINANCIAL_STATEMENT
+  INSURANCE
+  CERTIFICATION
+  RFQ_DOCUMENT
+  BID_PROPOSAL
+  CONTRACT
+  INVOICE
+  OTHER
+}
+
+enum ScanStatus {
+  PENDING
+  SCANNING
+  CLEAN
+  INFECTED
+  ERROR
+}
+
+// ==========================================
+// COMMUNICATION
+// ==========================================
+
+model ChatChannel {
+  id          String    @id @default(cuid())
+  name        String?
+  type        ChannelType @default(DIRECT)
+  
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  closedAt    DateTime?
+  
+  // Relations
+  messages    Message[]
+  participants ChatParticipant[]
+  
+  @@index([type])
+}
+
+enum ChannelType {
+  DIRECT
+  RFQ_DISCUSSION
+  SUPPORT
+  GROUP
+}
+
+model ChatParticipant {
+  id          String    @id @default(cuid())
+  channelId   String
+  userId      String
+  role        String?
+  joinedAt    DateTime  @default(now())
+  leftAt      DateTime?
+  
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  
+  @@unique([channelId, userId])
+  @@index([channelId])
+  @@index([userId])
+}
+
+model Message {
+  id          String    @id @default(cuid())
+  channelId   String
+  senderId    String
+  content     String    // Encrypted
+  
+  // Metadata
+  createdAt   DateTime  @default(now())
+  editedAt    DateTime?
+  deletedAt   DateTime?
+  
+  // Relations
+  channel     ChatChannel @relation(fields: [channelId], references: [id], onDelete: Cascade)
+  attachments MessageAttachment[]
+  readBy      MessageRead[]
+  
+  @@index([channelId])
+  @@index([senderId])
+}
+
+model MessageAttachment {
+  id          String    @id @default(cuid())
+  messageId   String
+  name        String
+  type        String
+  size        Int
+  url         String
+  
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@index([messageId])
+}
+
+model MessageRead {
+  id          String    @id @default(cuid())
+  messageId   String
+  userId      String
+  readAt      DateTime  @default(now())
+  
+  message     Message   @relation(fields: [messageId], references: [id], onDelete: Cascade)
+  
+  @@unique([messageId, userId])
+  @@index([messageId])
+  @@index([userId])
+}
+
+// ==========================================
+// NOTIFICATIONS
+// ==========================================
+
+model Notification {
+  id          String    @id @default(cuid())
+  userId      String
+  type        NotificationType
+  title       String
+  message     String
+  data        Json?     // Additional data
+  
+  // Status
+  read        Boolean   @default(false)
+  readAt      DateTime?
+  
+  // Delivery
+  emailSent   Boolean   @default(false)
+  smsSent     Boolean   @default(false)
+  pushSent    Boolean   @default(false)
+  
+  // Metadata
+  createdAt   DateTime  @default(now())
+  expiresAt   DateTime?
+  
+  // Relations
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@index([userId])
+  @@index([read])
+  @@index([type])
+}
+
+enum NotificationType {
+  RFQ_POSTED
+  BID_RECEIVED
+  BID_ACCEPTED
+  BID_REJECTED
+  CONTRACT_SIGNED
+  PAYMENT_RECEIVED
+  DOCUMENT_EXPIRING
+  SYSTEM_ANNOUNCEMENT
+  MESSAGE_RECEIVED
+}
+
+// ==========================================
+// AUDIT & COMPLIANCE
+// ==========================================
+
+
+// ==========================================
+// REVIEWS & RATINGS
+// ==========================================
+
+model Review {
+  id          String    @id @default(cuid())
+  businessId  String
+  reviewerId  String
+  contractId  String?
+  
+  // Ratings
+  overallRating      Int    // 1-5
+  communicationRating Int?
+  qualityRating      Int?
+  timelinessRating   Int?
+  valueRating        Int?
+  
+  // Review
+  title       String?
+  comment     String?
+  
+  // Status
+  verified    Boolean   @default(false)
+  published   Boolean   @default(true)
+  
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  business    Business  @relation(fields: [businessId], references: [id])
+  
+  @@index([businessId])
+  @@index([reviewerId])
+}
+
+// ==========================================
+// MISCELLANEOUS
+// ==========================================
+
+model RFQQuestion {
+  id          String    @id @default(cuid())
+  rfqId       String
+  askedBy     String
+  question    String
+  answer      String?
+  answeredBy  String?
+  answeredAt  DateTime?
+  
+  // Metadata
+  createdAt   DateTime  @default(now())
+  
+  // Relations
+  rfq         RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  
+  @@index([rfqId])
+}
+
+model RFQAmendment {
+  id          String    @id @default(cuid())
+  rfqId       String
+  version     Int
+  description String
+  changes     Json      // Detailed changes
+  
+  // Metadata
+  createdBy   String
+  createdAt   DateTime  @default(now())
+  
+  // Relations
+  rfq         RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  
+  @@index([rfqId])
+}
+
+model Evaluation {
+  id          String    @id @default(cuid())
+  rfqId       String
+  bidId       String
+  evaluatorId String
+  
+  // Scores
+  technicalScore Float?
+  priceScore     Float?
+  comments       String?
+  
+  // Metadata
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+  
+  // Relations
+  rfq         RFQ       @relation(fields: [rfqId], references: [id])
+  bid         Bid       @relation(fields: [bidId], references: [id])
+  
+  @@unique([rfqId, bidId, evaluatorId])
+  @@index([rfqId])
+  @@index([bidId])
+}
+
+// ==========================================
+// SECURITY & WAF
+// ==========================================
+
+model SecurityLog {
+  id          String    @id @default(cuid())
+  type        String    // RATE_LIMIT_VIOLATION, IP_BLOCKED, etc.
+  severity    String    // INFO, WARNING, ERROR, CRITICAL
+  identifier  String    // IP, userId, etc.
+  endpoint    String
+  timestamp   DateTime  @default(now())
+  metadata    Json?
+  
+  @@index([type])
+  @@index([severity])
+  @@index([identifier])
+  @@index([timestamp])
+}
+
+model WafLog {
+  id             String    @id @default(cuid())
+  timestamp      DateTime  @default(now())
+  ip             String
+  method         String
+  path           String
+  status         String    // allowed, blocked
+  processingTime Int       // milliseconds
+  userAgent      String?
+  metadata       Json?
+  
+  @@index([ip])
+  @@index([status])
+  @@index([timestamp])
+}
+
+model WafBlockCounter {
+  id          String    @id @default(cuid())
+  ip          String    @unique
+  count       Int       @default(0)
+  lastBlocked DateTime
+  types       String[]  // Array of block types
+  
+  @@index([count])
+}
+
+// ==========================================
+// AUDIT LOGGING
+// ==========================================
+
+model AuditLog {
+  id          String    @id @default(cuid())
+  timestamp   DateTime  @default(now())
+  
+  // Actor information
+  actorId     String?
+  actorType   String    // user, system, api, admin
+  actorEmail  String?
+  actorName   String?
+  
+  // Relations
+  user        User?     @relation(fields: [actorId], references: [id], onDelete: SetNull)
+  
+  // Action details
+  category    String    // AUTH, ACCESS, CREATE, READ, UPDATE, DELETE, etc.
+  action      String    // Specific action taken
+  resource    String    // Resource type affected
+  resourceId  String?   // Specific resource ID
+  
+  // Context
+  severity    String    // INFO, WARNING, ERROR, CRITICAL
+  result      String    // SUCCESS, FAILURE, PARTIAL, PENDING
+  duration    Int?      // Action duration in milliseconds
+  
+  // Request context
+  ipAddress   String?
+  userAgent   String?
+  sessionId   String?
+  requestId   String?
+  
+  // Location
+  country     String?
+  region      String?
+  city        String?
+  
+  // Additional data
+  metadata    String?   // JSON string
+  changes     String?   // JSON string of changes
+  error       String?   // JSON string of error details
+  
+  // Compliance
+  tags        String[]
+  retention   Int?      // Days to retain
+  encrypted   Boolean   @default(false)
+  
+  @@index([timestamp])
+  @@index([actorId])
+  @@index([category])
+  @@index([action])
+  @@index([resource])
+  @@index([resourceId])
+  @@index([severity])
+  @@index([result])
+  @@index([sessionId])
+}
+
+// ==========================================
+// BACKUP SYSTEM
+// ==========================================
+
+model BackupSchedule {
+  id                String    @id @default(cuid())
+  name              String
+  enabled           Boolean   @default(true)
+  
+  // Schedule
+  cronExpression    String
+  timezone          String    @default("America/Toronto")
+  
+  // Backup config
+  type              String    // FULL, INCREMENTAL, DIFFERENTIAL, SNAPSHOT
+  target            String    // DATABASE, FILES, REDIS, FULL_SYSTEM
+  
+  // Retention
+  retentionDays     Int       @default(30)
+  maxBackups        Int?
+  
+  // Options
+  compress          Boolean   @default(true)
+  encrypt           Boolean   @default(true)
+  verify            Boolean   @default(true)
+  
+  // Notifications
+  notifyOnSuccess   Boolean?
+  notifyOnFailure   Boolean?
+  notificationEmails String[]
+  
+  // Stats
+  lastRun           DateTime?
+  nextRun           DateTime?
+  successCount      Int       @default(0)
+  failureCount      Int       @default(0)
+  
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  
+  @@index([enabled])
+  @@index([nextRun])
+}
+
+model BackupJob {
+  id                String    @id @default(cuid())
+  type              String    // FULL, INCREMENTAL, DIFFERENTIAL, SNAPSHOT
+  target            String    // DATABASE, FILES, REDIS, FULL_SYSTEM
+  status            String    // PENDING, IN_PROGRESS, COMPLETED, FAILED, CANCELLED
+  
+  // Timing
+  scheduledAt       DateTime
+  startedAt         DateTime?
+  completedAt       DateTime?
+  
+  // Details
+  size              BigInt?
+  fileCount         Int?
+  duration          Int?      // milliseconds
+  
+  // Storage
+  storageLocation   String    // s3, local, etc
+  storageKey        String?
+  encryptionKey     String?
+  
+  // Metadata
+  metadata          String?   // JSON
+  error             String?   // JSON
+  
+  // Retention
+  retentionDays     Int
+  expiresAt         DateTime
+  
+  createdAt         DateTime  @default(now())
+  
+  @@index([status])
+  @@index([target])
+  @@index([completedAt])
+  @@index([expiresAt])
+}
+
+// ==========================================
+// WEBHOOK SYSTEM
+// ==========================================
+
+model Webhook {
+  id                String    @id @default(cuid())
+  url               String
+  secret            String
+  
+  // Configuration
+  events            String[]  // Array of webhook events
+  headers           Json?     // Custom headers
+  
+  // Status
+  status            String    @default("ACTIVE") // ACTIVE, INACTIVE, FAILED, SUSPENDED
+  active            Boolean   @default(true)
+  
+  // Metadata
+  description       String?
+  metadata          Json?
+  
+  // Rate limiting
+  rateLimit         Json?     // { requests, window }
+  
+  // Retry configuration
+  retryConfig       Json?     // { maxAttempts, initialDelay, maxDelay, backoffMultiplier, retryOn }
+  
+  // Stats
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
+  lastTriggeredAt   DateTime?
+  successCount      Int       @default(0)
+  failureCount      Int       @default(0)
+  
+  // Owner
+  ownerId           String
+  ownerType         String    // business, user, system
+  
+  // Relations
+  deliveries        WebhookDelivery[]
+  logs             WebhookLog[]
+  
+  @@index([ownerId])
+  @@index([status])
+  @@index([active])
+}
+
+model WebhookDelivery {
+  id                String    @id @default(cuid())
+  webhookId         String
+  
+  // Event data
+  event             String
+  payload           Json
+  
+  // Delivery info
+  status            String    // PENDING, SENDING, SUCCESS, FAILED, RETRYING
+  attempts          Int       @default(0)
+  
+  // Timing
+  scheduledAt       DateTime
+  sentAt            DateTime?
+  completedAt       DateTime?
+  nextRetryAt       DateTime?
+  
+  // Response
+  response          Json?
+  
+  // Error
+  error             Json?
+  
+  createdAt         DateTime  @default(now())
+  
+  // Relations
+  webhook           Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  logs              WebhookLog[]
+  
+  @@index([webhookId])
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model WebhookLog {
+  id                String    @id @default(cuid())
+  webhookId         String
+  deliveryId        String
+  
+  // Request
+  request           Json
+  
+  // Response
+  response          Json?
+  
+  // Metadata
+  duration          Int       // milliseconds
+  timestamp         DateTime  @default(now())
+  success           Boolean
+  error             String?
+  
+  // Relations
+  webhook           Webhook   @relation(fields: [webhookId], references: [id], onDelete: Cascade)
+  delivery          WebhookDelivery @relation(fields: [deliveryId], references: [id], onDelete: Cascade)
+  
+  @@index([webhookId])
+  @@index([deliveryId])
+  @@index([timestamp])
+}
+
+// ==========================================
+// USER TYPE DETECTION & INTELLIGENCE
+// ==========================================
+
+model UserTypeDetection {
+  id               String    @id @default(cuid())
+  
+  // Detection result
+  detectedType     String    // UserType enum value
+  confidence       Float     // 0-100
+  signals          String[]  // Array of detection signals
+  
+  // Context data
+  contextData      Json?     // Stores IP, email domain, etc.
+  
+  // User association (if authenticated)
+  userId           String?
+  sessionId        String?
+  
+  // Metadata
+  timestamp        DateTime  @default(now())
+  
+  // Relations
+  user             User?     @relation(fields: [userId], references: [id])
+  
+  @@index([userId])
+  @@index([detectedType])
+  @@index([timestamp])
+}
+
+// Intelligence aggregation for market insights
+model IntelligenceEvent {
+  id               String    @id @default(cuid())
+  
+  // Event details
+  eventType        String    // search, view, bid, payment, etc.
+  userType         String    // Detected user type
+  category         String    // Category of the event
+  
+  // Anonymized data
+  data             Json      // Event-specific data
+  
+  // Context
+  region           String?
+  industry         String?
+  value            Float?    // If applicable (e.g., contract value)
+  
+  // Metadata
+  timestamp        DateTime  @default(now())
+  processed        Boolean   @default(false)
+  
+  @@index([eventType])
+  @@index([userType])
+  @@index([timestamp])
+  @@index([processed])
+}
+
+// ============================================
+// FINANCIAL FLOW TRACKING
+// ============================================
+
+model FinancialFlow {
+  id                String   @id @default(cuid())
+  transactionId     String   @unique
+  sourceType        String   // government, bank, vc, supplier, community
+  sourceEntity      String
+  sourceEntityId    String?
+  destinationType   String   // contractor, subcontractor, supplier, employee
+  destinationEntity String
+  destinationEntityId String?
+  amount            Float
+  currency          String   @default("CAD")
+  purpose           String
+  contractId        String?
+  projectId         String?
+  tier              Int      // 1 = Prime, 2 = Sub, 3 = Sub-sub, etc.
+  indigenousContent Float?   // Percentage of Indigenous content
+  
+  // Tracking
+  flowDate          DateTime
+  recordedAt        DateTime @default(now())
+  verifiedAt        DateTime?
+  verificationMethod String? // bank_api, blockchain, manual, ai_inferred
+  
+  // Relationships
+  parentFlowId      String?
+  parentFlow        FinancialFlow? @relation("FlowHierarchy", fields: [parentFlowId], references: [id])
+  childFlows        FinancialFlow[] @relation("FlowHierarchy")
+  
+  // Impact tracking
+  impactMetrics     ImpactMetric[]
+  
+  // Audit
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+  
+  @@index([sourceType, sourceEntity])
+  @@index([destinationType, destinationEntity])
+  @@index([contractId])
+  @@index([projectId])
+  @@index([flowDate])
+}
+
+model FundingSource {
+  id               String   @id @default(cuid())
+  name             String
+  type             String   // government, bank, vc, indigenous_trust, crowdfunding
+  category         String   // federal, provincial, municipal, private, community
+  totalCapital     Float?
+  deployedCapital  Float?
+  indigenousFocus  Boolean  @default(false)
+  
+  // Contact & Details
+  contactInfo      Json?
+  programs         Json[]   // Array of funding programs
+  requirements     Json?
+  
+  // Metrics
+  investmentCount  Int      @default(0)
+  totalDeployed    Float    @default(0)
+  averageSize      Float?
+  successRate      Float?
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  
+  @@index([type])
+  @@index([category])
+}
+
+model LeverageAnalysis {
+  id                  String   @id @default(cuid())
+  businessId          String
+  projectId           String?
+  analysisDate        DateTime @default(now())
+  
+  // Capital Structure
+  equityIndigenous    Float    // Indigenous equity
+  equityNonIndigenous Float    // Non-Indigenous equity
+  debtBank           Float    // Bank loans
+  debtGovernment     Float    // Government loans
+  debtSupplier       Float    // Supplier credit
+  debtOther          Float    // Other debt
+  
+  // Calculated Metrics
+  totalCapital       Float
+  leverageRatio      Float    // Total debt / equity
+  indigenousControl  Float    // % Indigenous control
+  
+  // Risk Assessment
+  riskScore          Float    // 1-10 scale
+  riskFactors        Json[]   // Array of risk factors
+  sustainability     String   // sustainable, concerning, critical
+  
+  // Recommendations
+  recommendations    Json[]
+  
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
+  
+  @@index([businessId])
+  @@index([projectId])
+  @@index([analysisDate])
+}
+
+// ============================================
+// IMPACT MEASUREMENT
+// ============================================
+
+model ImpactMetric {
+  id              String   @id @default(cuid())
+  type            String   // job_created, business_started, infrastructure_built, etc.
+  category        String   // employment, business, community, training
+  
+  // What was impacted
+  entityType      String   // person, business, community, project
+  entityId        String?
+  
+  // Measurement
+  metricName      String
+  metricValue     Float
+  metricUnit      String   // count, dollars, percentage, etc.
+  
+  // Attribution
+  sourceType      String   // contract, program, investment
+  sourceId        String?
+  confidence      Float    @default(1.0) // Confidence in attribution
+  
+  // Time & Location
+  impactDate      DateTime
+  location        Json?    // Geographic data
+  communityId     String?
+  
+  // Verification
+  verified        Boolean  @default(false)
+  verificationMethod String?
+  
+  // Relationships
+  financialFlowId String?
+  financialFlow   FinancialFlow? @relation(fields: [financialFlowId], references: [id])
+  
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  @@index([type, category])
+  @@index([entityType, entityId])
+  @@index([communityId])
+  @@index([impactDate])
+}
+
+model EconomicSnapshot {
+  id                String   @id @default(cuid())
+  snapshotDate      DateTime
+  scope             String   // national, provincial, community, business
+  scopeId           String?
+  
+  // Employment Metrics
+  totalJobs         Int
+  indigenousJobs    Int
+  averageWage       Float
+  unemploymentRate  Float
+  
+  // Business Metrics
+  totalBusinesses   Int
+  newBusinesses     Int
+  businessGrowthRate Float
+  businessSurvivalRate Float
+  
+  // Financial Metrics
+  totalInvestment   Float
+  indigenousInvestment Float
+  economicActivity  Float
+  economicMultiplier Float
+  
+  // Community Metrics
+  povertyRate       Float?
+  medianIncome      Float?
+  youthRetention    Float?
+  infrastructureIndex Float?
+  
+  // Comparisons
+  previousSnapshot  Json?    // Comparison to previous period
+  yearOverYear     Json?    // YoY changes
+  
+  createdAt        DateTime @default(now())
+  
+  @@unique([snapshotDate, scope, scopeId])
+  @@index([scope, scopeId])
+  @@index([snapshotDate])
+}
+
+model SuccessStory {
+  id               String   @id @default(cuid())
+  type             String   // individual, business, community
+  title            String
+  summary          String   @db.Text
+  fullStory        String   @db.Text
+  
+  // Subject
+  subjectType      String
+  subjectId        String?
+  anonymized       Boolean  @default(true)
+  
+  // Impact Numbers
+  keyMetrics       Json[]   // Array of {metric, before, after, change}
+  timeframe        Json     // {start, end, milestones}
+  
+  // Media
+  images           Json[]   // Array of image URLs
+  videos           Json[]   // Array of video URLs
+  testimonials     Json[]   // Array of quotes
+  
+  // Verification
+  verified         Boolean  @default(false)
+  verifiedBy       String?
+  consentObtained  Boolean  @default(false)
+  
+  // Usage
+  featured         Boolean  @default(false)
+  views            Int      @default(0)
+  shares           Int      @default(0)
+  
+  // Tags for discovery
+  tags             String[]
+  
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+  publishedAt      DateTime?
+  
+  @@index([type])
+  @@index([tags])
+  @@index([featured])
+}
+
+// ==========================================
+// ECONOMIC RECONCILIATION BADGE SYSTEM
+// ==========================================
+
+model Badge {
+  id                    String          @id @default(cuid())
+  businessId            String          @unique
+  business              Business        @relation(fields: [businessId], references: [id])
+  
+  // Cryptographic Identity
+  publicKey             String          @unique
+  temporalProof         String          @db.Text
+  indigenousHash        String
+  performanceSignature  String
+  blockchainAnchor      String
+  
+  // Visual Badge
+  animalSpirit          String          // beaver, eagle, fox, wolf, bear, turtle, otter, wolverine, marten
+  evolutionStage        Int             // 1-4 (entry, aurora, golden, legendary)
+  
+  // Impact Metrics
+  procurementPercentage Float           @default(0)
+  indigenousEmployment  Int             @default(0)
+  communityInvestment   Float           @default(0)
+  sustainabilityScore   Float           @default(0)
+  yearsActive           Float           @default(0)
+  totalImpactValue      Float           @default(0)
+  
+  // Badge Status
+  status                BadgeStatus     @default(ACTIVE)
+  issuedAt              DateTime        @default(now())
+  lastVerified          DateTime        @default(now())
+  expiresAt             DateTime?
+  
+  // Analytics
+  clickCount            Int             @default(0)
+  conversionCount       Int             @default(0)
+  viralCoefficient      Float           @default(0)
+  
+  // Badge Platforms
+  platforms             BadgePlatform[]
+  
+  // Audit Trail
+  auditEvents           BadgeAuditEvent[]
+  
+  createdAt             DateTime        @default(now())
+  updatedAt             DateTime        @updatedAt
+  
+  @@index([status])
+  @@index([animalSpirit])
+  @@index([evolutionStage])
+  @@index([businessId])
+}
+
+model BadgePlatform {
+  id                String          @id @default(cuid())
+  badgeId           String
+  badge             Badge           @relation(fields: [badgeId], references: [id])
+  
+  platform          String          // website, linkedin, facebook, twitter, instagram, email
+  embedCode         String          @db.Text
+  isActive          Boolean         @default(true)
+  
+  // Analytics
+  impressions       Int             @default(0)
+  clicks            Int             @default(0)
+  conversions       Int             @default(0)
+  lastActivity      DateTime?
+  
+  // Platform-specific data
+  platformData      Json?           // OAuth tokens, specific settings
+  
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  lastSynced        DateTime        @default(now())
+  
+  @@unique([badgeId, platform])
+  @@index([platform])
+  @@index([isActive])
+}
+
+model BadgeAuditEvent {
+  id                String          @id @default(cuid())
+  badgeId           String
+  badge             Badge           @relation(fields: [badgeId], references: [id])
+  
+  eventType         String          // issued, verified, updated, suspended, revoked
+  eventData         Json
+  performedBy       String?
+  performedByType   String?         // system, admin, user, blockchain
+  
+  // Verification data
+  verificationResult Boolean?
+  verificationData   Json?
+  
+  createdAt         DateTime        @default(now())
+  
+  @@index([badgeId])
+  @@index([eventType])
+  @@index([createdAt])
+}
+
+// Trap Business Network for fraud detection
+model TrapBusiness {
+  id                String          @id @default(cuid())
+  businessName      String
+  trapType          String          // honeypot, timebomb, tracker
+  
+  // Tracking markers
+  phoneNumber       String?         @unique
+  email             String?         @unique
+  website           String?         @unique
+  hiddenMarkers     Json[]          // Forensic tracking data
+  
+  // Behavioral configuration
+  triggerConditions Json            // When to activate
+  timeBombDate      DateTime?       // When to fail catastrophically
+  
+  // Detection tracking
+  detections        TrapDetection[]
+  
+  isActive          Boolean         @default(true)
+  createdAt         DateTime        @default(now())
+  updatedAt         DateTime        @updatedAt
+  
+  @@index([trapType])
+  @@index([isActive])
+}
+
+model TrapDetection {
+  id                String          @id @default(cuid())
+  trapBusinessId    String
+  trapBusiness      TrapBusiness    @relation(fields: [trapBusinessId], references: [id])
+  
+  // Detection details
+  detectedAt        DateTime        @default(now())
+  detectedPlatform  String          // Where it was detected
+  detectedBy        String          // System or user that found it
+  
+  // Evidence collection
+  evidenceData      Json            // Screenshots, API responses, etc.
+  ipAddress         String?
+  userAgent         String?
+  
+  // Legal documentation
+  legalEvidence     Json?           // Formatted for legal proceedings
+  reported          Boolean         @default(false)
+  reportedAt        DateTime?
+  
+  @@index([trapBusinessId])
+  @@index([detectedPlatform])
+  @@index([detectedAt])
+}
+
+// Spirit Animal Quiz for viral onboarding
+model SpiritAnimalQuiz {
+  id                String          @id @default(cuid())
+  
+  // Quiz taker (could be anonymous)
+  email             String?
+  businessId        String?
+  
+  // Quiz results
+  answers           Json            // All quiz answers
+  assignedAnimal    String          // Resulting spirit animal
+  traits            Json            // Matched personality traits
+  
+  // Conversion tracking
+  converted         Boolean         @default(false)
+  convertedAt       DateTime?
+  conversionPath    Json?           // Steps taken after quiz
+  
+  // Analytics
+  timeSpent         Int             // Seconds to complete
+  shareCount        Int             @default(0)
+  
+  createdAt         DateTime        @default(now())
+  
+  @@index([assignedAnimal])
+  @@index([converted])
+  @@index([createdAt])
+}
+
+enum BadgeStatus {
+  ACTIVE
+  SUSPENDED
+  REVOKED
+  EXPIRED
+}

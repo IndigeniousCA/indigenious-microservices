@@ -1,0 +1,452 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Business {
+  id                    String    @id @default(uuid())
+  name                  String
+  businessNumber        String    @unique
+  industry              String
+  region                String
+  isIndigenous          Boolean   @default(false)
+  verified              Boolean   @default(false)
+  lastActiveAt          DateTime?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  // Analytics relationships
+  metrics               BusinessMetric[]
+  rfqsParticipated     RFQParticipation[]
+  certifications       BusinessCertification[]
+  
+  @@index([isIndigenous])
+  @@index([industry])
+  @@index([region])
+  @@index([verified])
+}
+
+model RFQ {
+  id                    String    @id @default(uuid())
+  title                 String
+  description           String
+  category              String
+  status                String    @default("ACTIVE")
+  estimatedBudget       Float?
+  finalValue            Float?
+  deadline              DateTime
+  createdAt             DateTime  @default(now())
+  completedAt           DateTime?
+  
+  // Creator/winner info
+  createdBy             String
+  winnerId              String?
+  isIndigenousWinner    Boolean   @default(false)
+  
+  // Analytics relationships
+  participation         RFQParticipation[]
+  analytics             RFQAnalytics[]
+  
+  @@index([category])
+  @@index([status])
+  @@index([createdAt])
+  @@index([isIndigenousWinner])
+}
+
+model RFQParticipation {
+  id                    String    @id @default(uuid())
+  rfqId                 String
+  businessId            String
+  submittedAt           DateTime?
+  bidAmount             Float?
+  responseTimeHours     Float?
+  isWinner             Boolean   @default(false)
+  evaluationScore      Float?
+  createdAt            DateTime  @default(now())
+  
+  rfq                   RFQ       @relation(fields: [rfqId], references: [id])
+  business              Business  @relation(fields: [businessId], references: [id])
+  
+  @@unique([rfqId, businessId])
+  @@index([rfqId])
+  @@index([businessId])
+  @@index([isWinner])
+}
+
+model RFQAnalytics {
+  id                    String    @id @default(uuid())
+  rfqId                 String
+  responseCount         Int       @default(0)
+  indigenousResponseCount Int     @default(0)
+  avgResponseTime       Float?
+  competitionLevel      String    // low, medium, high
+  categoryBreakdown     Json?
+  priceAnalysis         Json?
+  performanceMetrics    Json?
+  generatedAt           DateTime  @default(now())
+  
+  rfq                   RFQ       @relation(fields: [rfqId], references: [id])
+  
+  @@unique([rfqId])
+  @@index([competitionLevel])
+  @@index([generatedAt])
+}
+
+model BusinessMetric {
+  id                    String    @id @default(uuid())
+  businessId            String
+  period                DateTime  // Start of the period (month/quarter/year)
+  periodType            String    // monthly, quarterly, yearly
+  
+  // Core metrics
+  revenue               Float     @default(0)
+  employeeCount         Int       @default(0)
+  rfqsParticipated      Int       @default(0)
+  rfqsWon               Int       @default(0)
+  winRate               Float     @default(0)
+  avgResponseTime       Float     @default(0)
+  customerSatisfaction  Float     @default(0)
+  marketShare           Float     @default(0)
+  
+  // Growth metrics
+  revenueGrowth         Float     @default(0)
+  employeeGrowth        Float     @default(0)
+  marketShareGrowth     Float     @default(0)
+  
+  // Performance scores
+  onTimeDelivery        Float     @default(0)
+  qualityScore          Float     @default(0)
+  communicationScore    Float     @default(0)
+  overallRating         Float     @default(0)
+  
+  createdAt             DateTime  @default(now())
+  
+  business              Business  @relation(fields: [businessId], references: [id])
+  
+  @@unique([businessId, period, periodType])
+  @@index([businessId])
+  @@index([period])
+  @@index([periodType])
+}
+
+model BusinessCertification {
+  id                    String    @id @default(uuid())
+  businessId            String
+  type                  String    // INDIGENOUS_BUSINESS, CCAB, etc.
+  certificationNumber   String    @unique
+  issuedBy              String
+  issuedAt              DateTime
+  expiresAt             DateTime?
+  status                String    @default("ACTIVE") // ACTIVE, EXPIRED, REVOKED
+  metadata              Json?
+  
+  business              Business  @relation(fields: [businessId], references: [id])
+  
+  @@index([businessId])
+  @@index([type])
+  @@index([status])
+  @@index([expiresAt])
+}
+
+model IndigenousRegistry {
+  id                    String    @id @default(uuid())
+  bandNumber            String    @unique
+  bandName              String
+  region                String
+  province              String
+  treaty                String?
+  population            Int?
+  chiefName             String?
+  
+  // Analytics metrics
+  businessCount         Int       @default(0)
+  totalRevenue          Float     @default(0)
+  avgContractValue      Float     @default(0)
+  participationRate     Float     @default(0)
+  
+  verified              Boolean   @default(false)
+  verifiedDate          DateTime?
+  metadata              Json?
+  active                Boolean   @default(true)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([region])
+  @@index([province])
+  @@index([verified])
+  @@index([active])
+}
+
+model MarketAnalytics {
+  id                    String    @id @default(uuid())
+  category              String
+  region                String?
+  period                DateTime  // Start of period
+  periodType            String    // monthly, quarterly, yearly
+  
+  // Market metrics
+  totalRFQs             Int       @default(0)
+  totalValue            Float     @default(0)
+  avgContractValue      Float     @default(0)
+  uniqueBusinesses      Int       @default(0)
+  indigenousBusinesses  Int       @default(0)
+  avgResponseCount      Float     @default(0)
+  competitionIndex      Float     @default(0)
+  
+  // Growth metrics
+  rfqGrowthRate         Float     @default(0)
+  valueGrowthRate       Float     @default(0)
+  businessGrowthRate    Float     @default(0)
+  
+  // Quality metrics
+  avgCompletionTime     Float     @default(0)
+  successRate           Float     @default(0)
+  customerSatisfaction  Float     @default(0)
+  
+  createdAt             DateTime  @default(now())
+  
+  @@unique([category, region, period, periodType])
+  @@index([category])
+  @@index([region])
+  @@index([period])
+  @@index([periodType])
+}
+
+model PredictiveModel {
+  id                    String    @id @default(uuid())
+  name                  String    @unique
+  type                  String    // regression, classification, clustering, etc.
+  version               String
+  features              String[]  // Array of feature names
+  target                String?   // Target variable for supervised learning
+  accuracy              Float?
+  status                String    @default("TRAINING") // TRAINING, READY, FAILED, DEPRECATED
+  
+  // Model metadata
+  trainingDataSize      Int?
+  lastTrainedAt         DateTime?
+  hyperparameters       Json?
+  performanceMetrics    Json?
+  featureImportance     Json?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  predictions           Prediction[]
+  
+  @@index([type])
+  @@index([status])
+  @@index([lastTrainedAt])
+}
+
+model Prediction {
+  id                    String    @id @default(uuid())
+  modelId               String
+  businessId            String?
+  rfqId                 String?
+  entityType            String    // business, rfq, market, etc.
+  entityId              String
+  
+  // Prediction results
+  predictedValue        Float
+  probability           Float?
+  confidence            Float
+  explanation           String[]
+  alternatives          Json?     // Alternative predictions with probabilities
+  
+  // Input features used
+  features              Json
+  
+  createdAt             DateTime  @default(now())
+  
+  model                 PredictiveModel @relation(fields: [modelId], references: [id])
+  
+  @@index([modelId])
+  @@index([entityType, entityId])
+  @@index([businessId])
+  @@index([rfqId])
+  @@index([createdAt])
+}
+
+model Dashboard {
+  id                    String    @id @default(uuid())
+  name                  String
+  description           String?
+  type                  String    // executive, business, indigenous, compliance
+  isPublic              Boolean   @default(false)
+  ownerId               String?
+  ownerType             String?   // user, business, system
+  
+  configuration         Json      // Dashboard layout and widget config
+  refreshInterval       Int       @default(300) // seconds
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  widgets               DashboardWidget[]
+  
+  @@index([type])
+  @@index([isPublic])
+  @@index([ownerId])
+}
+
+model DashboardWidget {
+  id                    String    @id @default(uuid())
+  dashboardId           String
+  widgetType            String    // chart, metric, table, map, etc.
+  title                 String
+  description           String?
+  position              Json      // x, y, width, height
+  
+  // Widget configuration
+  dataSource            String    // API endpoint or query
+  config                Json      // Chart type, filters, etc.
+  refreshInterval       Int       @default(300)
+  
+  // Caching
+  cachedData            Json?
+  lastRefreshed         DateTime?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  dashboard             Dashboard @relation(fields: [dashboardId], references: [id])
+  
+  @@index([dashboardId])
+  @@index([widgetType])
+}
+
+model Report {
+  id                    String    @id @default(uuid())
+  name                  String
+  description           String?
+  type                  String    // procurement, indigenous, financial, compliance
+  format                String    // PDF, Excel, CSV, HTML
+  
+  // Report configuration
+  filters               Json
+  sections              Json      // Report sections and content
+  schedule              Json?     // Scheduling configuration
+  recipients            String[]  // Email recipients
+  
+  // Generation info
+  generatedBy           String?
+  generatedAt           DateTime?
+  fileUrl               String?
+  fileSize              Int?
+  status                String    @default("DRAFT") // DRAFT, GENERATING, COMPLETED, FAILED
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  @@index([type])
+  @@index([status])
+  @@index([generatedAt])
+}
+
+model AggregationJob {
+  id                    String    @id @default(uuid())
+  name                  String
+  type                  String    // rfq, business, indigenous, compliance
+  schedule              String    // Cron expression
+  query                 String    // SQL or query definition
+  destination           String    // Target table/collection
+  
+  // Job configuration
+  filters               Json?
+  transformations       String[]
+  batchSize             Int       @default(1000)
+  parallelism           Int       @default(1)
+  
+  // Execution tracking
+  lastRun               DateTime?
+  nextRun               DateTime?
+  status                String    @default("ACTIVE") // ACTIVE, PAUSED, ERROR
+  lastError             String?
+  
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  executions            JobExecution[]
+  
+  @@index([type])
+  @@index([status])
+  @@index([nextRun])
+}
+
+model JobExecution {
+  id                    String    @id @default(uuid())
+  jobId                 String
+  startedAt             DateTime  @default(now())
+  completedAt           DateTime?
+  status                String    @default("RUNNING") // RUNNING, COMPLETED, FAILED
+  
+  // Execution metrics
+  recordsProcessed      Int       @default(0)
+  recordsSucceeded      Int       @default(0)
+  recordsFailed         Int       @default(0)
+  executionTimeMs       Int?
+  
+  // Error handling
+  errors                Json?
+  logs                  String?
+  
+  job                   AggregationJob @relation(fields: [jobId], references: [id])
+  
+  @@index([jobId])
+  @@index([status])
+  @@index([startedAt])
+}
+
+model EventLog {
+  id                    String    @id @default(uuid())
+  eventType             String
+  entityType            String    // business, rfq, user, system
+  entityId              String
+  businessId            String?
+  userId                String?
+  
+  // Event data
+  eventData             Json
+  metadata              Json?
+  
+  // Tracking
+  timestamp             DateTime  @default(now())
+  ipAddress             String?
+  userAgent             String?
+  sessionId             String?
+  
+  @@index([eventType])
+  @@index([entityType, entityId])
+  @@index([businessId])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model DataQuality {
+  id                    String    @id @default(uuid())
+  tableName             String
+  columnName            String?
+  checkType             String    // completeness, accuracy, consistency, timeliness
+  
+  // Quality metrics
+  totalRecords          Int
+  validRecords          Int
+  invalidRecords        Int
+  qualityScore          Float     // 0-100
+  
+  // Issue details
+  issues                Json?     // Specific issues found
+  recommendations       String[]
+  
+  checkedAt             DateTime  @default(now())
+  
+  @@index([tableName])
+  @@index([checkType])
+  @@index([qualityScore])
+  @@index([checkedAt])
+}

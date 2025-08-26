@@ -1,0 +1,570 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Backup {
+  id                    String                  @id @default(uuid())
+  backupId              String                  @unique
+  name                  String
+  description           String?
+  type                  BackupType
+  scope                 BackupScope
+  source                BackupSource
+  destination           BackupDestination
+  
+  // Data information
+  databases             String[]                // Database names
+  collections           String[]                // Collection/table names
+  services              String[]                // Microservice names
+  includeIndigenousData Boolean                 @default(true)
+  dataSovereignty       Json?                   // Indigenous data handling
+  
+  // Backup details
+  size                  BigInt                  // Bytes
+  compressedSize        BigInt?                 // After compression
+  compressionRatio      Float?
+  encryptionMethod      String?
+  encryptionKey         String?                 // Encrypted key reference
+  checksum              String
+  
+  // S3/Cloud storage
+  storageLocation       String
+  storageProvider       String                  // AWS, GCP, Azure, Local
+  storageClass          String?                 // Standard, Glacier, etc.
+  s3Bucket              String?
+  s3Key                 String?
+  
+  // Timing
+  startedAt             DateTime
+  completedAt           DateTime?
+  duration              Int?                    // Seconds
+  expiresAt             DateTime?
+  
+  // Status
+  status                BackupStatus
+  progress              Float?                  // 0-100
+  error                 String?
+  warnings              String[]
+  
+  // Metadata
+  metadata              Json?
+  tags                  String[]
+  createdBy             String
+  
+  // Relationships
+  restores              RestoreOperation[]
+  verifications         BackupVerification[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([status])
+  @@index([source])
+  @@index([createdAt])
+  @@index([expiresAt])
+}
+
+model RestoreOperation {
+  id                    String                  @id @default(uuid())
+  restoreId             String                  @unique
+  backupId              String
+  name                  String
+  description           String?
+  
+  // Restore configuration
+  targetEnvironment     String                  // production, staging, dev
+  targetDatabase        String?
+  targetCollection      String?
+  restorePoint          DateTime?               // Point-in-time restore
+  partialRestore        Boolean                 @default(false)
+  selectedData          Json?                   // Specific data to restore
+  
+  // Indigenous data handling
+  indigenousDataIncluded Boolean                @default(false)
+  dataGovernanceApplied Boolean                @default(false)
+  bandApproval          String?                 // Band approval for data restore
+  
+  // Process details
+  startedAt             DateTime
+  completedAt           DateTime?
+  duration              Int?                    // Seconds
+  dataRestored          BigInt?                 // Bytes
+  
+  // Validation
+  validationEnabled     Boolean                 @default(true)
+  validationStatus      ValidationStatus?
+  validationErrors      String[]
+  integrityCheck        Boolean                 @default(false)
+  integrityStatus       String?
+  
+  // Status
+  status                RestoreStatus
+  progress              Float?                  // 0-100
+  error                 String?
+  rollbackAvailable     Boolean                 @default(false)
+  rollbackDeadline      DateTime?
+  
+  // Metadata
+  restoreLog            Json?
+  performedBy           String
+  approvedBy            String?
+  
+  backup                Backup                  @relation(fields: [backupId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([backupId])
+  @@index([status])
+  @@index([targetEnvironment])
+}
+
+model BackupSchedule {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+  
+  // Schedule configuration
+  schedule              String                  // Cron expression
+  timezone              String                  @default("UTC")
+  enabled               Boolean                 @default(true)
+  
+  // Backup configuration
+  type                  BackupType
+  scope                 BackupScope
+  source                BackupSource
+  databases             String[]
+  services              String[]
+  
+  // Retention policy
+  retentionDays         Int                     @default(30)
+  retentionCount        Int?                    // Max number to keep
+  archiveAfterDays      Int?                    // Move to cold storage
+  
+  // Indigenous data handling
+  includeIndigenousData Boolean                 @default(true)
+  requireDataApproval   Boolean                 @default(false)
+  approvalContacts      String[]
+  
+  // Storage configuration
+  destination           BackupDestination
+  storageProvider       String
+  compressionEnabled    Boolean                 @default(true)
+  encryptionEnabled     Boolean                 @default(true)
+  
+  // Notification settings
+  notifyOnSuccess       Boolean                 @default(false)
+  notifyOnFailure       Boolean                 @default(true)
+  notificationEmails    String[]
+  
+  // Execution history
+  lastRunAt             DateTime?
+  lastRunStatus         BackupStatus?
+  lastRunId             String?
+  nextRunAt             DateTime?
+  runCount              Int                     @default(0)
+  successCount          Int                     @default(0)
+  failureCount          Int                     @default(0)
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([enabled])
+  @@index([nextRunAt])
+}
+
+model BackupVerification {
+  id                    String                  @id @default(uuid())
+  backupId              String
+  verificationType      VerificationType
+  
+  // Verification details
+  startedAt             DateTime
+  completedAt           DateTime?
+  
+  // Results
+  status                VerificationStatus
+  dataIntegrity         Boolean?
+  checksumValid         Boolean?
+  restorable            Boolean?
+  
+  // Indigenous data verification
+  indigenousDataIntact  Boolean?
+  sovereigntyCompliant  Boolean?
+  
+  // Issues found
+  issues                Json?
+  warnings              String[]
+  errors                String[]
+  
+  // Performance metrics
+  filesChecked          Int?
+  recordsVerified       Int?
+  bytesProcessed        BigInt?
+  
+  performedBy           String
+  
+  backup                Backup                  @relation(fields: [backupId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([backupId])
+  @@index([status])
+}
+
+model DisasterRecoveryPlan {
+  id                    String                  @id @default(uuid())
+  planName              String
+  version               String
+  description           String
+  
+  // RTO/RPO objectives
+  rto                   Int                     // Recovery Time Objective (minutes)
+  rpo                   Int                     // Recovery Point Objective (minutes)
+  
+  // Priority levels
+  criticalSystems       String[]
+  highPrioritySystems   String[]
+  mediumPrioritySystems String[]
+  lowPrioritySystems    String[]
+  
+  // Indigenous data considerations
+  indigenousDataSystems String[]
+  dataSovereigntyPlan   Json?
+  bandNotification      Boolean                 @default(true)
+  culturalProtocols     Json?
+  
+  // Recovery procedures
+  procedures            Json                    // Step-by-step procedures
+  automationEnabled     Boolean                 @default(false)
+  automationScripts     Json?
+  
+  // Contact information
+  primaryContact        String
+  secondaryContacts     String[]
+  escalationPath        Json
+  
+  // Testing
+  lastTestedAt          DateTime?
+  testFrequency         String                  // Monthly, Quarterly, etc.
+  testResults           Json?
+  nextTestDate          DateTime?
+  
+  // Compliance
+  complianceStandards   String[]                // SOC2, ISO, etc.
+  auditLog              Json?
+  
+  isActive              Boolean                 @default(true)
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  incidents             DisasterRecoveryIncident[]
+  
+  @@index([isActive])
+}
+
+model DisasterRecoveryIncident {
+  id                    String                  @id @default(uuid())
+  incidentId            String                  @unique
+  planId                String
+  
+  // Incident details
+  severity              IncidentSeverity
+  type                  IncidentType
+  description           String
+  
+  // Impact assessment
+  affectedSystems       String[]
+  dataLoss              Boolean                 @default(false)
+  dataLossDescription   String?
+  indigenousDataAffected Boolean                @default(false)
+  estimatedImpact       Json?
+  
+  // Recovery process
+  recoveryStarted       DateTime?
+  recoveryCompleted     DateTime?
+  actualRTO             Int?                    // Minutes
+  actualRPO             Int?                    // Minutes
+  
+  // Recovery steps taken
+  stepsExecuted         Json?
+  backupsUsed           String[]                // Backup IDs
+  
+  // Status
+  status                IncidentStatus
+  currentPhase          String?
+  
+  // Lessons learned
+  rootCause             String?
+  preventiveMeasures    String[]
+  lessonsLearned        Json?
+  
+  // Team involved
+  incidentCommander     String
+  teamMembers           String[]
+  
+  reportedBy            String
+  reportedAt            DateTime
+  resolvedAt            DateTime?
+  
+  plan                  DisasterRecoveryPlan    @relation(fields: [planId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([planId])
+  @@index([severity])
+  @@index([status])
+}
+
+model BackupAuditLog {
+  id                    String                  @id @default(uuid())
+  action                AuditAction
+  entityType            String                  // Backup, Restore, Schedule, etc.
+  entityId              String
+  
+  // Action details
+  performedBy           String
+  performedAt           DateTime                @default(now())
+  ipAddress             String?
+  userAgent             String?
+  
+  // Changes made
+  previousState         Json?
+  newState              Json?
+  changes               Json?
+  
+  // Indigenous data tracking
+  indigenousDataAccessed Boolean                @default(false)
+  dataGovernanceApplied Boolean                @default(false)
+  
+  // Result
+  success               Boolean
+  errorMessage          String?
+  
+  // Compliance
+  complianceFlags       String[]
+  requiresReview        Boolean                 @default(false)
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  
+  @@index([action])
+  @@index([entityType])
+  @@index([entityId])
+  @@index([performedBy])
+  @@index([performedAt])
+}
+
+model StorageLocation {
+  id                    String                  @id @default(uuid())
+  name                  String
+  type                  StorageType
+  provider              StorageProvider
+  
+  // Connection details
+  endpoint              String?
+  region                String?
+  bucket                String?
+  path                  String?
+  
+  // Credentials (encrypted)
+  accessKey             String?
+  secretKey             String?
+  credentials           Json?                   // Additional encrypted credentials
+  
+  // Configuration
+  storageClass          String?                 // Standard, IA, Glacier, etc.
+  encryptionEnabled     Boolean                 @default(true)
+  versioningEnabled     Boolean                 @default(false)
+  lifecyclePolicies     Json?
+  
+  // Capacity
+  totalCapacity         BigInt?                 // Bytes
+  usedCapacity          BigInt?
+  availableCapacity     BigInt?
+  
+  // Indigenous data considerations
+  dataSovereigntyCompliant Boolean              @default(false)
+  dataResidency         String?                 // Country/Region
+  indigenousGovernance  Json?
+  
+  // Status
+  isActive              Boolean                 @default(true)
+  isDefault             Boolean                 @default(false)
+  healthStatus          HealthStatus
+  lastHealthCheck       DateTime?
+  
+  // Costs
+  monthlyCost           Float?
+  costPerGB             Float?
+  
+  tags                  String[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([provider])
+  @@index([isActive])
+}
+
+// Enums
+enum BackupType {
+  FULL
+  INCREMENTAL
+  DIFFERENTIAL
+  SNAPSHOT
+  CONTINUOUS
+  POINT_IN_TIME
+}
+
+enum BackupScope {
+  SYSTEM
+  DATABASE
+  SERVICE
+  APPLICATION
+  FILES
+  CONFIGURATION
+  CUSTOM
+}
+
+enum BackupSource {
+  POSTGRESQL
+  MONGODB
+  REDIS
+  ELASTICSEARCH
+  S3
+  FILESYSTEM
+  KUBERNETES
+  DOCKER
+}
+
+enum BackupDestination {
+  S3
+  GLACIER
+  GCS
+  AZURE_BLOB
+  LOCAL
+  NFS
+  TAPE
+}
+
+enum BackupStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  CANCELLED
+  EXPIRED
+  ARCHIVED
+}
+
+enum RestoreStatus {
+  PENDING
+  IN_PROGRESS
+  VALIDATING
+  COMPLETED
+  FAILED
+  ROLLED_BACK
+  CANCELLED
+}
+
+enum ValidationStatus {
+  PENDING
+  VALID
+  INVALID
+  PARTIAL
+  UNKNOWN
+}
+
+enum VerificationType {
+  CHECKSUM
+  INTEGRITY
+  RESTORE_TEST
+  SPOT_CHECK
+  FULL
+}
+
+enum VerificationStatus {
+  PENDING
+  PASSED
+  FAILED
+  PARTIAL
+  WARNING
+}
+
+enum IncidentSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum IncidentType {
+  DATA_LOSS
+  SYSTEM_FAILURE
+  CORRUPTION
+  BREACH
+  NATURAL_DISASTER
+  HUMAN_ERROR
+  CYBER_ATTACK
+}
+
+enum IncidentStatus {
+  DETECTED
+  ASSESSING
+  RECOVERING
+  RESOLVED
+  POST_MORTEM
+  CLOSED
+}
+
+enum AuditAction {
+  BACKUP_CREATED
+  BACKUP_DELETED
+  RESTORE_INITIATED
+  RESTORE_COMPLETED
+  SCHEDULE_CREATED
+  SCHEDULE_MODIFIED
+  SCHEDULE_DELETED
+  VERIFICATION_RUN
+  INCIDENT_DECLARED
+  INCIDENT_RESOLVED
+  DATA_ACCESSED
+  CONFIGURATION_CHANGED
+}
+
+enum StorageType {
+  OBJECT
+  BLOCK
+  FILE
+  ARCHIVE
+  DATABASE
+}
+
+enum StorageProvider {
+  AWS
+  GCP
+  AZURE
+  IBM
+  LOCAL
+  HYBRID
+}
+
+enum HealthStatus {
+  HEALTHY
+  DEGRADED
+  UNHEALTHY
+  UNKNOWN
+}

@@ -1,0 +1,269 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Document {
+  id                  String    @id @default(uuid())
+  filename            String
+  originalName        String
+  mimeType            String
+  size                Int
+  s3Key               String
+  thumbnailKey        String?
+  businessId          String?
+  userId              String
+  category            String?
+  tags                String[]
+  
+  // Indigenous-specific fields
+  isIndigenous        Boolean   @default(false)
+  language            String?
+  culturalSensitivity String?   // public, restricted, sacred
+  
+  // Content extraction
+  extractedText       String?   @db.Text
+  textLanguage        String?
+  entities            Json?
+  
+  // Security
+  checksum            String
+  scanStatus          String    @default("pending") // pending, clean, infected, error
+  encryptionKey       String?
+  
+  // Versioning
+  currentVersion      Int       @default(1)
+  lastModifiedBy      String?
+  
+  // Digital signatures
+  isSigned            Boolean   @default(false)
+  signatureIds        String[]
+  lastSignedAt        DateTime?
+  
+  metadata            Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  versions            DocumentVersion[]
+  signatures          DigitalSignature[]
+  accessLogs          DocumentAccess[]
+  shares              DocumentShare[]
+  
+  @@index([businessId])
+  @@index([userId])
+  @@index([category])
+  @@index([isIndigenous])
+  @@index([language])
+  @@index([createdAt])
+}
+
+model DocumentVersion {
+  id                  String    @id @default(uuid())
+  documentId          String
+  versionNumber       Int
+  filename            String
+  s3Key               String
+  size                Int
+  checksum            String
+  changes             String?
+  createdBy           String
+  createdAt           DateTime  @default(now())
+  
+  // Archive info
+  archived            Boolean   @default(false)
+  archivedAt          DateTime?
+  
+  // Soft delete
+  deletedAt           DateTime?
+  deletedBy           String?
+  
+  metadata            Json?
+  
+  document            Document  @relation(fields: [documentId], references: [id])
+  
+  @@unique([documentId, versionNumber])
+  @@index([documentId])
+  @@index([versionNumber])
+  @@index([createdAt])
+}
+
+model DigitalSignature {
+  id                  String    @id @default(uuid())
+  documentId          String
+  signerId            String
+  signerName          String
+  signerEmail         String
+  signerRole          String?
+  
+  signatureType       String    // electronic, digital, qualified
+  signatureData       String?   @db.Text // Base64 encoded signature
+  signatureHash       String
+  publicKey           String?
+  certificateId       String?
+  
+  timestamp           DateTime  @default(now())
+  ipAddress           String?
+  location            Json?     // lat, lng, address
+  
+  verificationCode    String    @unique
+  status              String    @default("pending") // pending, signed, rejected, expired
+  
+  metadata            Json?
+  
+  document            Document  @relation(fields: [documentId], references: [id])
+  attestations        WitnessAttestation[]
+  
+  @@index([documentId])
+  @@index([signerId])
+  @@index([status])
+  @@index([timestamp])
+}
+
+model WitnessAttestation {
+  id                  String    @id @default(uuid())
+  signatureId         String
+  witnessId           String
+  witnessName         String
+  attestation         String
+  timestamp           DateTime  @default(now())
+  
+  signature           DigitalSignature @relation(fields: [signatureId], references: [id])
+  
+  @@index([signatureId])
+  @@index([witnessId])
+}
+
+model SignatureRequest {
+  id                  String    @id @default(uuid())
+  documentId          String
+  requesterId         String
+  signers             Json      // Array of signer info
+  message             String?
+  deadline            DateTime?
+  signatureOrder      String    @default("parallel") // parallel, sequential
+  status              String    @default("draft") // draft, sent, in_progress, completed, cancelled
+  
+  createdAt           DateTime  @default(now())
+  completedAt         DateTime?
+  
+  @@index([documentId])
+  @@index([requesterId])
+  @@index([status])
+}
+
+model DocumentTemplate {
+  id                  String    @id @default(uuid())
+  name                String
+  category            String
+  description         String?
+  templateType        String    // rfq, contract, invoice, certification, report, custom
+  
+  // Indigenous-specific
+  isIndigenous        Boolean   @default(false)
+  language            String?
+  culturalElements    Json?     // Traditional symbols, patterns, etc.
+  
+  // Template structure
+  fields              Json      // Array of field definitions
+  sections            Json      // Array of sections
+  styles              Json?     // Custom styling
+  
+  // Permissions
+  isPublic            Boolean   @default(false)
+  createdBy           String
+  
+  metadata            Json?
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  @@index([category])
+  @@index([templateType])
+  @@index([isIndigenous])
+  @@index([isPublic])
+}
+
+model DocumentAccess {
+  id                  String    @id @default(uuid())
+  documentId          String
+  userId              String?
+  action              String    // view, download, edit, sign, share
+  ipAddress           String?
+  userAgent           String?
+  timestamp           DateTime  @default(now())
+  
+  document            Document  @relation(fields: [documentId], references: [id])
+  
+  @@index([documentId])
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+}
+
+model DocumentShare {
+  id                  String    @id @default(uuid())
+  documentId          String
+  sharedBy            String
+  sharedWith          String?   // userId or email
+  shareType           String    // view, edit, sign
+  expiresAt           DateTime?
+  accessCode          String?   @unique
+  accessed            Boolean   @default(false)
+  accessedAt          DateTime?
+  
+  createdAt           DateTime  @default(now())
+  
+  document            Document  @relation(fields: [documentId], references: [id])
+  
+  @@index([documentId])
+  @@index([sharedBy])
+  @@index([sharedWith])
+  @@index([accessCode])
+}
+
+model OCRJob {
+  id                  String    @id @default(uuid())
+  documentId          String
+  status              String    @default("pending") // pending, processing, completed, failed
+  
+  // Results
+  extractedText       String?   @db.Text
+  detectedLanguage    String?
+  confidence          Float?
+  entities            Json?
+  indigenousContent   Json?
+  
+  // Processing info
+  startedAt           DateTime?
+  completedAt         DateTime?
+  error               String?
+  
+  createdAt           DateTime  @default(now())
+  
+  @@index([documentId])
+  @@index([status])
+}
+
+model User {
+  id                  String    @id @default(uuid())
+  email               String    @unique
+  name                String
+  role                String?
+  businessId          String?
+  
+  // Indigenous affiliation
+  isIndigenous        Boolean   @default(false)
+  bandName            String?
+  bandNumber          String?
+  isElder             Boolean   @default(false)
+  
+  createdAt           DateTime  @default(now())
+  updatedAt           DateTime  @updatedAt
+  
+  @@index([email])
+  @@index([businessId])
+  @@index([isIndigenous])
+}

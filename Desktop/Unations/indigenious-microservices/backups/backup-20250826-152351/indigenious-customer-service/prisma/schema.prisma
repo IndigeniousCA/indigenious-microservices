@@ -1,0 +1,850 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model SupportTicket {
+  id                    String                  @id @default(uuid())
+  ticketId              String                  @unique
+  ticketNumber          String                  @unique
+  
+  // Customer information
+  customerId            String
+  customerName          String
+  customerEmail         String
+  customerPhone         String?
+  
+  // Indigenous customer features
+  indigenousCustomer    Boolean                 @default(false)
+  statusCardNumber      String?
+  bandMembership        String?
+  treatyTerritory       String?
+  preferredLanguage     Language?
+  
+  // Elder support
+  elderCustomer         Boolean                 @default(false)
+  elderAssistance       Boolean                 @default(false)
+  
+  // Ticket details
+  subject               String
+  description           String
+  category              TicketCategory
+  subCategory           String?
+  
+  // Priority and routing
+  priority              TicketPriority
+  severity              TicketSeverity
+  
+  // Cultural considerations
+  culturalSensitive     Boolean                 @default(false)
+  ceremonyRelated       Boolean                 @default(false)
+  traditionalMedicine   Boolean                 @default(false)
+  sacredItems           Boolean                 @default(false)
+  
+  // Language support
+  originalLanguage      Language
+  translationRequired   Boolean                 @default(false)
+  translatedContent     Json?
+  
+  // Community liaison
+  communityLiaison      String?
+  liaisonRequired       Boolean                 @default(false)
+  bandOfficeInvolved    Boolean                 @default(false)
+  
+  // Assignment
+  assignedTo            String?
+  assignedTeam          String?
+  assignedAt            DateTime?
+  
+  // Indigenous specialist
+  indigenousSpecialist  Boolean                 @default(false)
+  specialistId          String?
+  
+  // Communication preferences
+  preferredChannel      CommunicationChannel
+  contactTimes          Json?                   // Preferred contact times
+  timeZone              String?
+  
+  // Remote support considerations
+  remoteLocation        Boolean                 @default(false)
+  internetAccess        InternetAccess?
+  winterRoadOnly        Boolean                 @default(false)
+  
+  // Status and resolution
+  status                TicketStatus
+  resolution            String?
+  resolutionCode        ResolutionCode?
+  resolvedAt            DateTime?
+  resolvedBy            String?
+  
+  // SLA tracking
+  slaLevel              SLALevel
+  dueDate               DateTime?
+  breached              Boolean                 @default(false)
+  
+  // Interactions
+  interactions          Interaction[]
+  
+  // Escalations
+  escalated             Boolean                 @default(false)
+  escalationLevel       Int                     @default(0)
+  escalations           Escalation[]
+  
+  // Satisfaction
+  satisfactionRating    Int?                    // 1-5
+  feedback              String?
+  feedbackDate          DateTime?
+  
+  // Related items
+  relatedOrderId        String?
+  relatedReturnId       String?
+  relatedShipmentId     String?
+  
+  // Attachments
+  attachments           Attachment[]
+  
+  // Knowledge base
+  kbArticlesUsed        String[]
+  
+  // Tags
+  tags                  String[]
+  
+  // Timestamps
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  closedAt              DateTime?
+  
+  createdBy             String
+  
+  @@index([ticketNumber])
+  @@index([customerId])
+  @@index([status])
+  @@index([priority])
+  @@index([assignedTo])
+  @@index([indigenousCustomer])
+  @@index([createdAt])
+}
+
+model Interaction {
+  id                    String                  @id @default(uuid())
+  interactionId         String                  @unique
+  ticketId              String
+  
+  // Interaction type
+  type                  InteractionType
+  channel               CommunicationChannel
+  
+  // Direction
+  direction             Direction               // INBOUND or OUTBOUND
+  
+  // Participants
+  fromUserId            String?
+  fromName              String
+  toUserId              String?
+  toName                String
+  
+  // Content
+  subject               String?
+  content               String
+  
+  // Language
+  language              Language
+  translatedContent     Json?
+  
+  // Indigenous features
+  elderPresent          Boolean                 @default(false)
+  interpreterUsed       Boolean                 @default(false)
+  culturalProtocol      String?
+  
+  // Voice/Video specific
+  callDuration          Int?                    // seconds
+  recordingUrl          String?
+  transcription         String?
+  
+  // Sentiment
+  sentiment             Sentiment?
+  emotionDetected       String[]
+  
+  // Status
+  status                InteractionStatus
+  private               Boolean                 @default(false)
+  
+  // Attachments
+  attachments           String[]
+  
+  ticket                SupportTicket           @relation(fields: [ticketId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([ticketId])
+  @@index([createdAt])
+}
+
+model Agent {
+  id                    String                  @id @default(uuid())
+  agentId               String                  @unique
+  employeeId            String?
+  
+  // Personal information
+  firstName             String
+  lastName              String
+  email                 String                  @unique
+  phone                 String?
+  
+  // Indigenous agent features
+  indigenousAgent       Boolean                 @default(false)
+  statusNumber          String?
+  bandMembership        String?
+  
+  // Languages
+  languages             Language[]
+  indigenousLanguages   String[]                // Specific Indigenous languages
+  
+  // Cultural knowledge
+  culturalTraining      Boolean                 @default(false)
+  elderProtocol         Boolean                 @default(false)
+  ceremonyKnowledge     Boolean                 @default(false)
+  traditionalKnowledge  Boolean                 @default(false)
+  
+  // Specializations
+  specializations       String[]
+  certifications        Json?
+  
+  // Team assignment
+  teamId                String?
+  role                  AgentRole
+  supervisor            String?
+  
+  // Availability
+  status                AgentStatus
+  availability          Json                    // Schedule
+  currentLoad           Int                     @default(0)
+  maxConcurrentTickets  Int                     @default(10)
+  
+  // Performance
+  avgResponseTime       Int?                    // minutes
+  avgResolutionTime     Int?                    // hours
+  satisfactionScore     Decimal?                @db.Decimal(3, 2)
+  ticketsResolved       Int                     @default(0)
+  
+  // Skills
+  skills                Skill[]
+  
+  // Queue assignments
+  queues                Queue[]
+  
+  // Working hours
+  workingHours          Json
+  timeZone              String
+  
+  // Remote work
+  remoteAgent           Boolean                 @default(false)
+  location              String?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  lastActiveAt          DateTime?
+  
+  @@index([email])
+  @@index([indigenousAgent])
+  @@index([status])
+}
+
+model Queue {
+  id                    String                  @id @default(uuid())
+  queueId               String                  @unique
+  queueName             String
+  
+  // Queue type
+  type                  QueueType
+  description           String?
+  
+  // Indigenous queue features
+  indigenousQueue       Boolean                 @default(false)
+  languageSpecific      Language?
+  elderPriority         Boolean                 @default(false)
+  
+  // Routing rules
+  routingRules          Json
+  skillsRequired        String[]
+  
+  // Priority settings
+  priorityWeight        Int                     @default(1)
+  
+  // SLA
+  targetResponseTime    Int                     // minutes
+  targetResolutionTime  Int                     // hours
+  
+  // Capacity
+  maxQueueSize          Int?
+  currentSize           Int                     @default(0)
+  
+  // Business hours
+  businessHours         Json
+  afterHoursHandling    String?
+  
+  // Agents
+  agents                Agent[]
+  
+  // Status
+  status                QueueStatus
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([indigenousQueue])
+  @@index([status])
+}
+
+model KnowledgeArticle {
+  id                    String                  @id @default(uuid())
+  articleId             String                  @unique
+  articleNumber         String                  @unique
+  
+  // Article details
+  title                 String
+  content               String
+  summary               String?
+  
+  // Category
+  category              String
+  subCategory           String?
+  tags                  String[]
+  
+  // Language versions
+  language              Language
+  translations          Translation[]
+  
+  // Indigenous content
+  indigenousContent     Boolean                 @default(false)
+  culturalProtocols     Json?
+  elderApproved         Boolean                 @default(false)
+  elderApprovedBy       String?
+  
+  // Traditional knowledge
+  traditionalKnowledge  Boolean                 @default(false)
+  sacredInformation     Boolean                 @default(false)
+  restrictedAccess      Boolean                 @default(false)
+  
+  // Community specific
+  communitySpecific     Boolean                 @default(false)
+  communities           String[]                // Band numbers or names
+  
+  // Media
+  images                String[]
+  videos                String[]
+  audioGuides           String[]                // For Elder speakers
+  
+  // Accessibility
+  audioVersion          String?
+  largeTextVersion      Boolean                 @default(false)
+  simplifiedVersion     Boolean                 @default(false)
+  
+  // Usage
+  viewCount             Int                     @default(0)
+  helpfulCount          Int                     @default(0)
+  notHelpfulCount       Int                     @default(0)
+  
+  // Related articles
+  relatedArticles       String[]
+  
+  // Status
+  status                ArticleStatus
+  published             Boolean                 @default(false)
+  publishedAt           DateTime?
+  
+  // Version control
+  version               Int                     @default(1)
+  lastReviewedAt        DateTime?
+  nextReviewDate        DateTime?
+  
+  createdBy             String
+  updatedBy             String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([articleNumber])
+  @@index([category])
+  @@index([indigenousContent])
+  @@index([status])
+  @@fulltext([title, content])
+}
+
+model Translation {
+  id                    String                  @id @default(uuid())
+  translationId         String                  @unique
+  
+  // Source
+  sourceId              String
+  sourceType            TranslationType         // ARTICLE, TICKET, INTERACTION
+  
+  // Languages
+  sourceLanguage        Language
+  targetLanguage        Language
+  
+  // Content
+  originalContent       String
+  translatedContent     String
+  
+  // Indigenous translation features
+  indigenousLanguage    String?
+  dialectSpecific       Boolean                 @default(false)
+  culturalContext       Json?
+  
+  // Quality
+  humanVerified         Boolean                 @default(false)
+  verifiedBy            String?
+  accuracy              Decimal?                @db.Decimal(3, 2)
+  
+  // Elder review
+  elderReviewed         Boolean                 @default(false)
+  elderReviewedBy       String?
+  elderNotes            String?
+  
+  article               KnowledgeArticle?       @relation(fields: [sourceId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([sourceId])
+  @@index([sourceLanguage, targetLanguage])
+}
+
+model Escalation {
+  id                    String                  @id @default(uuid())
+  escalationId          String                  @unique
+  ticketId              String
+  
+  // Escalation details
+  level                 Int
+  reason                EscalationReason
+  description           String
+  
+  // To whom
+  escalatedTo           String
+  escalatedToTeam       String?
+  
+  // Elder escalation
+  elderEscalation       Boolean                 @default(false)
+  communityLeader       Boolean                 @default(false)
+  
+  // Band office involvement
+  bandOfficeNotified    Boolean                 @default(false)
+  bandOfficeContact     String?
+  
+  // Resolution
+  resolved              Boolean                 @default(false)
+  resolution            String?
+  resolvedBy            String?
+  resolvedAt            DateTime?
+  
+  ticket                SupportTicket           @relation(fields: [ticketId], references: [id])
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([ticketId])
+  @@index([level])
+}
+
+model Attachment {
+  id                    String                  @id @default(uuid())
+  attachmentId          String                  @unique
+  ticketId              String
+  
+  // File details
+  fileName              String
+  fileType              String
+  fileSize              Int                     // bytes
+  fileUrl               String                  // S3 URL
+  
+  // Metadata
+  description           String?
+  uploadedBy            String
+  
+  // Security
+  scanned               Boolean                 @default(false)
+  scanResult            String?
+  
+  ticket                SupportTicket           @relation(fields: [ticketId], references: [id])
+  
+  uploadedAt            DateTime                @default(now())
+  
+  @@index([ticketId])
+}
+
+model Skill {
+  id                    String                  @id @default(uuid())
+  skillId               String                  @unique
+  
+  // Skill details
+  skillName             String                  @unique
+  category              String
+  description           String?
+  
+  // Indigenous skills
+  indigenousSkill       Boolean                 @default(false)
+  languageSkill         Language?
+  culturalSkill         Boolean                 @default(false)
+  
+  // Proficiency levels required
+  minProficiency        Int                     @default(1) // 1-5
+  
+  // Agents with this skill
+  agents                Agent[]
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([category])
+  @@index([indigenousSkill])
+}
+
+model ChatSession {
+  id                    String                  @id @default(uuid())
+  sessionId             String                  @unique
+  
+  // Participants
+  customerId            String
+  agentId               String?
+  
+  // Session details
+  channel               ChatChannel
+  startTime             DateTime                @default(now())
+  endTime               DateTime?
+  
+  // Language
+  language              Language
+  translationActive     Boolean                 @default(false)
+  
+  // Indigenous features
+  indigenousSession     Boolean                 @default(false)
+  elderPresent          Boolean                 @default(false)
+  interpreterJoined     Boolean                 @default(false)
+  
+  // Messages
+  messages              ChatMessage[]
+  
+  // Transfer history
+  transfers             Int                     @default(0)
+  transferHistory       Json?
+  
+  // Quality
+  qualityScore          Decimal?                @db.Decimal(3, 2)
+  
+  // Status
+  status                SessionStatus
+  
+  // Related ticket
+  ticketId              String?
+  
+  @@index([customerId])
+  @@index([agentId])
+  @@index([status])
+}
+
+model ChatMessage {
+  id                    String                  @id @default(uuid())
+  messageId             String                  @unique
+  sessionId             String
+  
+  // Sender
+  senderId              String
+  senderType            SenderType              // CUSTOMER, AGENT, SYSTEM
+  senderName            String
+  
+  // Content
+  content               String
+  translatedContent     String?
+  
+  // Type
+  messageType           MessageType
+  
+  // Attachments
+  attachments           String[]
+  
+  // Sentiment
+  sentiment             Sentiment?
+  
+  // Read status
+  read                  Boolean                 @default(false)
+  readAt                DateTime?
+  
+  session               ChatSession             @relation(fields: [sessionId], references: [id])
+  
+  timestamp             DateTime                @default(now())
+  
+  @@index([sessionId])
+  @@index([timestamp])
+}
+
+model Feedback {
+  id                    String                  @id @default(uuid())
+  feedbackId            String                  @unique
+  
+  // Reference
+  ticketId              String?
+  sessionId             String?
+  agentId               String?
+  
+  // Customer
+  customerId            String
+  
+  // Ratings
+  overallRating         Int                     // 1-5
+  responseTimeRating    Int?
+  resolutionRating      Int?
+  agentRating           Int?
+  
+  // Indigenous specific ratings
+  culturalSensitivity   Int?                    // 1-5
+  languageSupport       Int?                    // 1-5
+  elderRespect          Int?                    // 1-5
+  
+  // Comments
+  comments              String?
+  suggestions           String?
+  
+  // Would recommend
+  wouldRecommend        Boolean?
+  
+  // Follow up
+  followUpRequested     Boolean                 @default(false)
+  followUpCompleted     Boolean                 @default(false)
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([ticketId])
+  @@index([customerId])
+  @@index([agentId])
+}
+
+// Enums
+enum Language {
+  ENGLISH
+  FRENCH
+  CREE
+  OJIBWE
+  INUKTITUT
+  MIKMAQ
+  MOHAWK
+  DENE
+  BLACKFOOT
+  HAIDA
+  OTHER
+}
+
+enum TicketCategory {
+  ORDER
+  SHIPPING
+  RETURN
+  PAYMENT
+  PRODUCT
+  ACCOUNT
+  TECHNICAL
+  CULTURAL
+  CEREMONY
+  ELDER_SUPPORT
+  LANGUAGE
+  OTHER
+}
+
+enum TicketPriority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+  ELDER
+  CEREMONY
+}
+
+enum TicketSeverity {
+  MINOR
+  MODERATE
+  MAJOR
+  CRITICAL
+}
+
+enum CommunicationChannel {
+  EMAIL
+  PHONE
+  CHAT
+  VIDEO
+  SMS
+  WHATSAPP
+  COMMUNITY_RADIO
+  IN_PERSON
+  BAND_OFFICE
+}
+
+enum InternetAccess {
+  HIGH_SPEED
+  BASIC
+  SATELLITE
+  MOBILE_ONLY
+  LIMITED
+  NONE
+}
+
+enum TicketStatus {
+  NEW
+  OPEN
+  IN_PROGRESS
+  PENDING
+  ON_HOLD
+  ESCALATED
+  RESOLVED
+  CLOSED
+  REOPENED
+}
+
+enum ResolutionCode {
+  SOLVED
+  NOT_SOLVED
+  PARTIALLY_SOLVED
+  WORKAROUND
+  DUPLICATE
+  INVALID
+  WONT_FIX
+  REFERRED
+}
+
+enum SLALevel {
+  STANDARD
+  PRIORITY
+  VIP
+  ELDER
+  CEREMONY
+}
+
+enum InteractionType {
+  EMAIL
+  CALL
+  CHAT
+  VIDEO
+  NOTE
+  SYSTEM
+}
+
+enum Direction {
+  INBOUND
+  OUTBOUND
+}
+
+enum Sentiment {
+  VERY_POSITIVE
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  VERY_NEGATIVE
+}
+
+enum InteractionStatus {
+  SENT
+  DELIVERED
+  READ
+  REPLIED
+  FAILED
+}
+
+enum AgentRole {
+  AGENT
+  SENIOR_AGENT
+  TEAM_LEAD
+  SUPERVISOR
+  MANAGER
+  SPECIALIST
+  ELDER_LIAISON
+}
+
+enum AgentStatus {
+  AVAILABLE
+  BUSY
+  AWAY
+  OFFLINE
+  IN_CALL
+  IN_MEETING
+  BREAK
+}
+
+enum QueueType {
+  GENERAL
+  TECHNICAL
+  BILLING
+  INDIGENOUS
+  ELDER
+  CEREMONY
+  LANGUAGE
+  PRIORITY
+}
+
+enum QueueStatus {
+  ACTIVE
+  PAUSED
+  CLOSED
+  OVERFLOW
+}
+
+enum ArticleStatus {
+  DRAFT
+  REVIEW
+  APPROVED
+  PUBLISHED
+  ARCHIVED
+  EXPIRED
+}
+
+enum TranslationType {
+  ARTICLE
+  TICKET
+  INTERACTION
+  MESSAGE
+}
+
+enum EscalationReason {
+  SLA_BREACH
+  CUSTOMER_REQUEST
+  COMPLEX_ISSUE
+  ELDER_REQUEST
+  CULTURAL_SENSITIVITY
+  LANGUAGE_BARRIER
+  TECHNICAL_EXPERTISE
+  MANAGEMENT_ATTENTION
+}
+
+enum ChatChannel {
+  WEB
+  MOBILE
+  WHATSAPP
+  MESSENGER
+  SMS
+}
+
+enum SessionStatus {
+  ACTIVE
+  ENDED
+  ABANDONED
+  TRANSFERRED
+}
+
+enum SenderType {
+  CUSTOMER
+  AGENT
+  SYSTEM
+  BOT
+}
+
+enum MessageType {
+  TEXT
+  IMAGE
+  FILE
+  AUDIO
+  VIDEO
+  SYSTEM
+  TYPING
+}

@@ -1,0 +1,509 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Email management system
+model EmailTemplate {
+  id                    String   @id @default(uuid())
+  templateName         String   @unique
+  subject              String
+  htmlContent          String   @db.Text
+  textContent          String?  @db.Text
+  mjmlContent          String?  @db.Text // MJML template source
+  
+  // Template metadata
+  description          String?
+  category             String   // NOTIFICATION, MARKETING, SYSTEM, CEREMONY, ELDER
+  version              String   @default("1.0")
+  
+  // Indigenous customization
+  indigenousTemplate   Boolean  @default(false)
+  elderTemplate        Boolean  @default(false) // Elder-friendly version
+  ceremonyTemplate     Boolean  @default(false) // Ceremony-related
+  traditionalDesign    Boolean  @default(false) // Traditional Indigenous design
+  nation               String?  // Nation-specific template
+  language             String   @default("en") // Template language
+  indigenousLanguage   String?  // Cree, Ojibwe, etc.
+  
+  // Cultural elements
+  culturalSymbols      Json?    // Indigenous symbols and meanings
+  colorScheme          Json?    // Traditional color schemes
+  traditionalElements  Json?    // Traditional design elements
+  respectfulTone       Boolean  @default(true) // Respectful communication tone
+  
+  // Template variables
+  variables            Json?    // Template placeholder variables
+  requiredFields       String[] // Required data fields
+  
+  // Approval workflow
+  needsElderApproval   Boolean  @default(false)
+  approvedBy           String?  // Elder who approved
+  approvedAt           DateTime?
+  culturalReview       Boolean  @default(false) // Cultural appropriateness review
+  reviewedBy           String?  // Cultural advisor who reviewed
+  reviewedAt           DateTime?
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  emails               Email[]
+}
+
+model Email {
+  id                    String   @id @default(uuid())
+  messageId            String   @unique // Unique message identifier
+  
+  // Recipient information
+  toEmail              String
+  toName               String?
+  ccEmails             String[] // CC recipients
+  bccEmails            String[] // BCC recipients
+  
+  // Sender information
+  fromEmail            String
+  fromName             String?
+  replyToEmail         String?
+  
+  // Content
+  subject              String
+  htmlContent          String   @db.Text
+  textContent          String?  @db.Text
+  attachments          Json?    // File attachments metadata
+  
+  // Template reference
+  templateId           String?
+  template             EmailTemplate? @relation(fields: [templateId], references: [id])
+  templateVariables    Json?    // Variables used in template
+  
+  // Indigenous context
+  indigenousEmail      Boolean  @default(false)
+  elderRecipient       Boolean  @default(false) // Sent to Elder
+  ceremonyRelated      Boolean  @default(false) // Ceremony-related content
+  communityBroadcast   Boolean  @default(false) // Community-wide broadcast
+  culturallySensitive  Boolean  @default(false) // Culturally sensitive content
+  traditionalKnowledge Boolean  @default(false) // Contains traditional knowledge
+  nation               String?  // Recipient's nation
+  territory            String?  // Recipient's territory
+  
+  // Priority and handling
+  priority             String   @default("NORMAL") // HIGH, NORMAL, LOW, ELDER_URGENT
+  urgentFlag           Boolean  @default(false)
+  elderPriority        Boolean  @default(false) // Elder priority delivery
+  ceremonyUrgent       Boolean  @default(false) // Ceremony-urgent delivery
+  
+  // Delivery tracking
+  status               String   @default("PENDING") // PENDING, SENT, DELIVERED, BOUNCED, FAILED
+  sentAt               DateTime?
+  deliveredAt          DateTime?
+  openedAt             DateTime?
+  clickedAt            DateTime?
+  bouncedAt            DateTime?
+  errorMessage         String?
+  
+  // Provider information
+  provider             String?  // SMTP, SENDGRID, AWS_SES, MAILGUN, POSTMARK
+  providerMessageId    String?  // Provider's message ID
+  providerResponse     Json?    // Provider response data
+  
+  // Retry logic
+  retryCount           Int      @default(0)
+  maxRetries           Int      @default(3)
+  nextRetryAt          DateTime?
+  
+  // Security and compliance
+  encrypted            Boolean  @default(false)
+  encryptionKey        String?  // Encryption key reference
+  dataClassification   String   @default("PUBLIC") // PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED
+  retentionPeriod      Int      @default(365) // Days
+  
+  // Indigenous data protection
+  sovereigntyCompliant Boolean  @default(true)
+  dataLocation         String?  // Data residency location
+  accessRestrictions   Json?    // Access control rules
+  elderApprovalRequired Boolean @default(false)
+  
+  // User tracking
+  userId               String?  // Sender user ID
+  recipientUserId      String?  // Recipient user ID if internal
+  
+  // Campaign tracking
+  campaignId           String?  // Email campaign ID
+  segmentId            String?  // Recipient segment ID
+  
+  // Metadata
+  metadata             Json?    // Additional metadata
+  tags                 String[] // Email tags
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  bounces              EmailBounce[]
+  opens                EmailOpen[]
+  clicks               EmailClick[]
+  unsubscribes         EmailUnsubscribe[]
+  
+  @@index([toEmail])
+  @@index([status])
+  @@index([priority])
+  @@index([elderRecipient])
+  @@index([ceremonyRelated])
+  @@index([createdAt])
+  @@index([sentAt])
+}
+
+model EmailBounce {
+  id                    String   @id @default(uuid())
+  
+  emailId              String
+  email                Email    @relation(fields: [emailId], references: [id])
+  
+  bounceType           String   // HARD, SOFT, COMPLAINT
+  bounceSubType        String?  // invalid-mailbox, message-too-large, etc.
+  bounceReason         String?  @db.Text
+  
+  // Provider details
+  provider             String
+  providerBounceId     String?
+  providerData         Json?
+  
+  // Indigenous handling
+  elderBounce          Boolean  @default(false) // Bounce from Elder email
+  ceremonyImpact       Boolean  @default(false) // Affects ceremony communications
+  
+  bouncedAt            DateTime @default(now())
+  
+  @@index([bounceType])
+  @@index([elderBounce])
+}
+
+model EmailOpen {
+  id                    String   @id @default(uuid())
+  
+  emailId              String
+  email                Email    @relation(fields: [emailId], references: [id])
+  
+  // Tracking details
+  ipAddress            String?
+  userAgent            String?
+  location             Json?    // Geographic location
+  
+  // Device information
+  deviceType           String?  // mobile, desktop, tablet
+  emailClient          String?  // outlook, gmail, apple-mail
+  
+  openedAt             DateTime @default(now())
+  
+  @@index([emailId, openedAt])
+}
+
+model EmailClick {
+  id                    String   @id @default(uuid())
+  
+  emailId              String
+  email                Email    @relation(fields: [emailId], references: [id])
+  
+  // Click details
+  url                  String   @db.Text
+  linkText             String?
+  linkId               String?  // Custom link identifier
+  
+  // Tracking details
+  ipAddress            String?
+  userAgent            String?
+  location             Json?
+  
+  clickedAt            DateTime @default(now())
+  
+  @@index([emailId, clickedAt])
+}
+
+model EmailUnsubscribe {
+  id                    String   @id @default(uuid())
+  
+  emailId              String
+  email                Email    @relation(fields: [emailId], references: [id])
+  
+  // Unsubscribe details
+  unsubscribeType      String   // MANUAL, AUTOMATIC, LIST_UNSUBSCRIBE
+  reason               String?  // User-provided reason
+  
+  // Indigenous considerations
+  elderUnsubscribe     Boolean  @default(false) // Elder unsubscribed
+  culturalConcern      Boolean  @default(false) // Cultural appropriateness concern
+  
+  unsubscribedAt       DateTime @default(now())
+  
+  @@index([elderUnsubscribe])
+}
+
+model EmailList {
+  id                    String   @id @default(uuid())
+  listName             String   @unique
+  description          String?
+  
+  // List type and permissions
+  listType             String   // GENERAL, ELDERS, CEREMONY, COMMUNITY, NATION
+  accessLevel          String   @default("PUBLIC") // PUBLIC, PRIVATE, RESTRICTED
+  
+  // Indigenous list management
+  indigenousList       Boolean  @default(false)
+  eldersList           Boolean  @default(false) // Elder-only communications
+  ceremonyList         Boolean  @default(false) // Ceremony participants
+  nationSpecific       Boolean  @default(false) // Nation-specific list
+  nation               String?  // Specific nation
+  territory            String?  // Territory/region
+  
+  // List settings
+  doubleOptIn          Boolean  @default(true)
+  moderatedJoin        Boolean  @default(false) // Requires approval to join
+  elderModerated       Boolean  @default(false) // Requires Elder approval
+  culturalGuidelines   String?  @db.Text // Cultural communication guidelines
+  
+  // List management
+  ownerId              String   // List owner/manager
+  moderators           String[] // List moderators
+  elderModerators      String[] // Elder moderators
+  
+  // Subscription settings
+  allowUnsubscribe     Boolean  @default(true)
+  maxSubscribers       Int?     // Maximum number of subscribers
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  subscriptions        EmailSubscription[]
+  campaigns            EmailCampaign[]
+}
+
+model EmailSubscription {
+  id                    String   @id @default(uuid())
+  
+  listId               String
+  list                 EmailList @relation(fields: [listId], references: [id])
+  
+  // Subscriber information
+  email                String
+  firstName            String?
+  lastName             String?
+  
+  // Indigenous subscriber data
+  indigenousSubscriber Boolean  @default(false)
+  isElder              Boolean  @default(false)
+  nation               String?
+  territory            String?
+  traditionalName      String?  // Traditional Indigenous name
+  preferredLanguage    String   @default("en")
+  indigenousLanguage   String?  // Preferred Indigenous language
+  
+  // Subscription preferences
+  confirmed            Boolean  @default(false)
+  confirmationToken    String?
+  confirmedAt          DateTime?
+  
+  // Cultural preferences
+  culturalContent      Boolean  @default(true) // Wants cultural content
+  ceremonyNotifications Boolean @default(false) // Ceremony notifications
+  elderCommunications  Boolean  @default(false) // Communications from Elders
+  traditionalCalendar  Boolean  @default(false) // Traditional calendar events
+  
+  // Communication preferences
+  frequency            String   @default("WEEKLY") // IMMEDIATE, DAILY, WEEKLY, MONTHLY
+  timeZone             String   @default("America/Toronto")
+  preferredTime        String?  // Preferred delivery time
+  
+  // Metadata
+  subscriptionSource   String?  // How they subscribed
+  customFields         Json?    // Additional custom fields
+  
+  // Status
+  status               String   @default("ACTIVE") // ACTIVE, PAUSED, UNSUBSCRIBED
+  unsubscribedAt       DateTime?
+  unsubscribeReason    String?
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([listId, email])
+  @@index([email])
+  @@index([isElder])
+  @@index([nation])
+}
+
+model EmailCampaign {
+  id                    String   @id @default(uuid())
+  campaignName         String   @unique
+  description          String?
+  
+  // Campaign configuration
+  templateId           String
+  listIds              String[] // Target lists
+  segmentIds           String[] // Target segments
+  
+  // Campaign content
+  subject              String
+  fromName             String
+  fromEmail            String
+  replyToEmail         String?
+  
+  // Indigenous campaign settings
+  indigenousCampaign   Boolean  @default(false)
+  elderCampaign        Boolean  @default(false) // Elder-specific campaign
+  ceremonyCampaign     Boolean  @default(false) // Ceremony-related
+  communityCampaign    Boolean  @default(false) // Community-wide
+  nationCampaign       String?  // Nation-specific
+  
+  // Cultural considerations
+  culturalReview       Boolean  @default(false) // Needs cultural review
+  elderApproval        Boolean  @default(false) // Needs Elder approval
+  reviewedBy           String?  // Who reviewed
+  approvedBy           String?  // Elder who approved
+  reviewedAt           DateTime?
+  approvedAt           DateTime?
+  
+  // Scheduling
+  scheduledAt          DateTime?
+  sentAt               DateTime?
+  completedAt          DateTime?
+  
+  // Campaign stats
+  totalRecipients      Int      @default(0)
+  sentCount            Int      @default(0)
+  deliveredCount       Int      @default(0)
+  openedCount          Int      @default(0)
+  clickedCount         Int      @default(0)
+  bouncedCount         Int      @default(0)
+  unsubscribedCount    Int      @default(0)
+  
+  // Indigenous metrics
+  elderRecipients      Int      @default(0)
+  elderOpens           Int      @default(0)
+  ceremonyEngagement   Float?   // Ceremony-related engagement rate
+  
+  // Campaign settings
+  status               String   @default("DRAFT") // DRAFT, SCHEDULED, SENDING, SENT, PAUSED, CANCELLED
+  priority             String   @default("NORMAL") // HIGH, NORMAL, LOW
+  
+  // A/B testing
+  isAbTest             Boolean  @default(false)
+  abTestPercentage     Int?     // Percentage for A/B test
+  
+  createdBy            String   // User who created the campaign
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  lists                EmailList[]
+}
+
+model EmailProvider {
+  id                    String   @id @default(uuid())
+  providerName         String   @unique
+  providerType         String   // SMTP, API
+  
+  // Provider configuration
+  configuration        Json     // Provider-specific config
+  
+  // Authentication
+  apiKey               String?
+  apiSecret            String?
+  smtpHost             String?
+  smtpPort             Int?
+  smtpUser             String?
+  smtpPassword         String?
+  
+  // Provider features
+  supportsTracking     Boolean  @default(false)
+  supportsTemplating   Boolean  @default(false)
+  supportsAttachments  Boolean  @default(true)
+  maxDailyLimit        Int?
+  maxHourlyLimit       Int?
+  
+  // Indigenous data compliance
+  dataResidency        String?  // Required for Indigenous data
+  sovereigntyCompliant Boolean  @default(false)
+  elderApproved        Boolean  @default(false) // Approved for Elder communications
+  
+  // Usage tracking
+  dailyUsage           Int      @default(0)
+  monthlyUsage         Int      @default(0)
+  lastResetDate        DateTime @default(now())
+  
+  // Priority and fallback
+  priority             Int      @default(1) // Lower number = higher priority
+  fallbackProvider     String?  // Fallback provider ID
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model EmailQuota {
+  id                    String   @id @default(uuid())
+  
+  // Quota identification
+  quotaType            String   // USER, ORGANIZATION, CAMPAIGN, ELDER
+  referenceId          String   // User ID, Org ID, etc.
+  
+  // Quota limits
+  dailyLimit           Int      @default(1000)
+  monthlyLimit         Int      @default(10000)
+  
+  // Indigenous quotas
+  elderDailyLimit      Int?     // Special limits for Elder communications
+  ceremonyLimit        Int?     // Ceremony-related email limits
+  
+  // Current usage
+  dailyUsage           Int      @default(0)
+  monthlyUsage         Int      @default(0)
+  
+  // Reset tracking
+  dailyResetAt         DateTime @default(now())
+  monthlyResetAt       DateTime @default(now())
+  
+  // Overage handling
+  allowOverage         Boolean  @default(false)
+  overageUsage         Int      @default(0)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([quotaType, referenceId])
+}
+
+model EmailWebhook {
+  id                    String   @id @default(uuid())
+  
+  // Webhook details
+  webhookUrl           String
+  webhookSecret        String?
+  
+  // Event types
+  eventTypes           String[] // sent, delivered, opened, clicked, bounced, etc.
+  
+  // Indigenous event types
+  elderEvents          Boolean  @default(false) // Elder-related events
+  ceremonyEvents       Boolean  @default(false) // Ceremony events
+  
+  // Provider
+  provider             String   // Which email provider
+  providerId           String?  // Provider's webhook ID
+  
+  // Status
+  active               Boolean  @default(true)
+  verified             Boolean  @default(false)
+  lastTriggered        DateTime?
+  
+  // Security
+  ipWhitelist          String[] // Allowed IP addresses
+  userAgent            String?  // Expected user agent
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}

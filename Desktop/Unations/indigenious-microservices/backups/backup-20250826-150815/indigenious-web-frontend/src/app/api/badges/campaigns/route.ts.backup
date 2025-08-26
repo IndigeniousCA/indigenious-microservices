@@ -1,0 +1,406 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { getServerSession } from 'next-auth/next';
+import { authOptions } from '@/lib/auth';
+import { BadgeViralCampaignService } from '@/features/verification-badges/services/BadgeViralCampaignService';
+import { SocialPressureEngine } from '@/features/verification-badges/services/SocialPressureEngine';
+import { ViralMilestoneService } from '@/features/verification-badges/services/ViralMilestoneService';
+import { prisma } from '@/lib/prisma';
+import { z } from 'zod';
+
+const campaignService = new BadgeViralCampaignService();
+const pressureEngine = new SocialPressureEngine();
+const milestoneService = new ViralMilestoneService();
+
+// POST /api/badges/campaigns - Launch targeted campaign
+export async function POST(request: NextRequest) {
+  try {
+    const session = await getServerSession(authOptions);
+    
+    // Check admin permissions
+    if (session?.user?.role !== 'ADMIN') {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
+
+    const body = await request.json();
+
+    const schema = z.object({
+      type: z.enum(['milestone', 'pressure', 'targeted', 'shame']),
+      targetBusinessIds: z.array(z.string()).optional(),
+      industry: z.string().optional(),
+      intensity: z.enum(['low', 'medium', 'high', 'nuclear']).optional()
+    });
+
+    const { type, targetBusinessIds, industry, intensity } = schema.parse(body);
+
+    switch (type) {
+      case 'milestone':
+        // Check and trigger milestone campaigns
+        await milestoneService.monitorMilestones();
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Milestone campaigns checked and triggered' 
+        });
+
+      case 'pressure':
+        // Apply pressure to specific businesses
+        if (!targetBusinessIds || targetBusinessIds.length === 0) {
+          return NextResponse.json({ 
+            error: 'Target business IDs required for pressure campaign' 
+          }, { status: 400 });
+        }
+
+        const pressureResults = await applyTargetedPressure(targetBusinessIds, intensity || 'medium');
+        return NextResponse.json({ 
+          success: true, 
+          results: pressureResults 
+        });
+
+      case 'targeted':
+        // Launch industry-wide campaign
+        if (!industry) {
+          return NextResponse.json({ 
+            error: 'Industry required for targeted campaign' 
+          }, { status: 400 });
+        }
+
+        const campaignId = await launchIndustryWideCampaign(industry, intensity || 'medium');
+        return NextResponse.json({ 
+          success: true, 
+          campaignId 
+        });
+
+      case 'shame':
+        // Carefully deployed shame campaign
+        const shameResults = await deployShameCampaign(targetBusinessIds);
+        return NextResponse.json({ 
+          success: true, 
+          results: shameResults 
+        });
+
+      default:
+        return NextResponse.json({ 
+          error: 'Invalid campaign type' 
+        }, { status: 400 });
+    }
+  } catch (error) {
+    console.error('Campaign launch error:', error);
+    return NextResponse.json(
+      { error: 'Failed to launch campaign' },
+      { status: 500 }
+    );
+  }
+}
+
+// GET /api/badges/campaigns - Get campaign analytics
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const timeframe = searchParams.get('timeframe') || '7d';
+    
+    // Get viral metrics
+    const metrics = await milestoneService.calculateViralMetrics();
+    
+    // Get active campaigns
+    const activeCampaigns = await getActiveCampaigns();
+    
+    // Get pressure effectiveness
+    const pressureStats = await getPressureEffectiveness(timeframe);
+    
+    // Get conversion funnel
+    const conversionFunnel = await getConversionFunnel(timeframe);
+
+    return NextResponse.json({
+      viralMetrics: metrics,
+      activeCampaigns,
+      pressureStats,
+      conversionFunnel,
+      recommendations: generateCampaignRecommendations(metrics)
+    });
+  } catch (error) {
+    console.error('Campaign analytics error:', error);
+    return NextResponse.json(
+      { error: 'Failed to fetch campaign analytics' },
+      { status: 500 }
+    );
+  }
+}
+
+// Helper functions
+
+async function applyTargetedPressure(
+  businessIds: string[],
+  intensity: string
+): Promise<any[]> {
+  const results = [];
+
+  for (const businessId of businessIds) {
+    const business = await prisma.business.findUnique({
+      where: { id: businessId },
+      include: {
+        badge: true
+      }
+    });
+
+    if (!business || business.badge) {
+      results.push({
+        businessId,
+        status: 'skipped',
+        reason: !business ? 'not_found' : 'already_verified'
+      });
+      continue;
+    }
+
+    const profile = {
+      id: business.id,
+      name: business.name,
+      industry: business.industries[0] || 'general',
+      size: business.employeeCount || 0,
+      hasVerificationBadge: false,
+      socialAccounts: [], // Would fetch from integration
+      pressureScore: 0
+    };
+
+    const pressureScore = await pressureEngine.calculatePressureScore(profile);
+    const pressurePoints = await pressureEngine.generatePressureCampaign(profile);
+    
+    // Apply pressure based on intensity
+    const filteredPoints = pressurePoints.filter(p => {
+      if (intensity === 'low') return p.intensity === 'low';
+      if (intensity === 'medium') return ['low', 'medium'].includes(p.intensity);
+      if (intensity === 'high') return ['low', 'medium', 'high'].includes(p.intensity);
+      return true; // nuclear - all points
+    });
+
+    await pressureEngine.deployPressureTactics(profile, filteredPoints);
+
+    results.push({
+      businessId,
+      businessName: business.name,
+      status: 'deployed',
+      pressureScore,
+      tacticsDeployed: filteredPoints.length
+    });
+  }
+
+  return results;
+}
+
+async function launchIndustryWideCampaign(
+  industry: string,
+  intensity: string
+): Promise<string> {
+  // Get unverified businesses in industry
+  const targets = await prisma.business.findMany({
+    where: {
+      industries: {
+        has: industry
+      },
+      badge: null,
+      status: 'ACTIVE'
+    },
+    select: {
+      id: true,
+      name: true,
+      employeeCount: true
+    },
+    orderBy: {
+      employeeCount: 'desc'
+    },
+    take: 50 // Top 50 by size
+  });
+
+  const campaignTargets = targets.map(t => ({
+    businessId: t.id,
+    businessName: t.name,
+    industry,
+    size: t.employeeCount > 100 ? 'large' : t.employeeCount > 20 ? 'medium' : 'small',
+    socialPresence: {}, // Would fetch from integration
+    influenceScore: calculateInfluenceScore(t)
+  }));
+
+  // Create campaign milestone
+  const milestone = {
+    type: 'industry_penetration' as const,
+    threshold: 25,
+    current: await getIndustryPenetration(industry),
+    reached: false,
+    campaignActions: ['industry_takeover', 'competitor_fomo', 'peer_pressure']
+  };
+
+  await campaignService.launchBadgeAdoptionCampaign(milestone, campaignTargets);
+
+  return `industry-${industry}-${Date.now()}`;
+}
+
+async function deployShameCampaign(
+  targetBusinessIds?: string[]
+): Promise<any> {
+  // Get major holdouts
+  const holdouts = await prisma.business.findMany({
+    where: {
+      id: targetBusinessIds ? { in: targetBusinessIds } : undefined,
+      badge: null,
+      employeeCount: {
+        gte: 100 // Large businesses only
+      },
+      contracts: {
+        some: {
+          rfq: {
+            postedBy: {
+              role: 'GOVERNMENT_OFFICER'
+            }
+          }
+        }
+      }
+    },
+    select: {
+      id: true,
+      name: true,
+      employeeCount: true,
+      industries: true
+    },
+    take: 10
+  });
+
+  if (holdouts.length === 0) {
+    return { message: 'No suitable targets for shame campaign' };
+  }
+
+  // Activate shame campaign
+  const targets = holdouts.map(h => ({
+    businessId: h.id,
+    businessName: h.name,
+    industry: h.industries[0] || 'general',
+    size: 'large' as const,
+    socialPresence: {},
+    influenceScore: 10 // High influence due to size
+  }));
+
+  await campaignService.activateShameCampaign(targets);
+
+  return {
+    targetsIdentified: holdouts.length,
+    campaignStatus: 'deployed',
+    estimatedImpact: 'high'
+  };
+}
+
+async function getActiveCampaigns(): Promise<any[]> {
+  // This would fetch from a campaigns table
+  // For now, return sample data
+  return [
+    {
+      id: 'camp-001',
+      type: 'milestone',
+      name: 'First 100 Celebration',
+      status: 'active',
+      startDate: new Date(Date.now() - 3 * 24 * 60 * 60 * 1000),
+      metrics: {
+        reach: 45000,
+        engagement: 3200,
+        conversions: 28
+      }
+    }
+  ];
+}
+
+async function getPressureEffectiveness(timeframe: string): Promise<any> {
+  // Calculate pressure campaign effectiveness
+  const totalTargeted = 150; // Would query from campaign logs
+  const converted = 42;
+  const pending = 38;
+  
+  return {
+    totalTargeted,
+    converted,
+    pending,
+    conversionRate: (converted / totalTargeted) * 100,
+    averageTimeToConversion: '3.2 days',
+    mostEffectiveTactic: 'competitor_comparison'
+  };
+}
+
+async function getConversionFunnel(timeframe: string): Promise<any> {
+  // Badge conversion funnel metrics
+  return {
+    awareness: {
+      impressions: 125000,
+      uniqueVisitors: 32000
+    },
+    interest: {
+      badgePageViews: 8500,
+      quizStarts: 3200
+    },
+    consideration: {
+      quizCompletions: 2800,
+      applicationStarts: 1200
+    },
+    conversion: {
+      applicationsCompleted: 980,
+      badgesIssued: 920
+    },
+    advocacy: {
+      socialShares: 450,
+      referrals: 180
+    }
+  };
+}
+
+function calculateInfluenceScore(business: any): number {
+  let score = 0;
+  
+  if (business.employeeCount > 100) score += 5;
+  if (business.employeeCount > 500) score += 5;
+  
+  // Additional factors would be calculated here
+  
+  return Math.min(score, 10);
+}
+
+async function getIndustryPenetration(industry: string): Promise<number> {
+  const [verified, total] = await Promise.all([
+    prisma.badge.count({
+      where: {
+        business: {
+          industries: {
+            has: industry
+          }
+        }
+      }
+    }),
+    prisma.business.count({
+      where: {
+        industries: {
+          has: industry
+        }
+      }
+    })
+  ]);
+
+  return total > 0 ? (verified / total) * 100 : 0;
+}
+
+function generateCampaignRecommendations(metrics: any): string[] {
+  const recommendations = [];
+
+  if (metrics.viralCoefficient < 1.5) {
+    recommendations.push('Launch referral incentive program to boost viral coefficient');
+  }
+
+  if (metrics.weeklyGrowth < metrics.totalBadges * 0.1) {
+    recommendations.push('Growth slowing - activate FOMO campaign');
+  }
+
+  const topIndustry = Object.entries(metrics.industryPenetration)
+    .sort(([,a], [,b]) => (b as number) - (a as number))[0];
+    
+  if (topIndustry && topIndustry[1] > 20) {
+    recommendations.push(`${topIndustry[0]} industry ready for takeover campaign`);
+  }
+
+  if (metrics.governmentAdoption > 5) {
+    recommendations.push('Government momentum building - push for mandate');
+  }
+
+  return recommendations;
+}

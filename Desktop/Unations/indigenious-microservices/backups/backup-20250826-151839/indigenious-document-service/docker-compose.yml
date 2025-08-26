@@ -1,0 +1,95 @@
+version: '3.8'
+
+services:
+  document-service:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: indigenious-document-service
+    restart: unless-stopped
+    ports:
+      - "3006:3006"
+    environment:
+      NODE_ENV: ${NODE_ENV:-development}
+      PORT: 3006
+      DATABASE_URL: postgresql://doc_user:doc_pass@postgres:5432/document_db
+      REDIS_URL: redis://redis:6379
+      
+      # AWS S3 Configuration
+      AWS_REGION: ${AWS_REGION:-us-east-1}
+      AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
+      AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      S3_BUCKET_NAME: ${S3_BUCKET_NAME:-indigenious-documents}
+      
+      # Security
+      JWT_SECRET: ${JWT_SECRET:-development_jwt_secret}
+      
+      # Application
+      APP_URL: ${APP_URL:-http://localhost:3000}
+      ALLOWED_ORIGINS: ${ALLOWED_ORIGINS:-http://localhost:3000}
+      
+      # File limits
+      MAX_FILE_SIZE: ${MAX_FILE_SIZE:-104857600} # 100MB
+      ALLOWED_FILE_TYPES: ${ALLOWED_FILE_TYPES:-pdf,doc,docx,xls,xlsx,png,jpg,jpeg,dwg,dxf}
+    depends_on:
+      - postgres
+      - redis
+      - localstack
+    networks:
+      - document-network
+    volumes:
+      - ./uploads:/app/uploads
+      - ./temp:/app/temp
+      - ./logs:/app/logs
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: document-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: doc_user
+      POSTGRES_PASSWORD: doc_pass
+      POSTGRES_DB: document_db
+    ports:
+      - "5434:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - document-network
+
+  redis:
+    image: redis:7-alpine
+    container_name: document-redis
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - document-network
+
+  # LocalStack for S3 testing
+  localstack:
+    image: localstack/localstack:latest
+    container_name: document-localstack
+    ports:
+      - "4566:4566"
+    environment:
+      - SERVICES=s3
+      - DEFAULT_REGION=us-east-1
+      - DATA_DIR=/tmp/localstack/data
+    volumes:
+      - localstack_data:/tmp/localstack
+      - /var/run/docker.sock:/var/run/docker.sock
+    networks:
+      - document-network
+
+networks:
+  document-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
+  redis_data:
+  localstack_data:

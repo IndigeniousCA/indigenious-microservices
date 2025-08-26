@@ -1,0 +1,711 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Shipment {
+  id                    String                  @id @default(uuid())
+  shipmentId            String                  @unique
+  trackingNumber        String                  @unique
+  orderId               String?
+  invoiceId             String?
+  rfqId                 String?
+  
+  // Shipment details
+  carrier               Carrier
+  service               ServiceType
+  status                ShipmentStatus
+  priority              Priority                @default(STANDARD)
+  
+  // Parties
+  senderId              String
+  senderType            PartyType
+  recipientId           String
+  recipientType         PartyType
+  
+  // Indigenous tracking
+  isIndigenousShipment  Boolean                 @default(false)
+  indigenousBusinessId  String?
+  bandNumber            String?
+  remoteDelivery        Boolean                 @default(false)
+  communityDelivery     Boolean                 @default(false)
+  winterRoadOnly        Boolean                 @default(false)
+  
+  // Addresses
+  originAddress         Json
+  destinationAddress    Json
+  returnAddress         Json?
+  
+  // Remote/Indigenous community details
+  communityName         String?
+  nearestHub            String?
+  lastMileCarrier       String?
+  requiresFloatPlane    Boolean                 @default(false)
+  requiresIceRoad       Boolean                 @default(false)
+  
+  // Package details
+  packages              Package[]
+  totalWeight           Decimal                 @db.Decimal(10, 2) // kg
+  totalVolume           Decimal                 @db.Decimal(10, 2) // cubic meters
+  declaredValue         Decimal                 @db.Decimal(19, 4)
+  insuranceAmount       Decimal?                @db.Decimal(19, 4)
+  
+  // Costs
+  shippingCost          Decimal                 @db.Decimal(19, 4)
+  fuelSurcharge         Decimal?                @db.Decimal(19, 4)
+  remoteSurcharge       Decimal?                @db.Decimal(19, 4)
+  indigenousDiscount    Decimal?                @db.Decimal(19, 4)
+  totalCost             Decimal                 @db.Decimal(19, 4)
+  
+  // Dates
+  shipDate              DateTime
+  estimatedDelivery     DateTime
+  actualDelivery        DateTime?
+  
+  // Tracking
+  trackingEvents        TrackingEvent[]
+  currentLocation       Json?
+  lastUpdate            DateTime?
+  
+  // Documentation
+  labels                ShippingLabel[]
+  customsDocuments      CustomsDocument[]
+  proofOfDelivery       String?
+  signature             String?
+  
+  // Metadata
+  specialInstructions   String?
+  deliveryInstructions  String?
+  metadata              Json?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([trackingNumber])
+  @@index([status])
+  @@index([carrier])
+  @@index([senderId])
+  @@index([recipientId])
+  @@index([isIndigenousShipment])
+  @@index([shipDate])
+}
+
+model Package {
+  id                    String                  @id @default(uuid())
+  packageId             String                  @unique
+  shipmentId            String
+  
+  // Package details
+  type                  PackageType
+  weight                Decimal                 @db.Decimal(10, 2) // kg
+  length                Decimal                 @db.Decimal(10, 2) // cm
+  width                 Decimal                 @db.Decimal(10, 2) // cm
+  height                Decimal                 @db.Decimal(10, 2) // cm
+  
+  // Contents
+  description           String
+  quantity              Int                     @default(1)
+  value                 Decimal                 @db.Decimal(19, 4)
+  
+  // Special handling
+  fragile               Boolean                 @default(false)
+  hazardous             Boolean                 @default(false)
+  perishable            Boolean                 @default(false)
+  temperatureControlled Boolean                 @default(false)
+  requiresSignature     Boolean                 @default(false)
+  
+  // Indigenous items
+  indigenousArtwork     Boolean                 @default(false)
+  traditionalGoods      Boolean                 @default(false)
+  ceremonialItems       Boolean                 @default(false)
+  
+  // Tracking
+  individualTracking    String?
+  barcode               String?
+  
+  shipment              Shipment                @relation(fields: [shipmentId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([shipmentId])
+}
+
+model TrackingEvent {
+  id                    String                  @id @default(uuid())
+  shipmentId            String
+  
+  // Event details
+  status                TrackingStatus
+  location              Json
+  description           String
+  carrier               String?
+  
+  // Location details
+  city                  String?
+  province              String?
+  postalCode            String?
+  country               String               @default("CA")
+  facility              String?
+  
+  // Indigenous community tracking
+  communityCheckpoint   Boolean                 @default(false)
+  communityName         String?
+  
+  // Timestamps
+  timestamp             DateTime
+  estimatedDelivery     DateTime?
+  
+  // Additional info
+  notes                 String?
+  exception             Boolean                 @default(false)
+  exceptionReason       String?
+  
+  shipment              Shipment                @relation(fields: [shipmentId], references: [id])
+  
+  @@index([shipmentId])
+  @@index([timestamp])
+  @@index([status])
+}
+
+model DeliveryZone {
+  id                    String                  @id @default(uuid())
+  zoneId                String                  @unique
+  name                  String
+  
+  // Zone details
+  type                  ZoneType
+  province              String
+  regions               String[]
+  postalCodes           String[]
+  
+  // Indigenous territories
+  isIndigenousTerritory Boolean                 @default(false)
+  territoryName         String?
+  treatyNumber          String?
+  bands                 String[]
+  
+  // Service availability
+  carriers              Carrier[]
+  standardDeliveryDays  Int
+  expressDeliveryDays   Int?
+  
+  // Remote area settings
+  isRemote              Boolean                 @default(false)
+  remoteSurcharge       Decimal?                @db.Decimal(19, 4)
+  winterRoadOnly        Boolean                 @default(false)
+  winterRoadMonths      Int[]                   // 1-12
+  airDeliveryOnly       Boolean                 @default(false)
+  
+  // Last mile delivery
+  lastMilePartners      String[]
+  communityPickupPoints Json[]
+  
+  // Costs
+  baseShippingRate      Decimal                 @db.Decimal(19, 4)
+  perKgRate             Decimal                 @db.Decimal(10, 4)
+  fuelSurchargePercent  Decimal?                @db.Decimal(5, 2)
+  
+  // Indigenous shipping benefits
+  indigenousDiscount    Decimal?                @db.Decimal(5, 2)
+  freeShippingThreshold Decimal?                @db.Decimal(19, 4)
+  
+  isActive              Boolean                 @default(true)
+  
+  routes                DeliveryRoute[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([isIndigenousTerritory])
+  @@index([isRemote])
+}
+
+model DeliveryRoute {
+  id                    String                  @id @default(uuid())
+  routeId               String                  @unique
+  name                  String
+  
+  // Route details
+  originZoneId          String
+  destinationZoneId     String
+  distance              Decimal                 @db.Decimal(10, 2) // km
+  estimatedTime         Int                     // hours
+  
+  // Carriers serving this route
+  carriers              Carrier[]
+  preferredCarrier      Carrier?
+  
+  // Route type
+  routeType             RouteType
+  requiresTransfer      Boolean                 @default(false)
+  transferPoints        String[]
+  
+  // Seasonal availability
+  yearRound             Boolean                 @default(true)
+  seasonalMonths        Int[]                   // 1-12 if not year-round
+  
+  // Indigenous route optimization
+  passesThruCommunities String[]
+  communityStops        Json[]
+  
+  // Cost calculation
+  baseCost              Decimal                 @db.Decimal(19, 4)
+  perKmCost             Decimal                 @db.Decimal(10, 4)
+  
+  originZone            DeliveryZone            @relation(fields: [originZoneId], references: [id])
+  
+  isActive              Boolean                 @default(true)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([originZoneId])
+  @@index([destinationZoneId])
+}
+
+model CarrierAccount {
+  id                    String                  @id @default(uuid())
+  carrier               Carrier                 @unique
+  
+  // API credentials (encrypted)
+  accountNumber         String?
+  apiKey                String?
+  apiSecret             String?
+  username              String?
+  password              String?
+  
+  // Configuration
+  isActive              Boolean                 @default(true)
+  isSandbox             Boolean                 @default(false)
+  
+  // Endpoints
+  trackingUrl           String?
+  labelUrl              String?
+  rateUrl               String?
+  
+  // Account details
+  accountType           String?                 // Business, Enterprise, etc.
+  creditLimit           Decimal?                @db.Decimal(19, 4)
+  balance               Decimal?                @db.Decimal(19, 4)
+  
+  // Indigenous partnership
+  indigenousPartnership Boolean                 @default(false)
+  partnershipDetails    Json?
+  specialRates          Json?
+  
+  // Service agreements
+  services              ServiceType[]
+  supportedCountries    String[]
+  
+  // Performance metrics
+  avgDeliveryTime       Int?                    // hours
+  onTimeRate            Decimal?                @db.Decimal(5, 2)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+}
+
+model ShippingRate {
+  id                    String                  @id @default(uuid())
+  rateId                String                  @unique
+  
+  // Rate details
+  carrier               Carrier
+  service               ServiceType
+  zoneFrom              String
+  zoneTo                String
+  
+  // Weight ranges (kg)
+  minWeight             Decimal                 @db.Decimal(10, 2)
+  maxWeight             Decimal                 @db.Decimal(10, 2)
+  
+  // Pricing
+  baseRate              Decimal                 @db.Decimal(19, 4)
+  perKgRate             Decimal                 @db.Decimal(10, 4)
+  
+  // Surcharges
+  fuelSurcharge         Decimal?                @db.Decimal(5, 2) // percentage
+  remoteSurcharge       Decimal?                @db.Decimal(19, 4)
+  residentialSurcharge  Decimal?                @db.Decimal(19, 4)
+  
+  // Indigenous rates
+  indigenousRate        Decimal?                @db.Decimal(19, 4)
+  indigenousDiscount    Decimal?                @db.Decimal(5, 2)
+  
+  // Delivery time
+  estimatedDays         Int
+  guaranteedDays        Int?
+  
+  // Validity
+  validFrom             DateTime
+  validUntil            DateTime?
+  
+  isActive              Boolean                 @default(true)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([carrier])
+  @@index([service])
+  @@index([zoneFrom, zoneTo])
+}
+
+model PickupRequest {
+  id                    String                  @id @default(uuid())
+  pickupId              String                  @unique
+  
+  // Pickup details
+  carrier               Carrier
+  requestedDate         DateTime
+  timeWindow            String                  // "09:00-12:00"
+  
+  // Location
+  address               Json
+  contactName           String
+  contactPhone          String
+  contactEmail          String?
+  
+  // Indigenous community pickup
+  isIndigenousCommunity Boolean                 @default(false)
+  communityName         String?
+  specialAccess         String?                 // Instructions for remote areas
+  
+  // Packages
+  packageCount          Int
+  totalWeight           Decimal                 @db.Decimal(10, 2)
+  
+  // Status
+  status                PickupStatus
+  confirmationNumber    String?
+  scheduledTime         DateTime?
+  completedTime         DateTime?
+  
+  // Related shipments
+  shipmentIds           String[]
+  
+  notes                 String?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([status])
+  @@index([requestedDate])
+  @@index([carrier])
+}
+
+model ShippingLabel {
+  id                    String                  @id @default(uuid())
+  labelId               String                  @unique
+  shipmentId            String
+  
+  // Label details
+  carrier               Carrier
+  trackingNumber        String
+  labelType             LabelType
+  
+  // Files
+  labelUrl              String
+  labelPdf              String?
+  zplData               String?                 // For thermal printers
+  
+  // Barcode
+  barcodeType           String
+  barcodeData           String
+  qrCode                String?
+  
+  // Creation details
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  expiresAt             DateTime?
+  
+  // Cost
+  cost                  Decimal?                @db.Decimal(19, 4)
+  
+  shipment              Shipment                @relation(fields: [shipmentId], references: [id])
+  
+  @@index([shipmentId])
+  @@index([trackingNumber])
+}
+
+model CustomsDocument {
+  id                    String                  @id @default(uuid())
+  documentId            String                  @unique
+  shipmentId            String
+  
+  // Document details
+  type                  CustomsDocType
+  documentNumber        String?
+  
+  // Customs info
+  exportReason          String
+  contentType           String
+  
+  // Values
+  declaredValue         Decimal                 @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  
+  // Items
+  items                 Json                    // Detailed item list
+  
+  // Countries
+  originCountry         String
+  destinationCountry    String
+  
+  // Indigenous trade
+  indigenousTrade       Boolean                 @default(false)
+  treatyExemption       Boolean                 @default(false)
+  exemptionCode         String?
+  
+  // Files
+  documentUrl           String?
+  
+  // Status
+  status                String
+  submittedAt           DateTime?
+  approvedAt            DateTime?
+  
+  shipment              Shipment                @relation(fields: [shipmentId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([shipmentId])
+}
+
+model DeliveryOptimization {
+  id                    String                  @id @default(uuid())
+  optimizationId        String                  @unique
+  
+  // Optimization run
+  date                  DateTime
+  region                String?
+  
+  // Input
+  shipmentCount         Int
+  driverCount           Int
+  vehicleCount          Int
+  
+  // Constraints
+  maxDistance           Decimal?                @db.Decimal(10, 2)
+  maxDeliveries         Int?
+  timeWindows           Json?
+  
+  // Indigenous priority
+  prioritizeCommunities Boolean                 @default(false)
+  communityStops        String[]
+  
+  // Results
+  routes                Json                    // Optimized routes
+  totalDistance         Decimal                 @db.Decimal(10, 2)
+  totalTime             Int                     // minutes
+  totalCost             Decimal                 @db.Decimal(19, 4)
+  
+  // Savings
+  distanceSaved         Decimal?                @db.Decimal(10, 2)
+  timeSaved             Int?                    // minutes
+  costSaved             Decimal?                @db.Decimal(19, 4)
+  
+  // Status
+  status                OptimizationStatus
+  completedAt           DateTime?
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([date])
+  @@index([status])
+}
+
+model ReturnShipment {
+  id                    String                  @id @default(uuid())
+  returnId              String                  @unique
+  originalShipmentId    String
+  
+  // Return details
+  reason                ReturnReason
+  description           String?
+  
+  // Return label
+  returnLabelId         String?
+  returnTracking        String?
+  
+  // Status
+  status                ReturnStatus
+  initiatedAt           DateTime
+  receivedAt            DateTime?
+  processedAt           DateTime?
+  
+  // Refund/Exchange
+  refundAmount          Decimal?                @db.Decimal(19, 4)
+  exchangeShipmentId    String?
+  
+  // Indigenous considerations
+  indigenousReturn      Boolean                 @default(false)
+  priorityProcessing    Boolean                 @default(false)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([originalShipmentId])
+  @@index([status])
+}
+
+// Enums
+enum Carrier {
+  CANADA_POST
+  PUROLATOR
+  FEDEX
+  UPS
+  DHL
+  CANPAR
+  DAY_ROSS
+  DICOM
+  INDIGENOUS_COURIER
+  LOCAL_CARRIER
+  AIR_INUIT
+  FIRST_AIR
+  CANADIAN_NORTH
+}
+
+enum ServiceType {
+  STANDARD
+  EXPRESS
+  PRIORITY
+  OVERNIGHT
+  SAME_DAY
+  ECONOMY
+  GROUND
+  AIR
+  REMOTE_DELIVERY
+  WINTER_ROAD
+  FLOAT_PLANE
+}
+
+enum ShipmentStatus {
+  CREATED
+  LABEL_PRINTED
+  PICKED_UP
+  IN_TRANSIT
+  OUT_FOR_DELIVERY
+  DELIVERED
+  RETURNED
+  CANCELLED
+  EXCEPTION
+  HELD
+}
+
+enum Priority {
+  LOW
+  STANDARD
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum PartyType {
+  BUSINESS
+  INDIVIDUAL
+  GOVERNMENT
+  INDIGENOUS_BUSINESS
+  BAND_COUNCIL
+  COMMUNITY_CENTER
+}
+
+enum PackageType {
+  BOX
+  ENVELOPE
+  PALLET
+  CRATE
+  TUBE
+  CUSTOM
+}
+
+enum TrackingStatus {
+  LABEL_CREATED
+  PICKED_UP
+  DEPARTED_FACILITY
+  IN_TRANSIT
+  ARRIVED_FACILITY
+  OUT_FOR_DELIVERY
+  DELIVERED
+  DELIVERY_ATTEMPTED
+  RETURNED_TO_SENDER
+  EXCEPTION
+  CUSTOMS_CLEARANCE
+  HELD_AT_FACILITY
+}
+
+enum ZoneType {
+  URBAN
+  SUBURBAN
+  RURAL
+  REMOTE
+  INDIGENOUS_TERRITORY
+  FLY_IN_ONLY
+  WINTER_ROAD_ACCESS
+}
+
+enum RouteType {
+  GROUND
+  AIR
+  WATER
+  COMBINED
+  WINTER_ROAD
+  ICE_ROAD
+}
+
+enum PickupStatus {
+  REQUESTED
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  FAILED
+}
+
+enum LabelType {
+  SHIPPING
+  RETURN
+  INTERNATIONAL
+  HAZMAT
+  FRAGILE
+}
+
+enum CustomsDocType {
+  COMMERCIAL_INVOICE
+  PACKING_LIST
+  CERTIFICATE_ORIGIN
+  EXPORT_DECLARATION
+  IMPORT_PERMIT
+  TREATY_EXEMPTION
+}
+
+enum OptimizationStatus {
+  PENDING
+  RUNNING
+  COMPLETED
+  FAILED
+}
+
+enum ReturnReason {
+  DAMAGED
+  WRONG_ITEM
+  NOT_AS_DESCRIBED
+  CHANGED_MIND
+  DEFECTIVE
+  DUPLICATE
+  OTHER
+}
+
+enum ReturnStatus {
+  INITIATED
+  LABEL_SENT
+  IN_TRANSIT
+  RECEIVED
+  PROCESSING
+  COMPLETED
+  REJECTED
+}

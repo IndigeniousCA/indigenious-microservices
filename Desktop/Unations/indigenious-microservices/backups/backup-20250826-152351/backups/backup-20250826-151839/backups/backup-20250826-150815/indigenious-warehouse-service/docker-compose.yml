@@ -1,0 +1,67 @@
+version: '3.8'
+
+services:
+  warehouse-service:
+    build: .
+    ports:
+      - "3033:3033"
+    environment:
+      - NODE_ENV=production
+      - PORT=3033
+      - DATABASE_URL=postgresql://warehouse_user:warehouse_pass@warehouse-db:5432/indigenous_warehouse_db
+      - REDIS_URL=redis://warehouse-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - WINTER_ROAD_API_KEY=${WINTER_ROAD_API_KEY}
+      - FLOAT_PLANE_API_KEY=${FLOAT_PLANE_API_KEY}
+      - INDIGENOUS_NETWORK_API=${INDIGENOUS_NETWORK_API}
+    depends_on:
+      - warehouse-db
+      - warehouse-redis
+    networks:
+      - warehouse-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3033/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  warehouse-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_warehouse_db
+      - POSTGRES_USER=warehouse_user
+      - POSTGRES_PASSWORD=warehouse_pass
+    volumes:
+      - warehouse-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5439:5432"
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+
+  warehouse-redis:
+    image: redis:7-alpine
+    ports:
+      - "6388:6379"
+    volumes:
+      - warehouse-redis-data:/data
+    networks:
+      - warehouse-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  warehouse-db-data:
+    driver: local
+  warehouse-redis-data:
+    driver: local
+
+networks:
+  warehouse-network:
+    driver: bridge
+  microservices-network:
+    external: true

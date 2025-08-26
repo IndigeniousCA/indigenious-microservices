@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  distribution-service:
+    build: .
+    ports:
+      - "3034:3034"
+    environment:
+      - NODE_ENV=production
+      - PORT=3034
+      - DATABASE_URL=postgresql://distribution_user:distribution_pass@distribution-db:5432/indigenous_distribution_db
+      - REDIS_URL=redis://distribution-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - WINTER_ROAD_API=${WINTER_ROAD_API}
+      - FLOAT_PLANE_API=${FLOAT_PLANE_API}
+      - WEATHER_API_KEY=${WEATHER_API_KEY}
+      - MAPBOX_API_KEY=${MAPBOX_API_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - INDIGENOUS_NETWORK_API=${INDIGENOUS_NETWORK_API}
+    depends_on:
+      - distribution-db
+      - distribution-redis
+    networks:
+      - distribution-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3034/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  distribution-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_distribution_db
+      - POSTGRES_USER=distribution_user
+      - POSTGRES_PASSWORD=distribution_pass
+    volumes:
+      - distribution-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5440:5432"
+    networks:
+      - distribution-network
+    restart: unless-stopped
+
+  distribution-redis:
+    image: redis:7-alpine
+    ports:
+      - "6389:6379"
+    volumes:
+      - distribution-redis-data:/data
+    networks:
+      - distribution-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  distribution-db-data:
+    driver: local
+  distribution-redis-data:
+    driver: local
+
+networks:
+  distribution-network:
+    driver: bridge
+  microservices-network:
+    external: true

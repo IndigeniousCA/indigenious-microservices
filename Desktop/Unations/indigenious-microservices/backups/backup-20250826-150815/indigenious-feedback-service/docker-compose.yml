@@ -1,0 +1,69 @@
+version: '3.8'
+
+services:
+  feedback-service:
+    build: .
+    ports:
+      - "3037:3037"
+    environment:
+      - NODE_ENV=production
+      - PORT=3037
+      - DATABASE_URL=postgresql://feedback_user:feedback_pass@feedback-db:5432/indigenous_feedback_db
+      - REDIS_URL=redis://feedback-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - SENTIMENT_API_KEY=${SENTIMENT_API_KEY}
+      - INDIGENOUS_SENTIMENT_API=${INDIGENOUS_SENTIMENT_API}
+      - ELDER_NETWORK_API=${ELDER_NETWORK_API}
+      - BAND_COUNCIL_API=${BAND_COUNCIL_API}
+      - SEVEN_GENERATIONS_API=${SEVEN_GENERATIONS_API}
+    depends_on:
+      - feedback-db
+      - feedback-redis
+    networks:
+      - feedback-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3037/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  feedback-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_feedback_db
+      - POSTGRES_USER=feedback_user
+      - POSTGRES_PASSWORD=feedback_pass
+    volumes:
+      - feedback-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5443:5432"
+    networks:
+      - feedback-network
+    restart: unless-stopped
+
+  feedback-redis:
+    image: redis:7-alpine
+    ports:
+      - "6392:6379"
+    volumes:
+      - feedback-redis-data:/data
+    networks:
+      - feedback-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  feedback-db-data:
+    driver: local
+  feedback-redis-data:
+    driver: local
+
+networks:
+  feedback-network:
+    driver: bridge
+  microservices-network:
+    external: true

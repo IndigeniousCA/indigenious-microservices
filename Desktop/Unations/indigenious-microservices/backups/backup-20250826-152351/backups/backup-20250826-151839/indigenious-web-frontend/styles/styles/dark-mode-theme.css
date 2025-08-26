@@ -1,0 +1,170 @@
+/* Dark Mode Theme for Indigenous Procurement Platform */
+/* Apple Glass UI with Dark Mode Support */
+
+:root {
+  /* Light mode variables (default) */
+  --bg-primary: rgba(255, 255, 255, 0.1);
+  --bg-secondary: rgba(255, 255, 255, 0.05);
+  --bg-tertiary: rgba(255, 255, 255, 0.02);
+  --bg-solid: #ffffff;
+  --bg-base: #f9fafb;
+  
+  --text-primary: #ffffff;
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-tertiary: rgba(255, 255, 255, 0.5);
+  --text-inverse: #1f2937;
+  
+  --border-primary: rgba(255, 255, 255, 0.2);
+  --border-secondary: rgba(255, 255, 255, 0.1);
+  
+  --glass-blur: 12px;
+  --glass-saturation: 180%;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.1);
+}
+
+/* Dark mode variables */
+[data-theme="dark"] {
+  --bg-primary: rgba(0, 0, 0, 0.5);
+  --bg-secondary: rgba(0, 0, 0, 0.3);
+  --bg-tertiary: rgba(0, 0, 0, 0.1);
+  --bg-solid: #0f172a;
+  --bg-base: #1e293b;
+  
+  --text-primary: #f8fafc;
+  --text-secondary: rgba(248, 250, 252, 0.8);
+  --text-tertiary: rgba(248, 250, 252, 0.6);
+  --text-inverse: #0f172a;
+  
+  --border-primary: rgba(148, 163, 184, 0.2);
+  --border-secondary: rgba(148, 163, 184, 0.1);
+  
+  --glass-blur: 16px;
+  --glass-saturation: 150%;
+  
+  --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.3);
+  --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.4);
+  --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5);
+}
+
+/* Base dark mode styles */
+[data-theme="dark"] {
+  color-scheme: dark;
+}
+
+[data-theme="dark"] body {
+  background-color: var(--bg-solid);
+  color: var(--text-primary);
+}
+
+/* Glass morphism components */
+.glass-panel {
+  background: var(--bg-primary);
+  backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(var(--glass-blur)) saturate(var(--glass-saturation));
+  border: 1px solid var(--border-primary);
+  transition: all 0.3s ease;
+}
+
+.glass-panel-secondary {
+  background: var(--bg-secondary);
+  backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(var(--glass-saturation));
+  -webkit-backdrop-filter: blur(calc(var(--glass-blur) * 0.8)) saturate(var(--glass-saturation));
+  border: 1px solid var(--border-secondary);
+}
+
+/* Dark mode specific component styles */
+[data-theme="dark"] .glass-panel:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(148, 163, 184, 0.3);
+}
+
+[data-theme="dark"] .glass-button {
+  background: rgba(0, 0, 0, 0.4);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+  backdrop-filter: blur(8px);
+}
+
+[data-theme="dark"] .glass-button:hover {
+  background: rgba(0, 0, 0, 0.6);
+  border-color: rgba(148, 163, 184, 0.4);
+}
+
+[data-theme="dark"] .glass-input {
+  background: rgba(0, 0, 0, 0.3);
+  color: var(--text-primary);
+  border: 1px solid var(--border-primary);
+}
+
+[data-theme="dark"] .glass-input:focus {
+  background: rgba(0, 0, 0, 0.5);
+  border-color: rgba(59, 130, 246, 0.5);
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+/* Tailwind dark mode utilities override */
+[data-theme="dark"] .bg-white\/10 {
+  background-color: var(--bg-primary);
+}
+
+[data-theme="dark"] .bg-white\/5 {
+  background-color: var(--bg-secondary);
+}
+
+[data-theme="dark"] .border-white\/20 {
+  border-color: var(--border-primary);
+}
+
+[data-theme="dark"] .text-white {
+  color: var(--text-primary);
+}
+
+[data-theme="dark"] .text-white\/70 {
+  color: var(--text-secondary);
+}
+
+[data-theme="dark"] .text-white\/60 {
+  color: var(--text-tertiary);
+}
+
+/* Code editor dark mode */
+[data-theme="dark"] pre,
+[data-theme="dark"] code {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #e4e4e7;
+}
+
+/* Scrollbar dark mode */
+[data-theme="dark"] ::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.3);
+  border-radius: 4px;
+}
+
+[data-theme="dark"] ::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.5);
+}
+
+/* Animation for theme transition */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* Prevent transition on page load */
+.no-transition * {
+  transition: none !important;
+}

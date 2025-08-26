@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  customer-service:
+    build: .
+    ports:
+      - "3036:3036"
+    environment:
+      - NODE_ENV=production
+      - PORT=3036
+      - DATABASE_URL=postgresql://customer_user:customer_pass@customer-db:5432/indigenous_customer_db
+      - REDIS_URL=redis://customer-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - TWILIO_ACCOUNT_SID=${TWILIO_ACCOUNT_SID}
+      - TWILIO_AUTH_TOKEN=${TWILIO_AUTH_TOKEN}
+      - TRANSLATION_API_KEY=${TRANSLATION_API_KEY}
+      - INDIGENOUS_LANGUAGE_API=${INDIGENOUS_LANGUAGE_API}
+      - ELDER_NETWORK_API=${ELDER_NETWORK_API}
+      - BAND_OFFICE_API=${BAND_OFFICE_API}
+    depends_on:
+      - customer-db
+      - customer-redis
+    networks:
+      - customer-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3036/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  customer-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_customer_db
+      - POSTGRES_USER=customer_user
+      - POSTGRES_PASSWORD=customer_pass
+    volumes:
+      - customer-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5442:5432"
+    networks:
+      - customer-network
+    restart: unless-stopped
+
+  customer-redis:
+    image: redis:7-alpine
+    ports:
+      - "6391:6379"
+    volumes:
+      - customer-redis-data:/data
+    networks:
+      - customer-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  customer-db-data:
+    driver: local
+  customer-redis-data:
+    driver: local
+
+networks:
+  customer-network:
+    driver: bridge
+  microservices-network:
+    external: true

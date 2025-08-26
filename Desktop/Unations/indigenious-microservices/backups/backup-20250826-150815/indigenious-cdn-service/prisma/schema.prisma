@@ -1,0 +1,614 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// CDN content management
+model CdnContent {
+  id                    String   @id @default(uuid())
+  contentId            String   @unique
+  
+  // Content information
+  url                  String   // Original URL
+  cdnUrl               String   // CDN URL
+  fallbackUrl          String?  // Fallback URL
+  
+  // Content metadata
+  contentType          String   // MIME type
+  contentLength        BigInt   // Size in bytes
+  etag                 String?  // Entity tag
+  lastModified         DateTime?
+  
+  // Cache configuration
+  cacheControl         String?  // Cache-Control header
+  maxAge               Int      @default(3600) // Seconds
+  sMaxAge              Int?     // s-maxage for shared caches
+  staleWhileRevalidate Int?     // Stale-while-revalidate
+  staleIfError         Int?     // Stale-if-error
+  
+  // Indigenous context
+  indigenousContent    Boolean  @default(false)
+  elderContent         Boolean  @default(false) // Elder-priority content
+  ceremonyContent      Boolean  @default(false) // Ceremony-specific
+  culturalContent      Boolean  @default(false) // Cultural materials
+  sacredContent        Boolean  @default(false) // Sacred content
+  nation               String?  // Associated nation
+  territory            String?  // Territory/region
+  language             String?  // Content language
+  
+  // Priority and optimization
+  priority             Int      @default(5) // 1-10 (1 highest)
+  preload              Boolean  @default(false) // Preload to edge
+  prefetch             Boolean  @default(false) // Prefetch hints
+  
+  // Edge locations
+  edgeLocations        String[] // List of edge locations
+  primaryLocation      String?  // Primary edge location
+  
+  // Access control
+  accessControl        String   @default("PUBLIC") // PUBLIC, PRIVATE, RESTRICTED
+  geoRestrictions      String[] // Geo-blocking
+  ipWhitelist          String[]
+  ipBlacklist          String[]
+  
+  // Security
+  signedUrl            Boolean  @default(false)
+  tokenAuth            Boolean  @default(false)
+  encryptionEnabled    Boolean  @default(false)
+  
+  // Performance metrics
+  hitCount             BigInt   @default(0)
+  missCount            BigInt   @default(0)
+  bytesServed          BigInt   @default(0)
+  averageResponseTime  Float?   // Milliseconds
+  
+  // Status
+  status               String   @default("PENDING") // PENDING, ACTIVE, PURGED, EXPIRED
+  active               Boolean  @default(true)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  expiresAt            DateTime?
+  purgedAt             DateTime?
+  
+  // Relations
+  rules                CdnRule[]
+  metrics              CdnMetric[]
+  purgeHistory         CdnPurge[]
+  
+  @@index([url])
+  @@index([cdnUrl])
+  @@index([nation])
+  @@index([indigenousContent])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CdnEdgeLocation {
+  id                    String   @id @default(uuid())
+  locationId           String   @unique
+  
+  // Location information
+  locationName         String
+  locationCode         String   @unique // e.g., YYZ, YVR
+  city                 String
+  province             String
+  country              String   @default("Canada")
+  
+  // Geographic coordinates
+  latitude             Float
+  longitude            Float
+  
+  // Indigenous territory
+  indigenousTerritory  String?  // Traditional territory
+  treatyArea           String?  // Treaty area
+  nationsCovered       String[] // Nations served
+  
+  // Provider information
+  provider             String   // CLOUDFLARE, AWS, AZURE, etc.
+  providerLocationId   String?  // Provider's location ID
+  
+  // Capacity
+  totalCapacity        BigInt   // Total storage capacity
+  usedCapacity         BigInt   @default(0)
+  bandwidth            BigInt   // Bandwidth capacity (bps)
+  
+  // Performance
+  averageLatency       Float?   // Average latency (ms)
+  uptime               Float    @default(100) // Percentage
+  
+  // Indigenous optimization
+  elderPriority        Boolean  @default(false) // Prioritize Elder content
+  ceremonyOptimized    Boolean  @default(false) // Optimize for ceremonies
+  culturalCache        Boolean  @default(true) // Cache cultural content
+  
+  // Features
+  supportsHttp3        Boolean  @default(true)
+  supportsWebSocket    Boolean  @default(true)
+  supportsStreaming    Boolean  @default(true)
+  supportsCompression  Boolean  @default(true)
+  
+  // Cost
+  costPerGB            Float?   // Monthly cost per GB
+  costPerRequest       Float?   // Cost per 10K requests
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  metrics              CdnMetric[]
+  
+  @@index([locationCode])
+  @@index([country])
+  @@index([indigenousTerritory])
+}
+
+model CdnRule {
+  id                    String   @id @default(uuid())
+  ruleId               String   @unique
+  
+  contentId            String
+  content              CdnContent @relation(fields: [contentId], references: [id])
+  
+  // Rule configuration
+  ruleName             String
+  ruleType             String   // CACHE, REDIRECT, HEADER, ORIGIN, SECURITY
+  priority             Int      @default(10)
+  
+  // Conditions
+  pathPattern          String?  // URL path pattern
+  method               String[] // HTTP methods
+  headers              Json?    // Header conditions
+  queryParams          Json?    // Query parameter conditions
+  
+  // Actions
+  action               String   // ALLOW, DENY, REDIRECT, MODIFY
+  actionConfig         Json?    // Action configuration
+  
+  // Cache rules
+  cacheBypass          Boolean  @default(false)
+  cacheKey             String?  // Custom cache key
+  cacheTtl             Int?     // TTL override
+  
+  // Indigenous rules
+  indigenousRule       Boolean  @default(false)
+  elderAccess          Boolean  @default(false) // Elder-only access
+  ceremonyAccess       Boolean  @default(false) // Ceremony-only
+  nationSpecific       String?  // Nation-specific rule
+  
+  // Time-based rules
+  validFrom            DateTime?
+  validUntil           DateTime?
+  schedulePattern      String?  // Cron pattern
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([contentId])
+  @@index([ruleType])
+  @@index([priority])
+}
+
+model CdnPurge {
+  id                    String   @id @default(uuid())
+  purgeId              String   @unique
+  
+  // Purge target
+  contentId            String?
+  content              CdnContent? @relation(fields: [contentId], references: [id])
+  
+  // Purge configuration
+  purgeType            String   // SINGLE, PATTERN, TAG, ALL
+  purgePattern         String?  // Pattern for pattern-based purge
+  purgeTags            String[] // Tags for tag-based purge
+  
+  // Scope
+  edgeLocations        String[] // Specific locations or ALL
+  
+  // Indigenous context
+  indigenousPurge      Boolean  @default(false)
+  ceremonyPurge        Boolean  @default(false) // Ceremony-related purge
+  elderDirected        Boolean  @default(false) // Elder-requested
+  
+  // Execution
+  status               String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, FAILED
+  progress             Int      @default(0) // Percentage
+  
+  // Results
+  itemsPurged          Int      @default(0)
+  bytesPurged          BigInt   @default(0)
+  locationsCompleted   String[]
+  
+  // Metadata
+  requestedBy          String   // User ID
+  reason               String?  // Purge reason
+  
+  error                String?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime @default(now())
+  
+  @@index([purgeType])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model CdnOrigin {
+  id                    String   @id @default(uuid())
+  originId             String   @unique
+  
+  // Origin configuration
+  originName           String
+  originUrl            String   // Origin server URL
+  backupUrls           String[] // Backup origin URLs
+  
+  // Connection settings
+  protocol             String   @default("HTTPS") // HTTP, HTTPS
+  port                 Int      @default(443)
+  
+  // Health check
+  healthCheckPath      String   @default("/health")
+  healthCheckInterval  Int      @default(30) // Seconds
+  healthCheckTimeout   Int      @default(10) // Seconds
+  
+  // Indigenous optimization
+  indigenousOrigin     Boolean  @default(false)
+  dataResidency        String   @default("canada") // Data location
+  sovereigntyCompliant Boolean  @default(true)
+  indigenousOwned      Boolean  @default(false) // Indigenous-owned infrastructure
+  
+  // Performance
+  connectionLimit      Int      @default(100)
+  requestTimeout       Int      @default(30) // Seconds
+  keepAliveTimeout     Int      @default(5) // Seconds
+  
+  // Load balancing
+  weight               Int      @default(1) // Load balancing weight
+  priority             Int      @default(1) // Failover priority
+  
+  // Security
+  sslVerification      Boolean  @default(true)
+  clientCertificate    String?  // Client cert for mTLS
+  
+  // Headers
+  hostHeader           String?  // Custom Host header
+  customHeaders        Json?    // Additional headers
+  
+  // Status
+  healthy              Boolean  @default(true)
+  lastHealthCheck      DateTime?
+  failureCount         Int      @default(0)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([originUrl])
+  @@index([healthy])
+}
+
+model CdnMetric {
+  id                    String   @id @default(uuid())
+  
+  // Metric target
+  contentId            String?
+  content              CdnContent? @relation(fields: [contentId], references: [id])
+  
+  edgeLocationId       String?
+  edgeLocation         CdnEdgeLocation? @relation(fields: [edgeLocationId], references: [id])
+  
+  // Time window
+  timestamp            DateTime @default(now())
+  period               String   // MINUTE, HOUR, DAY
+  
+  // Traffic metrics
+  requests             BigInt   @default(0)
+  bytesIn              BigInt   @default(0)
+  bytesOut             BigInt   @default(0)
+  
+  // Cache metrics
+  cacheHits            BigInt   @default(0)
+  cacheMisses          BigInt   @default(0)
+  cacheHitRatio        Float?   // Percentage
+  
+  // Performance metrics
+  averageResponseTime  Float?   // Milliseconds
+  p50ResponseTime      Float?   // 50th percentile
+  p95ResponseTime      Float?   // 95th percentile
+  p99ResponseTime      Float?   // 99th percentile
+  
+  // Error metrics
+  errors4xx            Int      @default(0)
+  errors5xx            Int      @default(0)
+  errorRate            Float?   // Percentage
+  
+  // Indigenous metrics
+  indigenousRequests   BigInt   @default(0)
+  elderRequests        BigInt   @default(0)
+  ceremonyRequests     BigInt   @default(0)
+  nationBreakdown      Json?    // Requests by nation
+  
+  // Geographic metrics
+  countryBreakdown     Json?    // Requests by country
+  provinceBreakdown    Json?    // Requests by province
+  
+  // Device metrics
+  mobileRequests       BigInt   @default(0)
+  desktopRequests      BigInt   @default(0)
+  tabletRequests       BigInt   @default(0)
+  
+  // Protocol metrics
+  httpRequests         BigInt   @default(0)
+  httpsRequests        BigInt   @default(0)
+  http2Requests        BigInt   @default(0)
+  http3Requests        BigInt   @default(0)
+  
+  @@index([contentId, timestamp])
+  @@index([edgeLocationId, timestamp])
+  @@index([period])
+  @@index([timestamp])
+}
+
+model CdnCertificate {
+  id                    String   @id @default(uuid())
+  certificateId        String   @unique
+  
+  // Certificate information
+  domain               String   // Domain name
+  alternativeNames     String[] // SANs
+  
+  // Certificate details
+  issuer               String
+  subject              String
+  serialNumber         String
+  
+  // Validity
+  validFrom            DateTime
+  validUntil           DateTime
+  
+  // Indigenous domains
+  indigenousDomain     Boolean  @default(false)
+  nation               String?  // Associated nation
+  
+  // Certificate data
+  certificate          String   @db.Text // PEM format
+  privateKey           String?  @db.Text // Encrypted private key
+  certificateChain     String?  @db.Text // Certificate chain
+  
+  // Provider
+  provider             String   // LETS_ENCRYPT, CUSTOM, etc.
+  autoRenew            Boolean  @default(true)
+  
+  // Status
+  status               String   @default("PENDING") // PENDING, ACTIVE, EXPIRED, REVOKED
+  deployedLocations    String[] // Edge locations
+  
+  // Renewal
+  renewalDate          DateTime?
+  lastRenewalAttempt   DateTime?
+  renewalErrors        String[]
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([domain])
+  @@index([validUntil])
+  @@index([status])
+}
+
+model CdnWafRule {
+  id                    String   @id @default(uuid())
+  ruleId               String   @unique
+  
+  // WAF rule configuration
+  ruleName             String
+  ruleSet              String   // OWASP, CUSTOM, INDIGENOUS
+  
+  // Rule details
+  description          String?
+  severity             String   @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  
+  // Pattern matching
+  pattern              String   // Regex or pattern
+  matchType            String   // REGEX, EXACT, CONTAINS
+  matchTarget          String   // URL, HEADER, BODY, COOKIE
+  
+  // Actions
+  action               String   @default("BLOCK") // BLOCK, CHALLENGE, LOG
+  
+  // Indigenous protection
+  indigenousProtection Boolean  @default(false)
+  protectElderContent  Boolean  @default(false)
+  protectSacredContent Boolean  @default(false)
+  
+  // Exceptions
+  whitelistIps         String[]
+  whitelistCountries   String[]
+  whitelistNations     String[] // Indigenous nations
+  
+  // Rate limiting
+  rateLimit            Int?     // Requests per minute
+  rateLimitAction      String?  // BLOCK, THROTTLE
+  
+  // Logging
+  logEnabled           Boolean  @default(true)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([ruleSet])
+  @@index([severity])
+  @@index([active])
+}
+
+model CdnAnalytics {
+  id                    String   @id @default(uuid())
+  
+  // Analytics period
+  date                 DateTime @db.Date
+  hour                 Int?     // 0-23 for hourly analytics
+  
+  // Overall metrics
+  totalRequests        BigInt   @default(0)
+  totalBandwidth       BigInt   @default(0) // Bytes
+  uniqueVisitors       BigInt   @default(0)
+  
+  // Cache performance
+  cacheHitRate         Float?   // Percentage
+  originRequests       BigInt   @default(0)
+  edgeRequests         BigInt   @default(0)
+  
+  // Geographic distribution
+  topCountries         Json?    // Top countries by requests
+  topProvinces         Json?    // Top provinces
+  topCities            Json?    // Top cities
+  
+  // Indigenous analytics
+  indigenousTraffic    BigInt   @default(0)
+  nationTraffic        Json?    // Traffic by nation
+  elderAccess          BigInt   @default(0)
+  ceremonyStreaming    BigInt   @default(0)
+  
+  // Content analytics
+  topContent           Json?    // Top content by requests
+  topReferrers         Json?    // Top referrers
+  
+  // Performance
+  averageResponseTime  Float?   // Milliseconds
+  averageOriginTime    Float?   // Origin response time
+  
+  // Errors
+  error4xxCount        BigInt   @default(0)
+  error5xxCount        BigInt   @default(0)
+  
+  // Cost
+  estimatedCost        Float?   // Estimated cost in CAD
+  
+  createdAt            DateTime @default(now())
+  
+  @@unique([date, hour])
+  @@index([date])
+}
+
+model CdnPreload {
+  id                    String   @id @default(uuid())
+  preloadId            String   @unique
+  
+  // Preload configuration
+  url                  String   // URL to preload
+  edgeLocations        String[] // Target locations or ALL
+  
+  // Priority
+  priority             Int      @default(5) // 1-10
+  
+  // Indigenous preloading
+  indigenousContent    Boolean  @default(false)
+  ceremonyPreload      Boolean  @default(false) // Pre-ceremony loading
+  elderContent         Boolean  @default(false)
+  
+  // Schedule
+  scheduledAt          DateTime?
+  recurringSchedule    String?  // Cron pattern
+  
+  // Status
+  status               String   @default("PENDING") // PENDING, IN_PROGRESS, COMPLETED, FAILED
+  progress             Int      @default(0)
+  
+  // Results
+  bytesPreloaded       BigInt   @default(0)
+  locationsCompleted   String[]
+  
+  error                String?
+  startedAt            DateTime?
+  completedAt          DateTime?
+  createdAt            DateTime @default(now())
+  
+  @@index([status])
+  @@index([scheduledAt])
+}
+
+model CdnBandwidthAllocation {
+  id                    String   @id @default(uuid())
+  
+  // Allocation target
+  customerId           String?  // Customer/organization ID
+  nation               String?  // Indigenous nation
+  
+  // Bandwidth limits
+  monthlyLimit         BigInt   // Bytes per month
+  dailyLimit           BigInt?  // Bytes per day
+  burstLimit           BigInt?  // Burst allowance
+  
+  // Current usage
+  monthlyUsage         BigInt   @default(0)
+  dailyUsage           BigInt   @default(0)
+  
+  // Indigenous allocations
+  indigenousAllocation Boolean  @default(false)
+  elderPriority        Boolean  @default(false)
+  ceremonyReserve      BigInt?  // Reserved for ceremonies
+  
+  // Overage handling
+  overageAllowed       Boolean  @default(false)
+  overageRate          Float?   // Cost per GB overage
+  
+  // Period
+  billingPeriodStart   DateTime
+  billingPeriodEnd     DateTime
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([customerId])
+  @@index([nation])
+  @@index([billingPeriodStart])
+}
+
+model CdnSecurityEvent {
+  id                    String   @id @default(uuid())
+  eventId              String   @unique
+  
+  // Event details
+  eventType            String   // DDoS, WAF_BLOCK, RATE_LIMIT, etc.
+  severity             String   // LOW, MEDIUM, HIGH, CRITICAL
+  
+  // Source
+  sourceIp             String?
+  sourceCountry        String?
+  userAgent            String?
+  
+  // Target
+  targetUrl            String?
+  targetContent        String?
+  
+  // Indigenous context
+  indigenousTarget     Boolean  @default(false)
+  elderContentTarget   Boolean  @default(false)
+  sacredContentTarget  Boolean  @default(false)
+  
+  // Action taken
+  action               String   // BLOCKED, CHALLENGED, LOGGED
+  
+  // Details
+  details              Json?
+  
+  // WAF
+  wafRuleId            String?
+  wafRuleSet           String?
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([eventType])
+  @@index([severity])
+  @@index([timestamp])
+  @@index([sourceIp])
+}

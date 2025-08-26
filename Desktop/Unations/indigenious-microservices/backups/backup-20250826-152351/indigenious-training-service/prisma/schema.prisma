@@ -1,0 +1,849 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Course {
+  id                    String                  @id @default(uuid())
+  courseCode            String                  @unique
+  title                 String
+  shortDescription      String
+  fullDescription       String
+  category              CourseCategory
+  subcategory           String?
+  level                 CourseLevel
+  duration              Int                     // Hours
+  format                CourseFormat
+  delivery              DeliveryMethod
+  language              String                  @default("en")
+  additionalLanguages   String[]                // Cree, Ojibwe, Inuktitut, etc.
+  indigenousContent     Boolean                 @default(false)
+  culturalSensitive     Boolean                 @default(false)
+  elderApproved         Boolean                 @default(false)
+  elderApprovalBy       String?
+  territorySpecific     String?                 // Territory/Nation specific content
+  prerequisites         String[]
+  learningObjectives    String[]
+  competenciesGained    String[]
+  industryAlignment     String[]                // Construction, IT, Healthcare, etc.
+  certificationEligible Boolean                 @default(false)
+  certificationBody     String?
+  cpd_points           Float?                  // Continuing Professional Development
+  price                 Float
+  subsidyAvailable      Boolean                 @default(false)
+  indigenousSubsidy     Float?                  // Percentage discount
+  bandFundingEligible   Boolean                 @default(false)
+  instructorId          String
+  instructorName        String
+  instructorBio         String?
+  instructorCredentials String[]
+  isInstructorIndigenous Boolean                @default(false)
+  maxEnrollment         Int                     @default(25)
+  currentEnrollment     Int                     @default(0)
+  materials             Json?                   // Course materials, PDFs, videos
+  assessmentMethods     String[]                // Quiz, Assignment, Project, Oral
+  passingGrade          Float                   @default(70)
+  certificateTemplate   String?                 // Template ID
+  tags                  String[]
+  skillsAssessed        String[]
+  equipmentRequired     String[]
+  location              String?                 // For in-person courses
+  timezone              String?                 // For virtual courses
+  accessibility         String[]                // Screen reader, closed captions, etc.
+  status                CourseStatus
+  publishedAt           DateTime?
+  retiredAt             DateTime?
+  lastUpdated           DateTime                @updatedAt
+  createdAt             DateTime                @default(now())
+  
+  schedules             CourseSchedule[]
+  enrollments           Enrollment[]
+  completions           CourseCompletion[]
+  reviews              CourseReview[]
+  modules              CourseModule[]
+  resources            CourseResource[]
+  
+  @@index([category])
+  @@index([level])
+  @@index([indigenousContent])
+  @@index([status])
+}
+
+model CourseModule {
+  id                    String                  @id @default(uuid())
+  courseId              String
+  moduleNumber          Int
+  title                 String
+  description           String
+  content               Json                    // Rich content: text, images, videos
+  duration              Int                     // Minutes
+  type                  ModuleType
+  interactiveElements   Json?                   // Quizzes, polls, exercises
+  culturalContext       String?                 // Indigenous cultural connections
+  traditionalKnowledge  String?                 // Connection to traditional practices
+  requiredCompletion    Boolean                 @default(true)
+  orderIndex            Int
+  resources             Json?                   // Additional materials
+  assessments          ModuleAssessment[]
+  
+  course                Course                  @relation(fields: [courseId], references: [id])
+  
+  @@index([courseId])
+  @@index([orderIndex])
+}
+
+model ModuleAssessment {
+  id                    String                  @id @default(uuid())
+  moduleId              String
+  type                  AssessmentType
+  title                 String
+  description           String?
+  questions             Json                    // Assessment questions
+  passingScore          Float                   @default(70)
+  maxAttempts           Int                     @default(3)
+  timeLimit             Int?                    // Minutes
+  culturallyAppropriate Boolean                 @default(true)
+  elderReviewed         Boolean                 @default(false)
+  
+  module                CourseModule            @relation(fields: [moduleId], references: [id])
+  attempts              AssessmentAttempt[]
+  
+  @@index([moduleId])
+}
+
+model CourseSchedule {
+  id                    String                  @id @default(uuid())
+  courseId              String
+  cohortName            String?
+  startDate             DateTime
+  endDate               DateTime
+  schedule              Json                    // Days/times
+  timezone              String
+  maxParticipants       Int
+  currentEnrollment     Int                     @default(0)
+  waitlistCount         Int                     @default(0)
+  location              String?                 // Physical or virtual meeting room
+  facilitatorId         String?
+  facilitatorName       String?
+  elderParticipation    Boolean                 @default(false)
+  elderName             String?
+  ceremonyIncluded      Boolean                 @default(false)
+  traditionalOpening    Boolean                 @default(false)
+  status                ScheduleStatus
+  
+  course                Course                  @relation(fields: [courseId], references: [id])
+  enrollments           Enrollment[]
+  
+  @@index([courseId])
+  @@index([startDate])
+  @@index([status])
+}
+
+model Enrollment {
+  id                    String                  @id @default(uuid())
+  userId                String
+  userName              String
+  userEmail             String
+  businessId            String?
+  businessName          String?
+  courseId              String
+  scheduleId            String?
+  enrollmentDate        DateTime                @default(now())
+  status                EnrollmentStatus
+  paymentStatus         PaymentStatus
+  paymentMethod         String?
+  amountPaid            Float?
+  subsidyApplied        Float?                  // Amount of subsidy
+  subsidySource         String?                 // Band, Government program
+  indigenousStatus      Json?                   // Verification details
+  accommodationsNeeded  String[]
+  culturalConsiderations String?               // Dietary, ceremonial, etc.
+  emergencyContact      Json?
+  completionDate        DateTime?
+  certificateIssued     Boolean                 @default(false)
+  certificateIssuedAt   DateTime?
+  grade                 Float?
+  feedback              String?
+  recommendationScore   Float?                  // 1-5 rating
+  
+  course                Course                  @relation(fields: [courseId], references: [id])
+  schedule             CourseSchedule?         @relation(fields: [scheduleId], references: [id])
+  progress             LearningProgress[]
+  assessmentAttempts   AssessmentAttempt[]
+  completion           CourseCompletion?
+  
+  @@index([userId])
+  @@index([courseId])
+  @@index([status])
+  @@index([businessId])
+}
+
+model LearningProgress {
+  id                    String                  @id @default(uuid())
+  enrollmentId          String
+  moduleId              String?
+  progressType          ProgressType
+  completedAt           DateTime?
+  timeSpent             Int?                    // Minutes
+  score                 Float?
+  attempts              Int                     @default(0)
+  notes                 String?
+  culturalReflection    String?                 // Student's cultural connection notes
+  
+  enrollment            Enrollment              @relation(fields: [enrollmentId], references: [id])
+  
+  @@index([enrollmentId])
+}
+
+model AssessmentAttempt {
+  id                    String                  @id @default(uuid())
+  enrollmentId          String
+  assessmentId          String
+  attemptNumber         Int
+  startedAt             DateTime                @default(now())
+  completedAt           DateTime?
+  timeSpent             Int?                    // Minutes
+  score                 Float?
+  passed                Boolean                 @default(false)
+  answers               Json                    // User's answers
+  feedback              Json?                   // Detailed feedback
+  culturalCompetency    Float?                  // Cultural understanding score
+  
+  enrollment            Enrollment              @relation(fields: [enrollmentId], references: [id])
+  assessment            ModuleAssessment        @relation(fields: [assessmentId], references: [id])
+  
+  @@index([enrollmentId])
+  @@index([assessmentId])
+}
+
+model CourseCompletion {
+  id                    String                  @id @default(uuid())
+  enrollmentId          String                  @unique
+  userId                String
+  courseId              String
+  completedAt           DateTime                @default(now())
+  finalGrade            Float
+  passed                Boolean
+  certificateNumber     String?                 @unique
+  certificateUrl        String?
+  competenciesAchieved  String[]
+  skillsValidated       String[]
+  elderEndorsement      Boolean                 @default(false)
+  elderEndorsementBy    String?
+  communityRecognition  Boolean                 @default(false)
+  traditionalHonoring   String?                 // Traditional recognition method
+  cpd_pointsEarned     Float?
+  industryRecognition   String[]                // Professional bodies that recognize
+  
+  enrollment            Enrollment              @relation(fields: [enrollmentId], references: [id])
+  course                Course                  @relation(fields: [courseId], references: [id])
+  
+  @@index([userId])
+  @@index([courseId])
+  @@index([completedAt])
+}
+
+model CourseReview {
+  id                    String                  @id @default(uuid())
+  courseId              String
+  userId                String
+  userName              String
+  rating                Float                   // 1-5 stars
+  title                 String?
+  review                String
+  culturalRelevance     Float?                  // 1-5 rating for cultural content
+  instructorRating      Float?                  // 1-5 rating for instructor
+  recommendToOthers     Boolean
+  helpfulVotes          Int                     @default(0)
+  isIndigenousLearner   Boolean                 @default(false)
+  bandAffiliation       String?
+  reviewDate            DateTime                @default(now())
+  status                ReviewStatus
+  
+  course                Course                  @relation(fields: [courseId], references: [id])
+  
+  @@index([courseId])
+  @@index([rating])
+}
+
+model Certification {
+  id                    String                  @id @default(uuid())
+  certificationCode     String                  @unique
+  name                  String
+  description           String
+  issuingBody           String
+  isIndigenousIssued    Boolean                 @default(false)
+  indigenousRecognition Boolean                 @default(false)
+  category              CertificationCategory
+  level                 CertificationLevel
+  validityPeriod        Int?                    // Months, null for lifetime
+  renewalRequired       Boolean                 @default(false)
+  renewalProcess        String?
+  prerequisites         String[]
+  requiredCourses       String[]                // Course IDs
+  requiredExperience    Int?                    // Years
+  industryRecognition   String[]
+  governmentRecognized  Boolean                 @default(false)
+  internationalRecognition Boolean             @default(false)
+  culturalCompetency    Boolean                 @default(false)
+  traditionalKnowledge  Boolean                 @default(false)
+  elderInvolvement      Boolean                 @default(false)
+  communityEndorsement  Boolean                 @default(false)
+  cost                  Float?
+  assessmentRequired    Boolean                 @default(false)
+  practicalExamRequired Boolean                 @default(false)
+  status                CertificationStatus
+  
+  userCertifications    UserCertification[]
+  requirements          CertificationRequirement[]
+  
+  @@index([category])
+  @@index([level])
+  @@index([isIndigenousIssued])
+}
+
+model CertificationRequirement {
+  id                    String                  @id @default(uuid())
+  certificationId       String
+  requirementType       RequirementType
+  description           String
+  details               Json                    // Specific requirements
+  mandatory             Boolean                 @default(true)
+  pointValue            Int?                    // For point-based systems
+  
+  certification         Certification           @relation(fields: [certificationId], references: [id])
+  
+  @@index([certificationId])
+}
+
+model UserCertification {
+  id                    String                  @id @default(uuid())
+  userId                String
+  userName              String
+  businessId            String?
+  businessName          String?
+  certificationId       String
+  issuedDate            DateTime
+  expiryDate            DateTime?
+  certificateNumber     String                  @unique
+  certificateUrl        String?
+  status                UserCertificationStatus
+  renewalDate           DateTime?
+  renewalStatus         RenewalStatus?
+  verificationCode      String                  @unique
+  digitalBadgeUrl       String?
+  elderEndorsement      Boolean                 @default(false)
+  elderEndorsedBy       String?
+  communityWitness      String[]                // Community members who witnessed
+  traditionalCeremony   Boolean                 @default(false)
+  ceremonyDetails       String?
+  
+  certification         Certification           @relation(fields: [certificationId], references: [id])
+  renewals              CertificationRenewal[]
+  
+  @@index([userId])
+  @@index([certificationId])
+  @@index([status])
+  @@index([businessId])
+}
+
+model CertificationRenewal {
+  id                    String                  @id @default(uuid())
+  userCertificationId   String
+  renewalType           RenewalType
+  applicationDate       DateTime                @default(now())
+  dueDate               DateTime
+  completedDate         DateTime?
+  status                RenewalStatus
+  requirements          Json                    // What needs to be completed
+  progress              Json                    // Current progress
+  cost                  Float?
+  paymentStatus         PaymentStatus?
+  continuingEducation   Float?                  // Hours completed
+  professionalDevelopment Float?                // Points earned
+  communityService      Float?                  // Hours contributed
+  
+  userCertification     UserCertification       @relation(fields: [userCertificationId], references: [id])
+  
+  @@index([userCertificationId])
+  @@index([status])
+}
+
+model Mentor {
+  id                    String                  @id @default(uuid())
+  userId                String                  @unique
+  userName              String
+  email                 String
+  businessId            String?
+  businessName          String?
+  isIndigenous          Boolean
+  bandAffiliation       String?
+  territoryConnection   String?
+  languages             String[]
+  expertise             String[]                // Areas of knowledge
+  industries            String[]
+  yearsExperience       Int
+  certifications        String[]
+  isElder               Boolean                 @default(false)
+  traditionalKnowledge  String[]                // Traditional skills/knowledge
+  culturalWisdom        String[]                // Cultural teachings they share
+  mentoringStyle        String?
+  availability          Json                    // Schedule availability
+  maxMentees            Int                     @default(3)
+  currentMentees        Int                     @default(0)
+  preferredMenteeProfile Json?                 // Ideal mentee characteristics
+  willingToTravel       Boolean                 @default(false)
+  virtualMentoring      Boolean                 @default(true)
+  ceremonyParticipation Boolean                 @default(false)
+  culturalTeaching      Boolean                 @default(false)
+  businessGuidance      Boolean                 @default(true)
+  technicalSkills       Boolean                 @default(true)
+  lifeSkills            Boolean                 @default(false)
+  rating                Float?                  // Average mentor rating
+  totalMentorships      Int                     @default(0)
+  successfulPlacements  Int                     @default(0)
+  approvedAt            DateTime?
+  approvedBy            String?
+  status                MentorStatus
+  
+  mentorships           Mentorship[]
+  reviews               MentorReview[]
+  
+  @@index([isIndigenous])
+  @@index([expertise])
+  @@index([status])
+}
+
+model Mentorship {
+  id                    String                  @id @default(uuid())
+  mentorId              String
+  menteeId              String
+  menteeName            String
+  menteeEmail           String
+  menteeBusinessId      String?
+  program               MentorshipProgram
+  focus                 String[]                // Areas of focus
+  goals                 String[]                // Mentee's goals
+  culturalComponent     Boolean                 @default(false)
+  traditionalTeaching   Boolean                 @default(false)
+  businessDevelopment   Boolean                 @default(false)
+  skillsDevelopment     Boolean                 @default(false)
+  startDate             DateTime
+  plannedEndDate        DateTime
+  actualEndDate         DateTime?
+  frequency             String                  // Weekly, bi-weekly, monthly
+  format                MentorshipFormat        // In-person, virtual, hybrid
+  status                MentorshipStatus
+  progress              Json?                   // Progress tracking
+  milestones            Json?                   // Achievement milestones
+  ceremonialAspects     Json?                   // Traditional ceremony involvement
+  elderInvolvement      Boolean                 @default(false)
+  communitySupport      Boolean                 @default(false)
+  successMetrics        Json?
+  
+  mentor                Mentor                  @relation(fields: [mentorId], references: [id])
+  sessions              MentorshipSession[]
+  
+  @@index([mentorId])
+  @@index([menteeId])
+  @@index([status])
+  @@index([program])
+}
+
+model MentorshipSession {
+  id                    String                  @id @default(uuid())
+  mentorshipId          String
+  sessionNumber         Int
+  scheduledDate         DateTime
+  actualDate            DateTime?
+  duration              Int?                    // Minutes
+  format                SessionFormat
+  location              String?
+  agenda                String[]
+  topics                String[]
+  culturalActivities    String[]                // Smudging, prayers, etc.
+  traditionalTeaching   String?
+  outcomes              String[]
+  nextSteps             String[]
+  menteeReflection      String?
+  mentorReflection      String?
+  resourcesShared       Json?
+  assignments           String[]
+  culturalProtocol      String?                 // Protocols observed
+  elderPresent          Boolean                 @default(false)
+  communityWitness      Boolean                 @default(false)
+  status                SessionStatus
+  
+  mentorship            Mentorship              @relation(fields: [mentorshipId], references: [id])
+  
+  @@index([mentorshipId])
+  @@index([scheduledDate])
+}
+
+model MentorReview {
+  id                    String                  @id @default(uuid())
+  mentorId              String
+  reviewerId            String
+  reviewerName          String
+  mentorshipId          String?
+  rating                Float                   // 1-5 stars
+  culturalSensitivity   Float?                  // Cultural competency rating
+  knowledgeSharing      Float?                  // Knowledge transfer rating
+  supportiveness        Float?                  // Emotional/professional support
+  availability          Float?                  // Accessibility rating
+  traditionalWisdom     Float?                  // Traditional knowledge sharing
+  review                String
+  wouldRecommend        Boolean
+  specificStrengths     String[]
+  areasForImprovement   String[]
+  culturalImpact        String?                 // Impact on cultural understanding
+  reviewDate            DateTime                @default(now())
+  
+  mentor                Mentor                  @relation(fields: [mentorId], references: [id])
+  
+  @@index([mentorId])
+  @@index([rating])
+}
+
+model TraditionalKnowledge {
+  id                    String                  @id @default(uuid())
+  title                 String
+  description           String
+  category              KnowledgeCategory
+  subcategory           String?
+  nation                String?                 // Specific to nation/tribe
+  region                String?
+  language              String
+  keeper                String                  // Knowledge keeper's name
+  keeperId              String?                 // If they're a system user
+  elderApproval         String[]                // Elders who approve sharing
+  sharingPermission     SharingPermission
+  publicAccess          Boolean                 @default(false)
+  indigenousOnly        Boolean                 @default(true)
+  communityOnly         Boolean                 @default(false)
+  ceremonyRequired      Boolean                 @default(false)
+  seasonalRestrictions  String?                 // When it can be shared
+  genderRestrictions    String?                 // If gender-specific
+  ageRestrictions       String?                 // If age-specific
+  content               Json                    // Rich content with media
+  audioRecordings       String[]                // Audio files
+  videoRecordings       String[]                // Video files
+  images                String[]                // Supporting images
+  documents             String[]                // PDF documents
+  linkedCourses         String[]                // Related courses
+  linkedCertifications  String[]                // Related certifications
+  culturalProtocols     String[]                // Required protocols
+  traditionalUse        String?                 // Traditional applications
+  modernApplication     String?                 // Modern applications
+  preservationNotes     String?                 // Preservation important notes
+  lastUpdated           DateTime                @updatedAt
+  createdAt             DateTime                @default(now())
+  
+  @@index([category])
+  @@index([nation])
+  @@index([sharingPermission])
+  @@index([publicAccess])
+}
+
+model CourseResource {
+  id                    String                  @id @default(uuid())
+  courseId              String
+  title                 String
+  description           String?
+  type                  ResourceType
+  fileUrl               String?
+  content               String?                 // For text resources
+  language              String                  @default("en")
+  culturalContext       String?
+  traditionalConnection String?
+  accessLevel           AccessLevel
+  downloadable          Boolean                 @default(true)
+  size                  Int?                    // File size in bytes
+  duration              Int?                    // For video/audio in seconds
+  elderApproved         Boolean                 @default(false)
+  
+  course                Course                  @relation(fields: [courseId], references: [id])
+  
+  @@index([courseId])
+  @@index([type])
+}
+
+// Enums
+enum CourseCategory {
+  BUSINESS_DEVELOPMENT
+  TECHNICAL_SKILLS
+  TRADITIONAL_KNOWLEDGE
+  CULTURAL_COMPETENCY
+  PROFESSIONAL_DEVELOPMENT
+  TRADES_CONSTRUCTION
+  INFORMATION_TECHNOLOGY
+  HEALTHCARE
+  EDUCATION
+  ENVIRONMENTAL
+  PROCUREMENT
+  FINANCE_ACCOUNTING
+  PROJECT_MANAGEMENT
+  LEADERSHIP
+  ENTREPRENEURSHIP
+  LANGUAGE_PRESERVATION
+  CEREMONIAL_PRACTICES
+  LAND_STEWARDSHIP
+}
+
+enum CourseLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+  ELDER_LEVEL
+}
+
+enum CourseFormat {
+  ONLINE
+  IN_PERSON
+  HYBRID
+  SELF_PACED
+  INSTRUCTOR_LED
+  COHORT_BASED
+  COMMUNITY_CIRCLE
+}
+
+enum DeliveryMethod {
+  SYNCHRONOUS
+  ASYNCHRONOUS
+  BLENDED
+  INTENSIVE_WORKSHOP
+  EXTENDED_PROGRAM
+  SEASONAL_TEACHING
+}
+
+enum CourseStatus {
+  DRAFT
+  REVIEW
+  ELDER_APPROVAL
+  PUBLISHED
+  ARCHIVED
+  RETIRED
+}
+
+enum ModuleType {
+  VIDEO
+  TEXT
+  INTERACTIVE
+  ASSESSMENT
+  DISCUSSION
+  PRACTICAL
+  CEREMONIAL
+  STORYTELLING
+}
+
+enum AssessmentType {
+  QUIZ
+  ASSIGNMENT
+  PROJECT
+  ORAL_EXAMINATION
+  PRACTICAL_DEMONSTRATION
+  CULTURAL_SHARING
+  PEER_REVIEW
+}
+
+enum ScheduleStatus {
+  PLANNED
+  OPEN_ENROLLMENT
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  POSTPONED
+}
+
+enum EnrollmentStatus {
+  ENROLLED
+  IN_PROGRESS
+  COMPLETED
+  DROPPED
+  TRANSFERRED
+  SUSPENDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  SUBSIDIZED
+  WAIVED
+  REFUNDED
+}
+
+enum ProgressType {
+  MODULE_START
+  MODULE_COMPLETE
+  ASSESSMENT_ATTEMPT
+  RESOURCE_ACCESSED
+  DISCUSSION_PARTICIPATE
+}
+
+enum ReviewStatus {
+  PENDING
+  PUBLISHED
+  FLAGGED
+  REMOVED
+}
+
+enum CertificationCategory {
+  PROFESSIONAL
+  TECHNICAL
+  CULTURAL
+  TRADITIONAL
+  ACADEMIC
+  INDUSTRY
+  GOVERNMENT
+  INDIGENOUS
+}
+
+enum CertificationLevel {
+  FOUNDATION
+  PRACTITIONER
+  SPECIALIST
+  EXPERT
+  MASTER
+  ELDER
+}
+
+enum CertificationStatus {
+  ACTIVE
+  UNDER_REVIEW
+  SUSPENDED
+  RETIRED
+}
+
+enum RequirementType {
+  COURSE_COMPLETION
+  WORK_EXPERIENCE
+  CONTINUING_EDUCATION
+  PRACTICAL_ASSESSMENT
+  CULTURAL_COMPETENCY
+  COMMUNITY_SERVICE
+  ELDER_ENDORSEMENT
+}
+
+enum UserCertificationStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  REVOKED
+  PENDING_RENEWAL
+}
+
+enum RenewalStatus {
+  NOT_REQUIRED
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+  OVERDUE
+  FAILED
+}
+
+enum RenewalType {
+  STANDARD
+  ACCELERATED
+  REMEDIAL
+  CULTURAL_COMPETENCY
+}
+
+enum MentorStatus {
+  PENDING_APPROVAL
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  RETIRED
+}
+
+enum MentorshipProgram {
+  BUSINESS_DEVELOPMENT
+  SKILLS_TRAINING
+  CULTURAL_PRESERVATION
+  YOUTH_GUIDANCE
+  ENTREPRENEUR_SUPPORT
+  CAREER_TRANSITION
+  TRADITIONAL_ARTS
+  COMMUNITY_LEADERSHIP
+}
+
+enum MentorshipFormat {
+  IN_PERSON
+  VIRTUAL
+  HYBRID
+  COMMUNITY_BASED
+  LAND_BASED
+}
+
+enum MentorshipStatus {
+  MATCHING
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  TERMINATED
+  GRADUATED
+}
+
+enum SessionFormat {
+  FACE_TO_FACE
+  VIDEO_CALL
+  PHONE_CALL
+  COMMUNITY_GATHERING
+  LAND_BASED_LEARNING
+  CEREMONIAL_SETTING
+}
+
+enum SessionStatus {
+  SCHEDULED
+  COMPLETED
+  CANCELLED
+  RESCHEDULED
+  NO_SHOW
+}
+
+enum KnowledgeCategory {
+  TRADITIONAL_PRACTICES
+  MEDICINAL_PLANTS
+  SEASONAL_TEACHINGS
+  CEREMONIAL_KNOWLEDGE
+  LAND_STEWARDSHIP
+  TRADITIONAL_ARTS
+  STORYTELLING
+  LANGUAGE_PRESERVATION
+  GOVERNANCE_SYSTEMS
+  CONFLICT_RESOLUTION
+  SUSTAINABLE_PRACTICES
+  SPIRITUAL_TEACHINGS
+}
+
+enum SharingPermission {
+  PUBLIC
+  INDIGENOUS_ONLY
+  NATION_SPECIFIC
+  COMMUNITY_ONLY
+  RESTRICTED
+  CEREMONIAL_ONLY
+}
+
+enum ResourceType {
+  PDF
+  VIDEO
+  AUDIO
+  IMAGE
+  DOCUMENT
+  LINK
+  INTERACTIVE
+  TRADITIONAL_MEDIA
+}
+
+enum AccessLevel {
+  PUBLIC
+  ENROLLED_ONLY
+  INDIGENOUS_ONLY
+  RESTRICTED
+}

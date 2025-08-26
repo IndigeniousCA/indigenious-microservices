@@ -1,0 +1,213 @@
+version: '3.8'
+
+services:
+  email-service:
+    build: .
+    ports:
+      - "3044:3044"
+    environment:
+      - NODE_ENV=production
+      - PORT=3044
+      - DATABASE_URL=postgresql://email_user:email_pass@email-db:5432/indigenous_email_db
+      - REDIS_URL=redis://email-redis:6379
+      - REDIS_HOST=email-redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      # SMTP Configuration
+      - SMTP_HOST=${SMTP_HOST}
+      - SMTP_PORT=${SMTP_PORT}
+      - SMTP_USER=${SMTP_USER}
+      - SMTP_PASS=${SMTP_PASS}
+      # Email Provider API Keys
+      - SENDGRID_API_KEY=${SENDGRID_API_KEY}
+      - MAILGUN_API_KEY=${MAILGUN_API_KEY}
+      - MAILGUN_DOMAIN=${MAILGUN_DOMAIN}
+      - POSTMARK_API_KEY=${POSTMARK_API_KEY}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=${AWS_REGION}
+      # Default settings
+      - DEFAULT_FROM_EMAIL=noreply@indigenous.ca
+      - DEFAULT_FROM_NAME=Indigenous Platform
+      - BASE_URL=https://indigenous.ca
+    depends_on:
+      - email-db
+      - email-redis
+    networks:
+      - email-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3044/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./logs:/app/logs
+      - ./templates:/app/templates
+
+  email-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_email_db
+      - POSTGRES_USER=email_user
+      - POSTGRES_PASSWORD=email_pass
+    volumes:
+      - email-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5450:5432"
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  email-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6400:6379"
+    volumes:
+      - email-redis-data:/data
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # Email queue monitoring
+  bull-board:
+    image: deadly0/bull-board:latest
+    environment:
+      - REDIS_HOST=email-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    ports:
+      - "3045:3000"
+    depends_on:
+      - email-redis
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # Email analytics and monitoring
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource,postgres-datasource
+    ports:
+      - "3046:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - email-db
+      - email-redis
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # Email webhook handler (for delivery tracking)
+  webhook-handler:
+    image: nginx:alpine
+    ports:
+      - "3047:80"
+    volumes:
+      - ./nginx/webhook.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - email-service
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # MJML API server for template compilation
+  mjml-api:
+    image: liminspace/mjml-tcpserver:latest
+    ports:
+      - "28101:28101"
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # Prometheus for metrics collection
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9091:9090"
+    volumes:
+      - ./prometheus/email-prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # Node exporter for system metrics
+  node-exporter:
+    image: prom/node-exporter:latest
+    ports:
+      - "9101:9100"
+    volumes:
+      - /proc:/host/proc:ro
+      - /sys:/host/sys:ro
+      - /:/rootfs:ro
+    command:
+      - '--path.procfs=/host/proc'
+      - '--path.rootfs=/rootfs'
+      - '--path.sysfs=/host/sys'
+      - '--collector.filesystem.mount-points-exclude=^/(sys|proc|dev|host|etc)($$|/)'
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # Elasticsearch for email search and analytics
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9201:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - email-network
+    restart: unless-stopped
+
+  # Kibana for email analytics dashboard
+  kibana:
+    image: kibana:8.11.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5602:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - email-network
+    restart: unless-stopped
+
+volumes:
+  email-db-data:
+    driver: local
+  email-redis-data:
+    driver: local
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+
+networks:
+  email-network:
+    driver: bridge
+  microservices-network:
+    external: true

@@ -1,0 +1,885 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model ContractLifecycle {
+  id                    String                  @id @default(uuid())
+  contractId            String                  @unique
+  referenceNumber       String                  @unique
+  
+  // Contract basics
+  title                 String
+  description           String?
+  type                  ContractType
+  category              ContractCategory
+  
+  // Value and duration
+  totalValue            Decimal                 @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  startDate             DateTime
+  endDate               DateTime?
+  duration              Int?                    // Days
+  
+  // Parties
+  vendorId              String
+  vendorName            String
+  vendorType            VendorType
+  purchaserId           String
+  purchaserName         String
+  
+  // Indigenous elements
+  isIndigenousVendor    Boolean                 @default(false)
+  indigenousBusinessId  String?
+  bandNumber            String?
+  treatyNumber          String?
+  indigenousOwnership   Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Procurement mandate
+  contributes5Percent   Boolean                 @default(false)
+  procurementCategory   String?
+  setAsideContract      Boolean                 @default(false) // Indigenous set-aside
+  
+  // Lifecycle stages
+  currentStage          LifecycleStage
+  stages                ContractStage[]
+  
+  // Performance
+  performanceScore      Decimal?                @db.Decimal(5, 2)
+  deliverables          Deliverable[]
+  milestones            Milestone[]
+  
+  // Payments
+  paymentTerms          PaymentTerms
+  paymentSchedule       PaymentSchedule[]
+  totalPaid             Decimal                 @db.Decimal(19, 4) @default(0)
+  outstandingAmount     Decimal                 @db.Decimal(19, 4)
+  
+  // Modifications
+  amendments            Amendment[]
+  changeOrders          ChangeOrder[]
+  extensions            Extension[]
+  
+  // Compliance
+  complianceStatus      ComplianceStatus
+  complianceChecks      ContractCompliance[]
+  
+  // Risk management
+  riskLevel             RiskLevel
+  riskFactors           Json?
+  
+  // Smart contract
+  isSmartContract       Boolean                 @default(false)
+  blockchainAddress     String?
+  smartContractData     Json?
+  
+  // Notifications
+  notifications         ContractNotification[]
+  alerts                ContractAlert[]
+  
+  // Documents
+  documents             ContractDocument[]
+  
+  // Audit trail
+  auditLogs             ContractAudit[]
+  
+  // Status
+  status                ContractLifecycleStatus
+  isActive              Boolean                 @default(true)
+  
+  // Key dates
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  approvedAt            DateTime?
+  executedAt            DateTime?
+  completedAt           DateTime?
+  terminatedAt          DateTime?
+  
+  // Metadata
+  tags                  String[]
+  metadata              Json?
+  
+  @@index([referenceNumber])
+  @@index([vendorId])
+  @@index([purchaserId])
+  @@index([currentStage])
+  @@index([status])
+  @@index([isIndigenousVendor])
+  @@index([startDate])
+  @@index([endDate])
+}
+
+model ContractStage {
+  id                    String                  @id @default(uuid())
+  contractId            String
+  
+  // Stage details
+  stage                 LifecycleStage
+  status                StageStatus
+  
+  // Timeline
+  startedAt             DateTime
+  completedAt           DateTime?
+  duration              Int?                    // Hours
+  
+  // Completion
+  completedBy           String?
+  completionNotes       String?
+  
+  // Approval
+  requiresApproval      Boolean                 @default(false)
+  approvalRequired      String[]                // Role IDs required
+  approvals             Json?                   // Approval records
+  
+  // Elder approval for Indigenous contracts
+  requiresElderApproval Boolean                 @default(false)
+  elderApprovalStatus   ApprovalStatus?
+  elderApprovalDate     DateTime?
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([stage])
+  @@index([status])
+}
+
+model Deliverable {
+  id                    String                  @id @default(uuid())
+  deliverableId         String                  @unique
+  contractId            String
+  
+  // Deliverable details
+  name                  String
+  description           String
+  type                  DeliverableType
+  
+  // Requirements
+  specifications        Json
+  acceptanceCriteria    Json
+  
+  // Schedule
+  dueDate               DateTime
+  submittedDate         DateTime?
+  acceptedDate          DateTime?
+  
+  // Status
+  status                DeliverableStatus
+  completionPercentage  Decimal                 @db.Decimal(5, 2)
+  
+  // Quality
+  qualityScore          Decimal?                @db.Decimal(5, 2)
+  defectsFound          Int                     @default(0)
+  
+  // Indigenous content
+  indigenousContent     Decimal?                @db.Decimal(5, 2) // Percentage
+  localHiring           Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Documentation
+  documents             String[]
+  proofOfDelivery       String?
+  
+  // Payment
+  paymentTriggered      Boolean                 @default(false)
+  paymentAmount         Decimal?                @db.Decimal(19, 4)
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([contractId])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model Milestone {
+  id                    String                  @id @default(uuid())
+  milestoneId           String                  @unique
+  contractId            String
+  
+  // Milestone details
+  name                  String
+  description           String
+  sequence              Int                     // Order in contract
+  
+  // Completion criteria
+  criteria              Json
+  verification          VerificationMethod
+  
+  // Timeline
+  targetDate            DateTime
+  actualDate            DateTime?
+  
+  // Status
+  status                MilestoneStatus
+  
+  // Payment release
+  paymentAmount         Decimal?                @db.Decimal(19, 4)
+  paymentReleased       Boolean                 @default(false)
+  
+  // Indigenous participation
+  indigenousParticipation Json?                 // Tracking Indigenous involvement
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([sequence])
+  @@index([status])
+}
+
+model PaymentSchedule {
+  id                    String                  @id @default(uuid())
+  scheduleId            String                  @unique
+  contractId            String
+  
+  // Payment details
+  paymentNumber         Int
+  amount                Decimal                 @db.Decimal(19, 4)
+  
+  // Schedule
+  dueDate               DateTime
+  
+  // Conditions
+  condition             String                  // Milestone, deliverable, date-based
+  conditionId           String?                 // Related milestone/deliverable ID
+  
+  // Status
+  status                PaymentStatus
+  paidDate              DateTime?
+  paidAmount            Decimal?                @db.Decimal(19, 4)
+  
+  // Invoice
+  invoiceNumber         String?
+  invoiceDate           DateTime?
+  
+  // Holdback
+  holdbackAmount        Decimal?                @db.Decimal(19, 4)
+  holdbackReleaseDate   DateTime?
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([dueDate])
+  @@index([status])
+}
+
+model Amendment {
+  id                    String                  @id @default(uuid())
+  amendmentId           String                  @unique
+  contractId            String
+  
+  // Amendment details
+  amendmentNumber       Int
+  title                 String
+  description           String
+  reason                AmendmentReason
+  
+  // Changes
+  originalValue         Decimal                 @db.Decimal(19, 4)
+  newValue              Decimal                 @db.Decimal(19, 4)
+  valueChange           Decimal                 @db.Decimal(19, 4)
+  
+  originalEndDate       DateTime?
+  newEndDate            DateTime?
+  
+  scopeChanges          Json?
+  termsChanges          Json?
+  
+  // Approval
+  status                AmendmentStatus
+  requestedBy           String
+  requestedDate         DateTime
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Indigenous impact
+  impactsIndigenous     Boolean                 @default(false)
+  indigenousReview      Boolean                 @default(false)
+  
+  // Effective date
+  effectiveDate         DateTime?
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([contractId])
+  @@index([status])
+}
+
+model ChangeOrder {
+  id                    String                  @id @default(uuid())
+  changeOrderId         String                  @unique
+  contractId            String
+  
+  // Change order details
+  orderNumber           String                  @unique
+  title                 String
+  description           String
+  
+  // Impact
+  costImpact            Decimal                 @db.Decimal(19, 4)
+  scheduleImpact        Int?                    // Days
+  
+  // Justification
+  justification         String
+  urgency               Urgency
+  
+  // Approval workflow
+  status                ChangeOrderStatus
+  approvalLevel         Int                     // Level of approval required
+  approvals             Json?
+  
+  // Implementation
+  implementationDate    DateTime?
+  completionDate        DateTime?
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([contractId])
+  @@index([orderNumber])
+  @@index([status])
+}
+
+model Extension {
+  id                    String                  @id @default(uuid())
+  extensionId           String                  @unique
+  contractId            String
+  
+  // Extension details
+  originalEndDate       DateTime
+  newEndDate            DateTime
+  extensionDays         Int
+  
+  // Reason
+  reason                String
+  justification         String
+  
+  // Terms
+  maintainTerms         Boolean                 @default(true)
+  revisedTerms          Json?
+  
+  // Approval
+  status                ExtensionStatus
+  requestedBy           String
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([contractId])
+  @@index([status])
+}
+
+model ContractCompliance {
+  id                    String                  @id @default(uuid())
+  complianceId          String                  @unique
+  contractId            String
+  
+  // Compliance check
+  checkType             ComplianceCheckType
+  checkDate             DateTime
+  
+  // Requirements
+  requirements          Json
+  
+  // Results
+  compliant             Boolean
+  score                 Decimal?                @db.Decimal(5, 2)
+  findings              Json?
+  
+  // Indigenous compliance
+  indigenous5Percent    Boolean?
+  indigenousEmployment  Decimal?                @db.Decimal(5, 2)
+  localProcurement      Decimal?                @db.Decimal(5, 2)
+  
+  // Corrective actions
+  actionsRequired       Boolean                 @default(false)
+  correctiveActions     Json?
+  deadline              DateTime?
+  
+  // Follow-up
+  followUpRequired      Boolean                 @default(false)
+  followUpDate          DateTime?
+  
+  performedBy           String
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([checkType])
+  @@index([checkDate])
+}
+
+model ContractNotification {
+  id                    String                  @id @default(uuid())
+  notificationId        String                  @unique
+  contractId            String
+  
+  // Notification details
+  type                  NotificationType
+  title                 String
+  message               String
+  
+  // Recipients
+  recipients            String[]
+  
+  // Timing
+  scheduledFor          DateTime
+  sentAt                DateTime?
+  
+  // Delivery
+  deliveryMethod        String[]                // email, sms, in-app
+  delivered             Boolean                 @default(false)
+  
+  // Response
+  requiresAction        Boolean                 @default(false)
+  actionDeadline        DateTime?
+  actionTaken           Boolean                 @default(false)
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([type])
+  @@index([scheduledFor])
+}
+
+model ContractAlert {
+  id                    String                  @id @default(uuid())
+  alertId               String                  @unique
+  contractId            String
+  
+  // Alert details
+  type                  AlertType
+  severity              AlertSeverity
+  title                 String
+  description           String
+  
+  // Trigger
+  triggerCondition      String
+  triggerValue          String?
+  
+  // Status
+  status                AlertStatus
+  acknowledgedBy        String?
+  acknowledgedAt        DateTime?
+  resolvedAt            DateTime?
+  
+  // Actions
+  recommendedActions    Json?
+  actionsTaken          Json?
+  
+  triggeredAt           DateTime                @default(now())
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([type])
+  @@index([severity])
+  @@index([status])
+}
+
+model ContractDocument {
+  id                    String                  @id @default(uuid())
+  documentId            String                  @unique
+  contractId            String
+  
+  // Document details
+  name                  String
+  type                  DocumentType
+  category              String
+  
+  // File info
+  fileUrl               String
+  fileSize              Int
+  mimeType              String
+  
+  // Version
+  version               String                  @default("1.0")
+  isLatest              Boolean                 @default(true)
+  
+  // Security
+  confidential          Boolean                 @default(false)
+  encryptionKey         String?
+  
+  // Signatures
+  requiresSignature     Boolean                 @default(false)
+  signed                Boolean                 @default(false)
+  signedBy              String[]
+  
+  uploadedBy            String
+  uploadedAt            DateTime                @default(now())
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([type])
+}
+
+model ContractAudit {
+  id                    String                  @id @default(uuid())
+  auditId               String                  @unique
+  contractId            String
+  
+  // Audit entry
+  action                AuditAction
+  entityType            String
+  entityId              String?
+  
+  // Changes
+  previousValue         Json?
+  newValue              Json?
+  
+  // User info
+  performedBy           String
+  performedAt           DateTime                @default(now())
+  ipAddress             String?
+  
+  // Context
+  context               Json?
+  
+  contract              ContractLifecycle       @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([action])
+  @@index([performedAt])
+}
+
+model ContractTemplate {
+  id                    String                  @id @default(uuid())
+  templateId            String                  @unique
+  
+  // Template details
+  name                  String
+  description           String
+  category              ContractCategory
+  type                  ContractType
+  
+  // Content
+  structure             Json                    // Template structure
+  clauses               Json                    // Standard clauses
+  variables             Json                    // Variable placeholders
+  
+  // Indigenous templates
+  isIndigenousTemplate  Boolean                 @default(false)
+  indigenousElements    Json?
+  culturalProtocols     Json?
+  
+  // Terms
+  standardTerms         Json
+  paymentTerms          PaymentTerms?
+  
+  // Usage
+  usageCount            Int                     @default(0)
+  lastUsedAt            DateTime?
+  
+  // Approval
+  approved              Boolean                 @default(false)
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Version
+  version               String                  @default("1.0")
+  isActive              Boolean                 @default(true)
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([category])
+  @@index([type])
+  @@index([isIndigenousTemplate])
+}
+
+model VendorPerformance {
+  id                    String                  @id @default(uuid())
+  vendorId              String
+  contractId            String
+  
+  // Performance metrics
+  overallScore          Decimal                 @db.Decimal(5, 2)
+  qualityScore          Decimal                 @db.Decimal(5, 2)
+  timelinessScore       Decimal                 @db.Decimal(5, 2)
+  complianceScore       Decimal                 @db.Decimal(5, 2)
+  
+  // Indigenous metrics
+  indigenousEmployment  Decimal?                @db.Decimal(5, 2)
+  indigenousProcurement Decimal?                @db.Decimal(5, 2)
+  communityBenefit      Decimal?                @db.Decimal(5, 2)
+  
+  // Delivery performance
+  onTimeDeliveries      Int
+  lateDeliveries        Int
+  totalDeliveries       Int
+  
+  // Quality metrics
+  defectRate            Decimal?                @db.Decimal(5, 2)
+  returnRate            Decimal?                @db.Decimal(5, 2)
+  
+  // Compliance
+  complianceIssues      Int                     @default(0)
+  safetyIncidents       Int                     @default(0)
+  
+  // Period
+  periodStart           DateTime
+  periodEnd             DateTime
+  
+  evaluatedBy           String
+  evaluatedAt           DateTime                @default(now())
+  
+  @@unique([vendorId, contractId])
+  @@index([vendorId])
+  @@index([contractId])
+  @@index([overallScore])
+}
+
+// Enums
+enum ContractType {
+  PURCHASE
+  SERVICE
+  CONSTRUCTION
+  CONSULTING
+  LICENSE
+  LEASE
+  MAINTENANCE
+  SUPPLY
+  FRAMEWORK
+  INDIGENOUS_PARTNERSHIP
+}
+
+enum ContractCategory {
+  GOODS
+  SERVICES
+  CONSTRUCTION
+  IT
+  PROFESSIONAL_SERVICES
+  INDIGENOUS_PROCUREMENT
+}
+
+enum VendorType {
+  STANDARD
+  INDIGENOUS_BUSINESS
+  SMALL_BUSINESS
+  SOCIAL_ENTERPRISE
+  BAND_OWNED
+}
+
+enum LifecycleStage {
+  INITIATION
+  PLANNING
+  SOLICITATION
+  EVALUATION
+  AWARD
+  EXECUTION
+  MONITORING
+  CLOSEOUT
+  ARCHIVED
+}
+
+enum ContractLifecycleStatus {
+  DRAFT
+  PENDING_APPROVAL
+  APPROVED
+  ACTIVE
+  ON_HOLD
+  COMPLETED
+  TERMINATED
+  EXPIRED
+  ARCHIVED
+}
+
+enum StageStatus {
+  NOT_STARTED
+  IN_PROGRESS
+  COMPLETED
+  SKIPPED
+  FAILED
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONDITIONAL
+}
+
+enum DeliverableType {
+  PRODUCT
+  SERVICE
+  REPORT
+  MILESTONE
+  DOCUMENT
+}
+
+enum DeliverableStatus {
+  PENDING
+  IN_PROGRESS
+  SUBMITTED
+  UNDER_REVIEW
+  ACCEPTED
+  REJECTED
+  OVERDUE
+}
+
+enum MilestoneStatus {
+  UPCOMING
+  IN_PROGRESS
+  COMPLETED
+  DELAYED
+  CANCELLED
+}
+
+enum VerificationMethod {
+  INSPECTION
+  TESTING
+  CERTIFICATION
+  DOCUMENTATION
+  SITE_VISIT
+}
+
+enum PaymentTerms {
+  NET_30
+  NET_60
+  NET_90
+  IMMEDIATE
+  MILESTONE_BASED
+  PROGRESS_BASED
+  HOLDBACK
+}
+
+enum PaymentStatus {
+  SCHEDULED
+  DUE
+  INVOICED
+  PAID
+  PARTIAL
+  OVERDUE
+  DISPUTED
+  CANCELLED
+}
+
+enum AmendmentReason {
+  SCOPE_CHANGE
+  COST_ADJUSTMENT
+  TIMELINE_CHANGE
+  TERMS_UPDATE
+  FORCE_MAJEURE
+  REGULATORY_CHANGE
+}
+
+enum AmendmentStatus {
+  DRAFT
+  PROPOSED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  IMPLEMENTED
+}
+
+enum ChangeOrderStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum Urgency {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum ExtensionStatus {
+  REQUESTED
+  APPROVED
+  REJECTED
+  ACTIVE
+}
+
+enum ComplianceCheckType {
+  REGULATORY
+  CONTRACTUAL
+  FINANCIAL
+  PERFORMANCE
+  INDIGENOUS_MANDATE
+  SAFETY
+  ENVIRONMENTAL
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  PARTIALLY_COMPLIANT
+  PENDING_REVIEW
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum NotificationType {
+  MILESTONE_REMINDER
+  PAYMENT_DUE
+  EXPIRY_WARNING
+  COMPLIANCE_ALERT
+  PERFORMANCE_REVIEW
+  AMENDMENT_NOTICE
+}
+
+enum AlertType {
+  EXPIRY
+  OVERDUE_PAYMENT
+  COMPLIANCE_ISSUE
+  PERFORMANCE_ISSUE
+  BUDGET_EXCEEDED
+  MILESTONE_DELAYED
+}
+
+enum AlertSeverity {
+  INFO
+  WARNING
+  ERROR
+  CRITICAL
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+}
+
+enum DocumentType {
+  CONTRACT
+  AMENDMENT
+  INVOICE
+  REPORT
+  CERTIFICATE
+  DELIVERABLE
+  CORRESPONDENCE
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  APPROVE
+  REJECT
+  SIGN
+  AMEND
+  EXTEND
+  TERMINATE
+}

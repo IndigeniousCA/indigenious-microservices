@@ -1,0 +1,245 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: canadian-verification
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: verification-config
+  namespace: canadian-verification
+data:
+  NODE_ENV: "production"
+  REDIS_HOST: "redis-service"
+  REDIS_PORT: "6379"
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: verification-secrets
+  namespace: canadian-verification
+type: Opaque
+stringData:
+  REDIS_PASSWORD: "change-me-in-production"
+  ENCRYPTION_KEY: "change-me-to-64-char-hex"
+  VERIFICATION_PRIVATE_KEY: "change-me-to-rsa-private-key"
+  # Provincial APIs
+  BC_REGISTRY_API_KEY: ""
+  AB_REGISTRY_API_KEY: ""
+  ON_REGISTRY_API_KEY: ""
+  QC_REQ_API_KEY: ""
+  # Federal APIs
+  CRA_API_KEY: ""
+  ISED_API_KEY: ""
+  ISC_API_KEY: ""
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: verification-service
+  namespace: canadian-verification
+  labels:
+    app: verification-service
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: verification-service
+  template:
+    metadata:
+      labels:
+        app: verification-service
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1001
+        fsGroup: 1001
+      containers:
+      - name: verification
+        image: canadian-verification:latest
+        imagePullPolicy: Always
+        ports:
+        - containerPort: 3000
+          name: http
+        envFrom:
+        - configMapRef:
+            name: verification-config
+        - secretRef:
+            name: verification-secrets
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "500m"
+          limits:
+            memory: "1Gi"
+            cpu: "1000m"
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 3000
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /ready
+            port: 3000
+          initialDelaySeconds: 20
+          periodSeconds: 5
+        volumeMounts:
+        - name: certs
+          mountPath: /app/certs
+          readOnly: true
+      volumes:
+      - name: certs
+        secret:
+          secretName: verification-certs
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: verification-service
+  namespace: canadian-verification
+spec:
+  selector:
+    app: verification-service
+  ports:
+  - port: 80
+    targetPort: 3000
+    protocol: TCP
+  type: ClusterIP
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: redis
+  namespace: canadian-verification
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: redis
+  template:
+    metadata:
+      labels:
+        app: redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        command:
+        - redis-server
+        - --requirepass
+        - $(REDIS_PASSWORD)
+        env:
+        - name: REDIS_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: verification-secrets
+              key: REDIS_PASSWORD
+        ports:
+        - containerPort: 6379
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "250m"
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: redis-pvc
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: redis-service
+  namespace: canadian-verification
+spec:
+  selector:
+    app: redis
+  ports:
+  - port: 6379
+    targetPort: 6379
+  type: ClusterIP
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: redis-pvc
+  namespace: canadian-verification
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 10Gi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: verification-hpa
+  namespace: canadian-verification
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: verification-service
+  minReplicas: 3
+  maxReplicas: 10
+  metrics:
+  - type: Resource
+    resource:
+      name: cpu
+      target:
+        type: Utilization
+        averageUtilization: 70
+  - type: Resource
+    resource:
+      name: memory
+      target:
+        type: Utilization
+        averageUtilization: 80
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: verification-ingress
+  namespace: canadian-verification
+  annotations:
+    kubernetes.io/ingress.class: nginx
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    nginx.ingress.kubernetes.io/rate-limit: "10"
+spec:
+  tls:
+  - hosts:
+    - api.verification.indigenousprocurement.ca
+    secretName: verification-tls
+  rules:
+  - host: api.verification.indigenousprocurement.ca
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: verification-service
+            port:
+              number: 80
+---
+apiVersion: v1
+kind: ServiceMonitor
+metadata:
+  name: verification-metrics
+  namespace: canadian-verification
+spec:
+  selector:
+    matchLabels:
+      app: verification-service
+  endpoints:
+  - port: http
+    path: /metrics
+    interval: 30s

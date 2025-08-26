@@ -1,0 +1,137 @@
+version: '3.8'
+
+services:
+  queue-service:
+    build: .
+    ports:
+      - "3041:3041"
+    environment:
+      - NODE_ENV=production
+      - PORT=3041
+      - DATABASE_URL=postgresql://queue_user:queue_pass@queue-db:5432/indigenous_queue_db
+      - REDIS_URL=redis://queue-redis:6379
+      - REDIS_HOST=queue-redis
+      - REDIS_PORT=6379
+      - RABBITMQ_URL=amqp://guest:guest@rabbitmq:5672
+      - KAFKA_BROKERS=kafka:9092
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      - queue-db
+      - queue-redis
+      - rabbitmq
+      - kafka
+    networks:
+      - queue-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3041/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  queue-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_queue_db
+      - POSTGRES_USER=queue_user
+      - POSTGRES_PASSWORD=queue_pass
+    volumes:
+      - queue-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5447:5432"
+    networks:
+      - queue-network
+    restart: unless-stopped
+
+  queue-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6397:6379"
+    volumes:
+      - queue-redis-data:/data
+    networks:
+      - queue-network
+    restart: unless-stopped
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    environment:
+      - RABBITMQ_DEFAULT_USER=admin
+      - RABBITMQ_DEFAULT_PASS=admin123
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    volumes:
+      - rabbitmq-data:/var/lib/rabbitmq
+    networks:
+      - queue-network
+    restart: unless-stopped
+
+  kafka:
+    image: confluentinc/cp-kafka:latest
+    environment:
+      - KAFKA_BROKER_ID=1
+      - KAFKA_ZOOKEEPER_CONNECT=zookeeper:2181
+      - KAFKA_ADVERTISED_LISTENERS=PLAINTEXT://kafka:9092
+      - KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR=1
+      - KAFKA_AUTO_CREATE_TOPICS_ENABLE=true
+    ports:
+      - "9092:9092"
+    depends_on:
+      - zookeeper
+    volumes:
+      - kafka-data:/var/lib/kafka/data
+    networks:
+      - queue-network
+    restart: unless-stopped
+
+  zookeeper:
+    image: confluentinc/cp-zookeeper:latest
+    environment:
+      - ZOOKEEPER_CLIENT_PORT=2181
+      - ZOOKEEPER_TICK_TIME=2000
+    ports:
+      - "2181:2181"
+    volumes:
+      - zookeeper-data:/var/lib/zookeeper/data
+      - zookeeper-logs:/var/lib/zookeeper/log
+    networks:
+      - queue-network
+    restart: unless-stopped
+
+  bull-board:
+    image: deadly0/bull-board:latest
+    environment:
+      - REDIS_HOST=queue-redis
+      - REDIS_PORT=6379
+    ports:
+      - "3042:3000"
+    depends_on:
+      - queue-redis
+    networks:
+      - queue-network
+    restart: unless-stopped
+
+volumes:
+  queue-db-data:
+    driver: local
+  queue-redis-data:
+    driver: local
+  rabbitmq-data:
+    driver: local
+  kafka-data:
+    driver: local
+  zookeeper-data:
+    driver: local
+  zookeeper-logs:
+    driver: local
+
+networks:
+  queue-network:
+    driver: bridge
+  microservices-network:
+    external: true

@@ -1,0 +1,308 @@
+generator client {
+  provider = "prisma-client-js"
+  binaryTargets = ["native", "linux-musl-arm64-openssl-3.0.x"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id              String    @id @default(uuid())
+  email           String    @unique
+  passwordHash    String?
+  name            String?
+  role            UserRole  @default(SUPPLIER)
+  verified        Boolean   @default(false)
+  twoFactorEnabled Boolean  @default(false)
+  image           String?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  profile         Profile?
+  business        Business?
+  rfqs            RFQ[]
+  bids            Bid[]
+  messages        Message[]
+  notifications   Notification[]
+  sessions        Session[]
+  accounts        Account[]
+}
+
+model Account {
+  id                String  @id @default(uuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  
+  @@unique([provider, providerAccountId])
+}
+
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Profile {
+  id              String   @id @default(uuid())
+  userId          String   @unique
+  firstName       String?
+  lastName        String?
+  phone           String?
+  address         String?
+  city            String?
+  province        String?
+  postalCode      String?
+  country         String   @default("Canada")
+  bio             String?
+  linkedIn        String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Business {
+  id                    String    @id @default(uuid())
+  ownerId               String    @unique
+  businessName          String
+  description           String?
+  registrationNumber    String?
+  taxNumber             String?
+  indigenousCertified   Boolean   @default(false)
+  certificationNumber   String?
+  certificationExpiry   DateTime?
+  verified              Boolean   @default(false)
+  website               String?
+  email                 String?
+  phone                 String?
+  address               String?
+  city                  String?
+  province              String?
+  postalCode            String?
+  country               String    @default("Canada")
+  logo                  String?
+  employees             Int?
+  yearEstablished       Int?
+  annualRevenue         Float?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  owner                 User      @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  categories            BusinessCategory[]
+  capabilities          Capability[]
+  portfolio             Portfolio[]
+  documents             Document[]
+  bids                  Bid[]
+  ratings               Rating[]
+}
+
+model Category {
+  id          String    @id @default(uuid())
+  name        String    @unique
+  description String?
+  parent      Category? @relation("CategoryHierarchy", fields: [parentId], references: [id])
+  parentId    String?
+  children    Category[] @relation("CategoryHierarchy")
+  businesses  BusinessCategory[]
+  rfqs        RFQCategory[]
+}
+
+model BusinessCategory {
+  businessId  String
+  categoryId  String
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@id([businessId, categoryId])
+}
+
+model Capability {
+  id          String    @id @default(uuid())
+  businessId  String
+  name        String
+  description String?
+  createdAt   DateTime  @default(now())
+  
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model Portfolio {
+  id          String    @id @default(uuid())
+  businessId  String
+  title       String
+  description String?
+  imageUrl    String?
+  projectDate DateTime?
+  value       Float?
+  createdAt   DateTime  @default(now())
+  
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+model RFQ {
+  id                    String    @id @default(uuid())
+  buyerId               String
+  title                 String
+  description           String
+  requirements          String?
+  budgetMin             Float?
+  budgetMax             Float?
+  deadline              DateTime
+  submissionDeadline    DateTime
+  indigenousPreference  Boolean   @default(false)
+  status                RFQStatus @default(OPEN)
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+  
+  buyer                 User      @relation(fields: [buyerId], references: [id])
+  categories            RFQCategory[]
+  documents             Document[]
+  bids                  Bid[]
+  questions             Question[]
+}
+
+model RFQCategory {
+  rfqId       String
+  categoryId  String
+  rfq         RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  category    Category  @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  
+  @@id([rfqId, categoryId])
+}
+
+model Bid {
+  id              String    @id @default(uuid())
+  rfqId           String
+  businessId      String
+  userId          String
+  proposal        String
+  price           Float
+  deliveryDate    DateTime
+  validUntil      DateTime
+  status          BidStatus @default(SUBMITTED)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  rfq             RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  business        Business  @relation(fields: [businessId], references: [id])
+  user            User      @relation(fields: [userId], references: [id])
+  documents       Document[]
+  messages        Message[]
+}
+
+model Question {
+  id          String    @id @default(uuid())
+  rfqId       String
+  question    String
+  answer      String?
+  askedBy     String?
+  answeredBy  String?
+  createdAt   DateTime  @default(now())
+  answeredAt  DateTime?
+  
+  rfq         RFQ       @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+}
+
+model Document {
+  id          String    @id @default(uuid())
+  name        String
+  url         String
+  type        String
+  size        Int
+  uploadedBy  String
+  createdAt   DateTime  @default(now())
+  
+  businessId  String?
+  rfqId       String?
+  bidId       String?
+  
+  business    Business? @relation(fields: [businessId], references: [id], onDelete: Cascade)
+  rfq         RFQ?      @relation(fields: [rfqId], references: [id], onDelete: Cascade)
+  bid         Bid?      @relation(fields: [bidId], references: [id], onDelete: Cascade)
+}
+
+model Message {
+  id          String    @id @default(uuid())
+  content     String
+  senderId    String
+  bidId       String?
+  read        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  
+  sender      User      @relation(fields: [senderId], references: [id])
+  bid         Bid?      @relation(fields: [bidId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id          String    @id @default(uuid())
+  userId      String
+  title       String
+  message     String
+  type        NotificationType
+  read        Boolean   @default(false)
+  createdAt   DateTime  @default(now())
+  
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Rating {
+  id          String    @id @default(uuid())
+  businessId  String
+  rating      Int
+  review      String?
+  reviewerId  String
+  createdAt   DateTime  @default(now())
+  
+  business    Business  @relation(fields: [businessId], references: [id], onDelete: Cascade)
+}
+
+enum UserRole {
+  ADMIN
+  BUYER
+  SUPPLIER
+}
+
+enum RFQStatus {
+  DRAFT
+  OPEN
+  CLOSED
+  AWARDED
+  CANCELLED
+}
+
+enum BidStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  SHORTLISTED
+  ACCEPTED
+  REJECTED
+  WITHDRAWN
+}
+
+enum NotificationType {
+  RFQ_NEW
+  RFQ_UPDATED
+  RFQ_CLOSING_SOON
+  BID_RECEIVED
+  BID_ACCEPTED
+  BID_REJECTED
+  MESSAGE_RECEIVED
+  DOCUMENT_UPLOADED
+  SYSTEM
+}

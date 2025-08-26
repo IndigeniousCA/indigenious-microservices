@@ -1,0 +1,472 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Push notification system
+model PushNotification {
+  id                    String   @id @default(uuid())
+  notificationId       String   @unique
+  
+  // Target information
+  userId               String?  // Target user ID
+  deviceToken          String?  // Device push token
+  topic                String?  // Topic/channel for broadcast
+  
+  // Notification content
+  title                String
+  body                 String   @db.Text
+  subtitle             String?
+  badge                Int?     // Badge count
+  sound                String?  // Notification sound
+  image                String?  // Rich media image URL
+  icon                 String?  // Icon URL
+  color                String?  // Accent color
+  
+  // Deep linking
+  clickAction          String?  // Deep link or action
+  data                 Json?    // Custom data payload
+  
+  // Indigenous context
+  indigenousNotification Boolean @default(false)
+  elderNotification    Boolean  @default(false) // Sent to Elder
+  ceremonyNotification Boolean  @default(false) // Ceremony-related
+  emergencyNotification Boolean @default(false) // Emergency alert
+  communityAlert       Boolean  @default(false) // Community-wide alert
+  culturallySensitive  Boolean  @default(false)
+  traditionalContent   Boolean  @default(false)
+  nation               String?  // Target nation
+  territory            String?  // Target territory
+  language             String   @default("en")
+  indigenousLanguage   String?  // Indigenous language
+  
+  // Priority and urgency
+  priority             String   @default("NORMAL") // HIGH, NORMAL, LOW, EMERGENCY
+  urgent               Boolean  @default(false)
+  elderPriority        Boolean  @default(false)
+  ceremonyUrgent       Boolean  @default(false)
+  ttl                  Int?     // Time to live in seconds
+  
+  // Delivery tracking
+  status               String   @default("PENDING") // PENDING, SENT, DELIVERED, FAILED, CLICKED
+  sentAt               DateTime?
+  deliveredAt          DateTime?
+  clickedAt            DateTime?
+  failedAt             DateTime?
+  errorMessage         String?
+  
+  // Platform information
+  platform             String?  // IOS, ANDROID, WEB, EXPO
+  provider             String?  // FCM, APNS, ONESIGNAL, EXPO
+  providerMessageId    String?
+  providerResponse     Json?
+  
+  // Retry logic
+  retryCount           Int      @default(0)
+  maxRetries           Int      @default(3)
+  nextRetryAt          DateTime?
+  
+  // Campaign tracking
+  campaignId           String?
+  segmentId            String?
+  
+  // Metadata
+  metadata             Json?
+  tags                 String[]
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  device               Device?  @relation(fields: [deviceToken], references: [token])
+  interactions         NotificationInteraction[]
+  
+  @@index([userId])
+  @@index([deviceToken])
+  @@index([status])
+  @@index([priority])
+  @@index([elderNotification])
+  @@index([ceremonyNotification])
+  @@index([emergencyNotification])
+  @@index([createdAt])
+}
+
+model Device {
+  id                    String   @id @default(uuid())
+  deviceId             String   @unique
+  token                String   @unique
+  
+  // User information
+  userId               String
+  
+  // Device information
+  platform             String   // IOS, ANDROID, WEB
+  model                String?  // Device model
+  os                   String?  // OS version
+  appVersion           String?  // App version
+  
+  // Push configuration
+  pushEnabled          Boolean  @default(true)
+  soundEnabled         Boolean  @default(true)
+  badgeEnabled         Boolean  @default(true)
+  alertEnabled         Boolean  @default(true)
+  
+  // Indigenous preferences
+  indigenousUser       Boolean  @default(false)
+  isElder              Boolean  @default(false)
+  nation               String?
+  territory            String?
+  preferredLanguage    String   @default("en")
+  indigenousLanguage   String?
+  
+  // Notification preferences
+  allowElderNotifications Boolean @default(true)
+  allowCeremonyAlerts  Boolean  @default(false)
+  allowEmergencyAlerts Boolean  @default(true)
+  allowCommunityAlerts Boolean  @default(true)
+  allowCulturalContent Boolean  @default(true)
+  
+  // Quiet hours
+  quietHoursEnabled    Boolean  @default(false)
+  quietHoursStart      String?  // HH:MM format
+  quietHoursEnd        String?  // HH:MM format
+  timeZone             String   @default("America/Toronto")
+  
+  // Status
+  active               Boolean  @default(true)
+  lastSeen             DateTime @default(now())
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  notifications        PushNotification[]
+  subscriptions        TopicSubscription[]
+  
+  @@index([userId])
+  @@index([platform])
+  @@index([isElder])
+  @@index([nation])
+}
+
+model NotificationInteraction {
+  id                    String   @id @default(uuid())
+  
+  notificationId       String
+  notification         PushNotification @relation(fields: [notificationId], references: [id])
+  
+  // Interaction details
+  interactionType      String   // DELIVERED, CLICKED, DISMISSED, ACTION
+  actionId             String?  // Custom action identifier
+  
+  // Device and user
+  deviceId             String?
+  userId               String?
+  
+  // Tracking
+  ipAddress            String?
+  userAgent            String?
+  
+  // Indigenous tracking
+  elderInteraction     Boolean  @default(false)
+  ceremonyRelated      Boolean  @default(false)
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([notificationId])
+  @@index([interactionType])
+  @@index([timestamp])
+}
+
+model NotificationTemplate {
+  id                    String   @id @default(uuid())
+  templateName         String   @unique
+  
+  // Template content
+  title                String
+  body                 String   @db.Text
+  subtitle             String?
+  
+  // Rich content
+  imageUrl             String?
+  iconUrl              String?
+  color                String?
+  sound                String?
+  
+  // Template metadata
+  category             String   // ALERT, CEREMONY, ELDER, COMMUNITY, MARKETING
+  version              String   @default("1.0")
+  
+  // Indigenous customization
+  indigenousTemplate   Boolean  @default(false)
+  elderTemplate        Boolean  @default(false)
+  ceremonyTemplate     Boolean  @default(false)
+  emergencyTemplate    Boolean  @default(false)
+  nation               String?
+  language             String   @default("en")
+  indigenousLanguage   String?
+  
+  // Cultural elements
+  traditionalGreeting  String?
+  culturalSymbols      Json?
+  respectfulTone       Boolean  @default(true)
+  
+  // Variables
+  variables            Json?
+  requiredFields       String[]
+  
+  // Approval
+  needsElderApproval   Boolean  @default(false)
+  approvedBy           String?
+  approvedAt           DateTime?
+  culturalReview       Boolean  @default(false)
+  reviewedBy           String?
+  reviewedAt           DateTime?
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model Topic {
+  id                    String   @id @default(uuid())
+  topicName            String   @unique
+  displayName          String
+  description          String?
+  
+  // Topic configuration
+  topicType            String   // PUBLIC, PRIVATE, INDIGENOUS, ELDER, CEREMONY
+  accessLevel          String   @default("PUBLIC")
+  
+  // Indigenous topics
+  indigenousTopic      Boolean  @default(false)
+  elderTopic           Boolean  @default(false)
+  ceremonyTopic        Boolean  @default(false)
+  emergencyTopic       Boolean  @default(false)
+  nation               String?
+  territory            String?
+  
+  // Settings
+  autoSubscribe        Boolean  @default(false)
+  requiresApproval     Boolean  @default(false)
+  elderModerated       Boolean  @default(false)
+  
+  // Management
+  ownerId              String
+  moderators           String[]
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  subscriptions        TopicSubscription[]
+  campaigns            NotificationCampaign[]
+}
+
+model TopicSubscription {
+  id                    String   @id @default(uuid())
+  
+  topicId              String
+  topic                Topic    @relation(fields: [topicId], references: [id])
+  
+  deviceId             String
+  device               Device   @relation(fields: [deviceId], references: [id])
+  
+  // Subscription preferences
+  subscribed           Boolean  @default(true)
+  mutedUntil           DateTime?
+  
+  // Indigenous preferences
+  ceremonyAlerts       Boolean  @default(false)
+  elderMessages        Boolean  @default(false)
+  emergencyOnly        Boolean  @default(false)
+  
+  subscribedAt         DateTime @default(now())
+  unsubscribedAt       DateTime?
+  
+  @@unique([topicId, deviceId])
+  @@index([subscribed])
+}
+
+model NotificationCampaign {
+  id                    String   @id @default(uuid())
+  campaignName         String   @unique
+  description          String?
+  
+  // Campaign content
+  templateId           String?
+  title                String
+  body                 String   @db.Text
+  imageUrl             String?
+  data                 Json?
+  
+  // Target
+  topicIds             String[]
+  userSegments         Json?
+  
+  // Indigenous campaign
+  indigenousCampaign   Boolean  @default(false)
+  elderCampaign        Boolean  @default(false)
+  ceremonyCampaign     Boolean  @default(false)
+  emergencyCampaign    Boolean  @default(false)
+  nation               String?
+  
+  // Approval
+  culturalReview       Boolean  @default(false)
+  elderApproval        Boolean  @default(false)
+  reviewedBy           String?
+  approvedBy           String?
+  reviewedAt           DateTime?
+  approvedAt           DateTime?
+  
+  // Scheduling
+  scheduledAt          DateTime?
+  sentAt               DateTime?
+  completedAt          DateTime?
+  
+  // Stats
+  targetCount          Int      @default(0)
+  sentCount            Int      @default(0)
+  deliveredCount       Int      @default(0)
+  clickedCount         Int      @default(0)
+  failedCount          Int      @default(0)
+  
+  // Indigenous metrics
+  elderRecipients      Int      @default(0)
+  elderEngagement      Float?
+  ceremonyEngagement   Float?
+  
+  // Campaign settings
+  status               String   @default("DRAFT") // DRAFT, SCHEDULED, SENDING, SENT, PAUSED, CANCELLED
+  priority             String   @default("NORMAL")
+  
+  createdBy            String
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  topics               Topic[]
+}
+
+model NotificationSchedule {
+  id                    String   @id @default(uuid())
+  
+  // Schedule configuration
+  scheduleName         String   @unique
+  scheduleType         String   // RECURRING, ONE_TIME, CEREMONY_BASED
+  cronExpression       String?  // For recurring
+  scheduledTime        DateTime? // For one-time
+  
+  // Content
+  templateId           String?
+  title                String
+  body                 String   @db.Text
+  data                 Json?
+  
+  // Target
+  topicIds             String[]
+  userSegments         Json?
+  
+  // Indigenous scheduling
+  indigenousSchedule   Boolean  @default(false)
+  ceremonyBased        Boolean  @default(false)
+  ceremonyType         String?  // Type of ceremony
+  moonPhase            String?  // For moon-based ceremonies
+  season               String?  // For seasonal ceremonies
+  elderSchedule        Boolean  @default(false)
+  
+  // Settings
+  active               Boolean  @default(true)
+  lastRun              DateTime?
+  nextRun              DateTime?
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model NotificationAnalytics {
+  id                    String   @id @default(uuid())
+  
+  // Time period
+  periodType           String   // HOURLY, DAILY, WEEKLY, MONTHLY
+  periodStart          DateTime
+  periodEnd            DateTime
+  
+  // Metrics
+  totalSent            Int      @default(0)
+  totalDelivered       Int      @default(0)
+  totalClicked         Int      @default(0)
+  totalFailed          Int      @default(0)
+  
+  // Rates
+  deliveryRate         Float    @default(0)
+  clickRate            Float    @default(0)
+  failureRate          Float    @default(0)
+  
+  // Platform breakdown
+  iosSent              Int      @default(0)
+  androidSent          Int      @default(0)
+  webSent              Int      @default(0)
+  
+  // Indigenous metrics
+  indigenousSent       Int      @default(0)
+  elderSent            Int      @default(0)
+  ceremonySent         Int      @default(0)
+  emergencySent        Int      @default(0)
+  
+  // Engagement by nation
+  nationEngagement     Json?
+  
+  // Top performing
+  topCampaigns         Json?
+  topTopics            Json?
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([periodType, periodStart])
+}
+
+model PushProvider {
+  id                    String   @id @default(uuid())
+  providerName         String   @unique
+  providerType         String   // FCM, APNS, ONESIGNAL, EXPO
+  
+  // Configuration
+  configuration        Json
+  
+  // Credentials
+  apiKey               String?
+  serverKey            String?
+  senderId             String?
+  projectId            String?
+  privateKey           String?  @db.Text
+  clientEmail          String?
+  
+  // Features
+  supportsRichMedia    Boolean  @default(true)
+  supportsBadge        Boolean  @default(true)
+  supportsSound        Boolean  @default(true)
+  supportsData         Boolean  @default(true)
+  maxPayloadSize       Int      @default(4096)
+  
+  // Indigenous compliance
+  dataResidency        String?
+  sovereigntyCompliant Boolean  @default(false)
+  elderApproved        Boolean  @default(false)
+  emergencyCapable     Boolean  @default(false)
+  
+  // Rate limits
+  dailyLimit           Int?
+  rateLimit            Int?     // Per second
+  
+  // Priority
+  priority             Int      @default(1)
+  fallbackProvider     String?
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}

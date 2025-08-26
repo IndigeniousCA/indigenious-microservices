@@ -1,0 +1,529 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// File storage system
+model File {
+  id                    String   @id @default(uuid())
+  fileId               String   @unique
+  
+  // File information
+  fileName             String
+  originalName         String
+  mimeType             String
+  size                 BigInt   // File size in bytes
+  extension            String?
+  
+  // Storage information
+  storageProvider      String   // S3, AZURE, GCS, MINIO, LOCAL
+  bucketName           String
+  objectKey            String   // Storage key/path
+  storageClass         String   @default("STANDARD") // STANDARD, GLACIER, etc.
+  region               String?  // Storage region
+  
+  // File metadata
+  width                Int?     // For images
+  height               Int?     // For images
+  duration             Int?     // For videos/audio (seconds)
+  pages                Int?     // For documents
+  metadata             Json?    // Additional metadata
+  
+  // Access URLs
+  publicUrl            String?
+  signedUrl            String?
+  thumbnailUrl         String?
+  cdnUrl               String?
+  
+  // Indigenous context
+  indigenousFile       Boolean  @default(false)
+  culturalContent      Boolean  @default(false) // Cultural significance
+  sacredContent        Boolean  @default(false) // Sacred/ceremonial content
+  elderContent         Boolean  @default(false) // Elder-specific content
+  traditionalKnowledge Boolean  @default(false) // Traditional knowledge
+  nation               String?  // Associated nation
+  territory            String?  // Territory/region
+  language             String?  // Content language
+  
+  // Permissions and access
+  accessLevel          String   @default("PRIVATE") // PUBLIC, PRIVATE, RESTRICTED, SACRED
+  ownerUserId          String
+  ownerType            String   @default("USER") // USER, ORGANIZATION, COMMUNITY
+  
+  // Data sovereignty
+  dataResidency        String   @default("canada") // Data location requirement
+  sovereigntyCompliant Boolean  @default(true)
+  encryptionStatus     String   @default("ENCRYPTED") // ENCRYPTED, UNENCRYPTED
+  encryptionKey        String?  // Encryption key reference
+  
+  // Indigenous data protection
+  elderApprovalRequired Boolean @default(false)
+  ceremonyRestricted   Boolean  @default(false) // Only during ceremonies
+  seasonalAccess       Boolean  @default(false) // Seasonal restrictions
+  moonPhaseRestricted  Boolean  @default(false) // Moon phase restrictions
+  genderRestricted     String?  // Gender-specific access
+  ageRestricted        Int?     // Minimum age requirement
+  
+  // File processing
+  processedAt          DateTime?
+  thumbnailGenerated   Boolean  @default(false)
+  virusScanStatus      String?  // PENDING, CLEAN, INFECTED
+  virusScanDate        DateTime?
+  
+  // Versioning
+  versionNumber        Int      @default(1)
+  parentFileId         String?  // Previous version
+  
+  // Lifecycle
+  retentionPeriod      Int?     // Days to retain
+  expiresAt            DateTime?
+  archivedAt           DateTime?
+  deletedAt            DateTime?
+  
+  // Tags and categories
+  tags                 String[]
+  category             String?
+  
+  // Checksums
+  md5Hash              String?
+  sha256Hash           String?
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  // Relations
+  permissions          FilePermission[]
+  shares               FileShare[]
+  downloads            FileDownload[]
+  versions             FileVersion[]
+  conversions          FileConversion[]
+  
+  @@index([ownerUserId])
+  @@index([bucketName, objectKey])
+  @@index([indigenousFile])
+  @@index([nation])
+  @@index([accessLevel])
+  @@index([createdAt])
+}
+
+model FilePermission {
+  id                    String   @id @default(uuid())
+  
+  fileId               String
+  file                 File     @relation(fields: [fileId], references: [id])
+  
+  // Permission target
+  userId               String?  // User ID
+  groupId              String?  // Group ID
+  roleId               String?  // Role ID
+  nation               String?  // Nation-wide permission
+  
+  // Permission levels
+  canRead              Boolean  @default(true)
+  canWrite             Boolean  @default(false)
+  canDelete            Boolean  @default(false)
+  canShare             Boolean  @default(false)
+  canDownload          Boolean  @default(true)
+  
+  // Indigenous permissions
+  elderPermission      Boolean  @default(false) // Elder-granted permission
+  ceremonyPermission   Boolean  @default(false) // Ceremony-specific
+  temporaryAccess      Boolean  @default(false) // Temporary permission
+  
+  // Time restrictions
+  validFrom            DateTime?
+  validUntil           DateTime?
+  
+  // Grant information
+  grantedBy            String   // User who granted permission
+  grantedAt            DateTime @default(now())
+  reason               String?  // Reason for access
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([fileId, userId])
+  @@unique([fileId, groupId])
+  @@index([userId])
+  @@index([nation])
+}
+
+model FileShare {
+  id                    String   @id @default(uuid())
+  shareId              String   @unique
+  
+  fileId               String
+  file                 File     @relation(fields: [fileId], references: [id])
+  
+  // Share details
+  sharedBy             String   // User who shared
+  sharedWith           String?  // Specific user
+  shareType            String   // LINK, EMAIL, DIRECT
+  
+  // Share link
+  shareLink            String?  @unique
+  shortLink            String?  @unique
+  password             String?  // Password protection
+  
+  // Access restrictions
+  maxDownloads         Int?     // Download limit
+  downloadCount        Int      @default(0)
+  expiresAt            DateTime?
+  
+  // Indigenous sharing
+  indigenousShare      Boolean  @default(false)
+  nationShare          Boolean  @default(false) // Shared with nation
+  ceremonyShare        Boolean  @default(false) // Ceremony participants
+  elderShare           Boolean  @default(false) // Shared with Elders
+  
+  // Tracking
+  viewCount            Int      @default(0)
+  lastViewedAt         DateTime?
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([shareLink])
+  @@index([sharedBy])
+  @@index([expiresAt])
+}
+
+model FileDownload {
+  id                    String   @id @default(uuid())
+  
+  fileId               String
+  file                 File     @relation(fields: [fileId], references: [id])
+  
+  // Download information
+  downloadedBy         String   // User ID
+  downloadedAt         DateTime @default(now())
+  
+  // Context
+  ipAddress            String?
+  userAgent            String?
+  location             Json?    // Geographic location
+  
+  // Indigenous tracking
+  indigenousDownload   Boolean  @default(false)
+  elderDownload        Boolean  @default(false)
+  ceremonyContext      Boolean  @default(false)
+  
+  // Download details
+  bytesDownloaded      BigInt
+  downloadTime         Int?     // Duration in milliseconds
+  resumedDownload      Boolean  @default(false)
+  
+  @@index([fileId])
+  @@index([downloadedBy])
+  @@index([downloadedAt])
+}
+
+model FileVersion {
+  id                    String   @id @default(uuid())
+  
+  fileId               String
+  file                 File     @relation(fields: [fileId], references: [id])
+  
+  // Version details
+  versionNumber        Int
+  versionLabel         String?  // v1.0, draft, final, etc.
+  
+  // Version metadata
+  fileName             String
+  size                 BigInt
+  md5Hash              String?
+  
+  // Storage
+  objectKey            String
+  storageProvider      String
+  
+  // Changes
+  changeDescription    String?  @db.Text
+  changedBy            String
+  
+  // Indigenous versioning
+  elderApproved        Boolean  @default(false)
+  ceremonyVersion      Boolean  @default(false) // Ceremony-specific version
+  seasonalVersion      Boolean  @default(false) // Seasonal version
+  
+  createdAt            DateTime @default(now())
+  
+  @@unique([fileId, versionNumber])
+  @@index([fileId])
+}
+
+model FileConversion {
+  id                    String   @id @default(uuid())
+  
+  fileId               String
+  file                 File     @relation(fields: [fileId], references: [id])
+  
+  // Conversion details
+  conversionType       String   // THUMBNAIL, PREVIEW, FORMAT, COMPRESS
+  targetFormat         String   // Target format/type
+  
+  // Output
+  outputFileId         String?  // Converted file ID
+  outputUrl            String?
+  outputSize           BigInt?
+  
+  // Status
+  status               String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  progress             Int      @default(0) // Percentage
+  error                String?
+  
+  // Quality settings
+  quality              Int?     // Quality percentage
+  resolution           String?  // For images/videos
+  bitrate              String?  // For audio/video
+  
+  startedAt            DateTime?
+  completedAt          DateTime?
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([fileId])
+  @@index([status])
+}
+
+model Folder {
+  id                    String   @id @default(uuid())
+  folderId             String   @unique
+  
+  // Folder information
+  folderName           String
+  folderPath           String   // Full path
+  parentFolderId       String?  // Parent folder
+  
+  // Owner
+  ownerUserId          String
+  ownerType            String   @default("USER")
+  
+  // Indigenous organization
+  indigenousFolder     Boolean  @default(false)
+  nationFolder         Boolean  @default(false) // Nation-specific
+  ceremonyFolder       Boolean  @default(false) // Ceremony materials
+  elderFolder          Boolean  @default(false) // Elder materials
+  sacredFolder         Boolean  @default(false) // Sacred content
+  nation               String?
+  
+  // Access control
+  accessLevel          String   @default("PRIVATE")
+  inheritPermissions   Boolean  @default(true)
+  
+  // Metadata
+  description          String?
+  color                String?  // Folder color
+  icon                 String?  // Folder icon
+  
+  // Statistics
+  fileCount            Int      @default(0)
+  totalSize            BigInt   @default(0)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@unique([folderPath, ownerUserId])
+  @@index([parentFolderId])
+  @@index([ownerUserId])
+  @@index([nation])
+}
+
+model StorageQuota {
+  id                    String   @id @default(uuid())
+  
+  // Quota target
+  userId               String?  @unique
+  organizationId       String?  @unique
+  nation               String?  @unique
+  
+  // Quota limits (in bytes)
+  totalQuota           BigInt   @default(10737418240) // 10GB default
+  usedSpace            BigInt   @default(0)
+  
+  // File limits
+  maxFileSize          BigInt   @default(104857600) // 100MB default
+  maxFiles             Int?     // Maximum number of files
+  currentFiles         Int      @default(0)
+  
+  // Indigenous quotas
+  ceremonyQuota        BigInt?  // Ceremony content quota
+  elderQuota           BigInt?  // Elder content quota
+  sacredQuota          BigInt?  // Sacred content quota
+  
+  // Warnings
+  warningThreshold     Int      @default(80) // Percentage
+  warningsSent         DateTime[]
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model StorageProvider {
+  id                    String   @id @default(uuid())
+  providerName         String   @unique
+  providerType         String   // S3, AZURE, GCS, MINIO, LOCAL
+  
+  // Configuration
+  configuration        Json     // Provider-specific config
+  
+  // Credentials
+  accessKeyId          String?
+  secretAccessKey      String?
+  endpoint             String?
+  region               String?
+  
+  // Features
+  supportsVersioning   Boolean  @default(false)
+  supportsEncryption   Boolean  @default(true)
+  supportsCDN          Boolean  @default(false)
+  supportsLifecycle    Boolean  @default(false)
+  
+  // Indigenous compliance
+  dataResidency        String   // Country/region
+  sovereigntyCompliant Boolean  @default(false)
+  indigenousOwned      Boolean  @default(false) // Indigenous-owned infrastructure
+  
+  // Performance
+  uploadBandwidth      BigInt?  // Bytes per second
+  downloadBandwidth    BigInt?  // Bytes per second
+  
+  // Costs
+  storageCostPerGB     Float?   // Monthly cost
+  transferCostPerGB    Float?   // Transfer cost
+  
+  // Priority
+  priority             Int      @default(1)
+  isDefault            Boolean  @default(false)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model BackupJob {
+  id                    String   @id @default(uuid())
+  jobId                String   @unique
+  
+  // Backup configuration
+  jobName              String
+  backupType           String   // FULL, INCREMENTAL, DIFFERENTIAL
+  
+  // Source
+  sourceProvider       String
+  sourceBucket         String
+  sourcePath           String?
+  
+  // Destination
+  destinationProvider  String
+  destinationBucket    String
+  destinationPath      String?
+  
+  // Schedule
+  schedule             String?  // Cron expression
+  lastRunAt            DateTime?
+  nextRunAt            DateTime?
+  
+  // Indigenous backup
+  indigenousBackup     Boolean  @default(false)
+  ceremonyBackup       Boolean  @default(false) // Ceremony recordings
+  elderBackup          Boolean  @default(false) // Elder materials
+  
+  // Encryption
+  encryptBackup        Boolean  @default(true)
+  encryptionKey        String?
+  
+  // Retention
+  retentionDays        Int      @default(30)
+  
+  // Status
+  status               String   @default("SCHEDULED") // SCHEDULED, RUNNING, COMPLETED, FAILED
+  progress             Int      @default(0)
+  filesBackedUp        Int      @default(0)
+  bytesBackedUp        BigInt   @default(0)
+  
+  // Errors
+  lastError            String?
+  errorCount           Int      @default(0)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([status])
+  @@index([nextRunAt])
+}
+
+model FileAudit {
+  id                    String   @id @default(uuid())
+  
+  // Audit target
+  fileId               String?
+  folderId             String?
+  
+  // Action
+  action               String   // UPLOAD, DOWNLOAD, VIEW, EDIT, DELETE, SHARE
+  actionDetails        Json?    // Additional action details
+  
+  // User
+  userId               String
+  userName             String?
+  userRole             String?
+  
+  // Context
+  ipAddress            String?
+  userAgent            String?
+  location             Json?
+  
+  // Indigenous tracking
+  indigenousAction     Boolean  @default(false)
+  elderAction          Boolean  @default(false)
+  ceremonyContext      Boolean  @default(false)
+  
+  // Result
+  success              Boolean  @default(true)
+  errorMessage         String?
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([fileId])
+  @@index([userId])
+  @@index([action])
+  @@index([timestamp])
+}
+
+model DataSovereigntyRule {
+  id                    String   @id @default(uuid())
+  ruleName             String   @unique
+  
+  // Rule configuration
+  ruleType             String   // RESIDENCY, ACCESS, RETENTION, ENCRYPTION
+  priority             Int      @default(1)
+  
+  // Conditions
+  nations              String[] // Applicable nations
+  territories          String[] // Applicable territories
+  fileTypes            String[] // Applicable file types
+  
+  // Requirements
+  requiredResidency    String[] // Required data locations
+  prohibitedLocations  String[] // Prohibited locations
+  requiredEncryption   Boolean  @default(true)
+  
+  // Access control
+  requiresElderApproval Boolean @default(false)
+  ceremonyRestriction  Boolean  @default(false)
+  seasonalRestriction  Json?    // Seasonal access rules
+  
+  // Enforcement
+  enforcement          String   @default("STRICT") // STRICT, MODERATE, ADVISORY
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}

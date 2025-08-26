@@ -1,0 +1,1098 @@
+openapi: 3.0.3
+info:
+  title: Indigenous Verification Badge System API
+  description: |
+    Secure API for managing Indigenous business verification badges with 
+    cryptographic identity, ethical campaign management, and legal compliance.
+    
+    ## Security Features
+    - Enterprise-grade authentication and authorization
+    - Comprehensive input validation and sanitization
+    - Rate limiting and DoS protection
+    - Audit logging and compliance tracking
+    - Privacy protection and data retention policies
+    
+    ## Ethical Standards
+    All campaign and PR operations follow strict ethical guidelines:
+    - Explicit consent required for all communications
+    - Transparent disclosure of sources and intent
+    - Prohibition of manipulative or coercive tactics
+    - Cultural sensitivity for Indigenous communities
+    
+  version: 1.0.0
+  contact:
+    name: Technical Team
+    email: tech@indigenious.ca
+  license:
+    name: MIT
+    url: https://opensource.org/licenses/MIT
+
+servers:
+  - url: https://api.indigenious.ca/v1
+    description: Production server
+  - url: https://staging-api.indigenious.ca/v1
+    description: Staging server
+  - url: http://localhost:3000/api
+    description: Development server
+
+security:
+  - BearerAuth: []
+
+paths:
+  /badges/quiz:
+    get:
+      summary: Get spirit animal quiz questions
+      description: Retrieve quiz questions for spirit animal determination
+      tags: [Quiz]
+      security: []
+      responses:
+        '200':
+          description: Quiz questions retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  questions:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/QuizQuestion'
+                  totalQuestions:
+                    type: integer
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+        '500':
+          $ref: '#/components/responses/InternalError'
+    
+    post:
+      summary: Submit quiz answers
+      description: |
+        Submit quiz answers to determine spirit animal and business alignment.
+        Supports optional email capture for follow-up communications.
+      tags: [Quiz]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [answers]
+              properties:
+                answers:
+                  type: object
+                  additionalProperties:
+                    type: string
+                    maxLength: 50
+                email:
+                  type: string
+                  format: email
+                  description: Optional email for follow-up
+                businessId:
+                  type: string
+                  format: uuid
+                  description: Link quiz to business (requires authentication)
+      responses:
+        '200':
+          description: Quiz completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  result:
+                    $ref: '#/components/schemas/QuizResult'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /badges:
+    get:
+      summary: List verification badges
+      description: |
+        Retrieve a list of verification badges with filtering options.
+        Results are paginated and include business information.
+      tags: [Badges]
+      parameters:
+        - name: businessId
+          in: query
+          schema:
+            type: string
+            format: uuid
+          description: Filter by business ID (requires business access)
+        - name: animalSpirit
+          in: query
+          schema:
+            $ref: '#/components/schemas/AnimalSpirit'
+          description: Filter by spirit animal
+        - name: evolutionStage
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 4
+          description: Filter by evolution stage
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [ACTIVE, SUSPENDED, REVOKED]
+            default: ACTIVE
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+            default: 20
+      responses:
+        '200':
+          description: Badges retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  badges:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Badge'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+    
+    post:
+      summary: Create verification badge
+      description: |
+        Create a new verification badge for an eligible Indigenous business.
+        Requires business ownership or admin privileges.
+      tags: [Badges]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [businessId]
+              properties:
+                businessId:
+                  type: string
+                  format: uuid
+                  description: ID of the business to create badge for
+                metadata:
+                  type: object
+                  properties:
+                    reason:
+                      type: string
+                      maxLength: 500
+                      description: Reason for badge creation
+                    notes:
+                      type: string
+                      maxLength: 1000
+                      description: Additional notes
+      responses:
+        '200':
+          description: Badge created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  badge:
+                    $ref: '#/components/schemas/CreatedBadge'
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /badges/verify:
+    post:
+      summary: Verify badge authenticity
+      description: |
+        Verify the cryptographic authenticity of a verification badge.
+        This endpoint is public and does not require authentication.
+      tags: [Badges]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [publicKey, temporalProof, blockchainAnchor]
+              properties:
+                publicKey:
+                  type: string
+                  pattern: '^0x[a-fA-F0-9]{64}$'
+                  description: Badge public key (64-char hex)
+                temporalProof:
+                  type: string
+                  minLength: 100
+                  maxLength: 5000
+                  description: Temporal proof of badge validity
+                blockchainAnchor:
+                  type: string
+                  pattern: '^0x[a-fA-F0-9]{64}$'
+                  description: Blockchain anchor hash
+      responses:
+        '200':
+          description: Badge verification completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  isValid:
+                    type: boolean
+                  badge:
+                    $ref: '#/components/schemas/VerifiedBadge'
+                  verificationDetails:
+                    type: object
+                    properties:
+                      verifiedAt:
+                        type: string
+                        format: date-time
+                      cryptographicValid:
+                        type: boolean
+                      blockchainAnchored:
+                        type: boolean
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '429':
+          $ref: '#/components/responses/RateLimitError'
+
+  /badges/campaigns:
+    get:
+      summary: List ethical marketing campaigns
+      description: |
+        Retrieve marketing campaigns with ethical standards compliance.
+        Only authorized marketing personnel can access.
+      tags: [Campaigns]
+      parameters:
+        - name: timeframe
+          in: query
+          schema:
+            type: string
+            enum: [7d, 30d, 90d]
+            default: 7d
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [awareness, education, community, milestone, all]
+            default: all
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, completed, paused, all]
+            default: all
+      responses:
+        '200':
+          description: Campaign analytics retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  analytics:
+                    $ref: '#/components/schemas/CampaignAnalytics'
+                  compliance:
+                    $ref: '#/components/schemas/ComplianceInfo'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    
+    post:
+      summary: Create ethical marketing campaign
+      description: |
+        Create a new marketing campaign following ethical guidelines.
+        Requires legal review and compliance certification.
+      tags: [Campaigns]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CampaignCreation'
+      responses:
+        '200':
+          description: Campaign created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  campaign:
+                    $ref: '#/components/schemas/Campaign'
+                  message:
+                    type: string
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/SecurityError'
+
+  /badges/traps:
+    get:
+      summary: List trap businesses (Restricted)
+      description: |
+        List trap businesses for fraud detection. Requires legal team access.
+        All operations are logged for compliance and audit purposes.
+      tags: [Security]
+      security:
+        - BearerAuth: [legal_team, admin, security_officer]
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [active, inactive, expired, all]
+            default: active
+        - name: type
+          in: query
+          schema:
+            type: string
+            enum: [honeypot, timebomb, tracker, all]
+            default: all
+        - name: page
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 50
+            default: 20
+      responses:
+        '200':
+          description: Trap businesses retrieved
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  traps:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/TrapBusiness'
+                  pagination:
+                    $ref: '#/components/schemas/Pagination'
+                  compliance:
+                    $ref: '#/components/schemas/LegalCompliance'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/ForbiddenError'
+    
+    post:
+      summary: Create trap business (Legal Required)
+      description: |
+        Create a new trap business for fraud detection. Requires legal review ID
+        and strict compliance with data retention policies.
+      tags: [Security]
+      security:
+        - BearerAuth: [legal_team, admin, security_officer]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/TrapCreation'
+      responses:
+        '200':
+          description: Trap business created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  trapBusiness:
+                    $ref: '#/components/schemas/TrapBusiness'
+                  warnings:
+                    type: array
+                    items:
+                      type: string
+                  compliance:
+                    $ref: '#/components/schemas/LegalCompliance'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/UnauthorizedError'
+        '403':
+          $ref: '#/components/responses/SecurityError'
+
+  /badges/traps/detect:
+    post:
+      summary: Record detection event (Public)
+      description: |
+        Record a potential trap detection event. Returns generic response
+        to avoid revealing detection status. Used by honeypot systems.
+      tags: [Security]
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [businessData, source]
+              properties:
+                businessData:
+                  type: object
+                  properties:
+                    name:
+                      type: string
+                      maxLength: 200
+                    phone:
+                      type: string
+                      maxLength: 50
+                    email:
+                      type: string
+                      format: email
+                    website:
+                      type: string
+                      format: uri
+                    businessNumber:
+                      type: string
+                      maxLength: 50
+                    indigenousClaim:
+                      type: boolean
+                source:
+                  type: string
+                  maxLength: 100
+                  description: Source of the detection (e.g., 'registration_form')
+                metadata:
+                  type: object
+                  properties:
+                    timestamp:
+                      type: string
+                      format: date-time
+                    detectionType:
+                      type: string
+                      enum: [registration, claim, copy, inquiry]
+      responses:
+        '200':
+          description: Data processed (always returns same response)
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: processed
+                  message:
+                    type: string
+                    example: Business data received
+                  timestamp:
+                    type: string
+                    format: date-time
+    
+    get:
+      summary: Admin trap status check
+      description: |
+        Check if business identifiers match known traps. Requires admin access
+        and is logged for audit purposes.
+      tags: [Security]
+      security:
+        - BearerAuth: [legal_team, admin, security_officer]
+      parameters:
+        - name: businessId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - name: phone
+          in: query
+          schema:
+            type: string
+            maxLength: 50
+        - name: email
+          in: query
+          schema:
+            type: string
+            format: email
+        - name: website
+          in: query
+          schema:
+            type: string
+            format: uri
+        - name: businessNumber
+          in: query
+          schema:
+            type: string
+            maxLength: 50
+      responses:
+        '200':
+          description: Trap status check completed
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                  result:
+                    type: object
+                    properties:
+                      isTrap:
+                        type: boolean
+                      confidence:
+                        type: number
+                        minimum: 0
+                        maximum: 1
+                      checkType:
+                        type: string
+                        example: administrative
+                      checkedBy:
+                        type: string
+                      timestamp:
+                        type: string
+                        format: date-time
+                  compliance:
+                    $ref: '#/components/schemas/DataProtection'
+
+components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  schemas:
+    AnimalSpirit:
+      type: string
+      enum: [BEAVER, EAGLE, FOX, WOLF, BEAR, TURTLE, OTTER, WOLVERINE, MARTEN, RAVEN]
+      description: |
+        Spirit animals representing different business characteristics:
+        - BEAVER: Builders and creators
+        - EAGLE: Visionaries and leaders  
+        - FOX: Adaptable and clever
+        - WOLF: Collaborative and loyal
+        - BEAR: Strong and protective
+        - TURTLE: Wise and patient
+        - OTTER: Playful and social
+        - WOLVERINE: Fierce and determined
+        - MARTEN: Agile and resourceful
+        - RAVEN: Transformative and innovative
+
+    QuizQuestion:
+      type: object
+      properties:
+        id:
+          type: string
+        question:
+          type: string
+        answers:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              text:
+                type: string
+
+    QuizResult:
+      type: object
+      properties:
+        primarySpirit:
+          $ref: '#/components/schemas/AnimalSpirit'
+        narrative:
+          type: string
+          description: Personalized narrative about the spirit animal
+        businessAlignment:
+          type: string
+          description: How the spirit aligns with business practices
+        growthPath:
+          type: string
+          description: Recommended growth strategies
+        traits:
+          type: array
+          items:
+            type: string
+        quizId:
+          type: string
+        shareData:
+          type: object
+          properties:
+            text:
+              type: string
+            hashtags:
+              type: array
+              items:
+                type: string
+
+    Badge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        businessId:
+          type: string
+          format: uuid
+        businessName:
+          type: string
+        businessNation:
+          type: string
+        animalSpirit:
+          $ref: '#/components/schemas/AnimalSpirit'
+        evolutionStage:
+          type: integer
+          minimum: 1
+          maximum: 4
+        status:
+          type: string
+          enum: [ACTIVE, SUSPENDED, REVOKED]
+        issuedAt:
+          type: string
+          format: date-time
+        lastVerified:
+          type: string
+          format: date-time
+        publicKey:
+          type: string
+          description: Only included for authenticated users
+        blockchainAnchor:
+          type: string
+          description: Only included for authenticated users
+
+    CreatedBadge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        businessId:
+          type: string
+          format: uuid
+        identity:
+          type: object
+          properties:
+            publicKey:
+              type: string
+            blockchainAnchor:
+              type: string
+        visual:
+          type: object
+          properties:
+            animal:
+              $ref: '#/components/schemas/AnimalSpirit'
+            stage:
+              type: integer
+            colors:
+              type: object
+            animations:
+              type: object
+        status:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+
+    VerifiedBadge:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        animalSpirit:
+          $ref: '#/components/schemas/AnimalSpirit'
+        evolutionStage:
+          type: integer
+        businessName:
+          type: string
+        nation:
+          type: string
+        issuedAt:
+          type: string
+          format: date-time
+        lastVerified:
+          type: string
+          format: date-time
+
+    CampaignCreation:
+      type: object
+      required: [name, description, type, targetAudience, content, settings, compliance]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 100
+        description:
+          type: string
+          minLength: 1
+          maxLength: 500
+        type:
+          type: string
+          enum: [awareness, education, community, milestone]
+        targetAudience:
+          type: string
+          enum: [general, businesses, government, indigenous_communities]
+        content:
+          type: object
+          required: [subject, message, callToAction]
+          properties:
+            subject:
+              type: string
+              maxLength: 100
+            message:
+              type: string
+              maxLength: 2000
+            callToAction:
+              type: string
+              maxLength: 200
+            attachments:
+              type: array
+              maxItems: 5
+              items:
+                type: string
+                format: uri
+        settings:
+          type: object
+          required: [startDate, endDate, budget, channels, requiresConsent]
+          properties:
+            startDate:
+              type: string
+              format: date-time
+            endDate:
+              type: string
+              format: date-time
+            budget:
+              type: number
+              minimum: 0
+              maximum: 25000
+            channels:
+              type: array
+              minItems: 1
+              items:
+                type: string
+                enum: [email, website, social_media, newsletter]
+            requiresConsent:
+              type: boolean
+              enum: [true]
+              description: Must be true - consent is required
+            autoApproval:
+              type: boolean
+              default: false
+        compliance:
+          type: object
+          required: [legalReview, privacyCompliant, accessibilityReviewed]
+          properties:
+            legalReview:
+              type: boolean
+              description: Legal team has reviewed campaign
+            privacyCompliant:
+              type: boolean
+              description: Campaign follows privacy laws
+            accessibilityReviewed:
+              type: boolean
+              description: Content is accessible
+            culturallyAppropriate:
+              type: boolean
+              description: Required for Indigenous community campaigns
+
+    Campaign:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        type:
+          type: string
+        status:
+          type: string
+          enum: [PENDING_APPROVAL, ACTIVE, PAUSED, COMPLETED, CANCELLED]
+        createdAt:
+          type: string
+          format: date-time
+
+    CampaignAnalytics:
+      type: object
+      properties:
+        summary:
+          type: object
+          properties:
+            totalCampaigns:
+              type: integer
+            activeCampaigns:
+              type: integer
+            totalInteractions:
+              type: integer
+            totalConversions:
+              type: integer
+            conversionRate:
+              type: string
+        campaigns:
+          type: array
+          items:
+            type: object
+            properties:
+              id:
+                type: string
+              name:
+                type: string
+              type:
+                type: string
+              status:
+                type: string
+              interactions:
+                type: integer
+              conversions:
+                type: integer
+        ethicalCompliance:
+          type: object
+          properties:
+            consentRate:
+              type: number
+              example: 100
+            transparencyScore:
+              type: number
+              example: 100
+            ethicalReviewPassed:
+              type: integer
+
+    TrapCreation:
+      type: object
+      required: [trapType, targetIndustry, metadata]
+      properties:
+        trapType:
+          type: string
+          enum: [honeypot, timebomb, tracker]
+        targetIndustry:
+          type: string
+          minLength: 1
+          maxLength: 100
+        metadata:
+          type: object
+          required: [purpose, authorizedBy, legalReviewId, expiresAt]
+          properties:
+            purpose:
+              type: string
+              minLength: 10
+              maxLength: 500
+              description: Legitimate purpose for trap creation
+            authorizedBy:
+              type: string
+              format: email
+              description: Email of authorizing user
+            legalReviewId:
+              type: string
+              minLength: 1
+              maxLength: 50
+              description: Legal review case ID
+            expiresAt:
+              type: string
+              format: date-time
+              description: Automatic expiration date (max 90 days)
+
+    TrapBusiness:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        businessName:
+          type: string
+        trapType:
+          type: string
+        status:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+        compliance:
+          type: string
+          example: "This is a controlled security measure for fraud prevention."
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+        pages:
+          type: integer
+        hasMore:
+          type: boolean
+
+    ComplianceInfo:
+      type: object
+      properties:
+        ethicalStandards:
+          type: string
+          example: "All campaigns follow ethical marketing standards"
+        consentBased:
+          type: string
+          example: "Explicit consent required for all communications"
+        transparencyRequired:
+          type: string
+          example: "Full disclosure of campaign sources and intent"
+
+    LegalCompliance:
+      type: object
+      properties:
+        accessLevel:
+          type: string
+        dataRetention:
+          type: string
+          example: "90 days for trap data, 7 years for evidence"
+        privacyNotice:
+          type: string
+          example: "Personal data is hashed for privacy protection"
+
+    DataProtection:
+      type: object
+      properties:
+        accessLevel:
+          type: string
+        dataProtection:
+          type: string
+          example: "Business identifiers are processed securely"
+        auditTrail:
+          type: string
+          example: "All checks are logged for compliance"
+
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        code:
+          type: string
+        details:
+          type: array
+          items:
+            type: object
+
+  responses:
+    ValidationError:
+      description: Invalid input data
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  code:
+                    example: VALIDATION_ERROR
+
+    UnauthorizedError:
+      description: Authentication required
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  code:
+                    example: AUTH_REQUIRED
+
+    ForbiddenError:
+      description: Insufficient permissions
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  code:
+                    example: INSUFFICIENT_PERMISSIONS
+
+    SecurityError:
+      description: Security policy violation
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  code:
+                    example: SECURITY_VIOLATION
+
+    RateLimitError:
+      description: Rate limit exceeded
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  code:
+                    example: RATE_LIMIT_EXCEEDED
+
+    InternalError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            allOf:
+              - $ref: '#/components/schemas/Error'
+              - type: object
+                properties:
+                  code:
+                    example: INTERNAL_ERROR
+
+tags:
+  - name: Quiz
+    description: Spirit animal quiz system for viral onboarding
+  - name: Badges
+    description: Cryptographic verification badge management
+  - name: Campaigns
+    description: Ethical marketing campaign management
+  - name: Security
+    description: Fraud detection and security operations

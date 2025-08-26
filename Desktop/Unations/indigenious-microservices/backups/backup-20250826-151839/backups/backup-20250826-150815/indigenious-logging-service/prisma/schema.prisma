@@ -1,0 +1,378 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Centralized logging system
+model LogEntry {
+  id                    String   @id @default(uuid())
+  
+  // Basic log information
+  level                String   // FATAL, ERROR, WARN, INFO, DEBUG, TRACE
+  message              String   @db.Text
+  timestamp            DateTime @default(now())
+  
+  // Source information
+  service              String   // Originating service
+  component            String?  // Specific component within service
+  function             String?  // Function or method name
+  filename             String?  // Source file
+  lineNumber           Int?     // Line number in source
+  
+  // Request context
+  requestId            String?  // Unique request identifier
+  sessionId            String?  // User session ID
+  userId               String?  // User making the request
+  correlationId        String?  // Correlation across services
+  traceId              String?  // Distributed tracing ID
+  spanId               String?  // Span ID within trace
+  
+  // Request details
+  method               String?  // HTTP method
+  url                  String?  // Request URL
+  userAgent            String?  // User agent string
+  ipAddress            String?  // Client IP address
+  geoLocation          Json?    // Geographic location data
+  
+  // Response information
+  statusCode           Int?     // HTTP status code
+  responseTime         Int?     // Response time in milliseconds
+  
+  // Error information
+  error                String?  @db.Text // Error message
+  errorCode            String?  // Error code
+  stackTrace           String?  @db.Text // Stack trace
+  errorDetails         Json?    // Additional error context
+  
+  // Indigenous context
+  indigenousUser       Boolean  @default(false) // User is Indigenous
+  nation               String?  // Indigenous nation
+  territory            String?  // Territory/region
+  ceremonialContext    Boolean  @default(false) // During ceremony
+  elderActivity        Boolean  @default(false) // Elder-related activity
+  communityAction      Boolean  @default(false) // Community-wide action
+  culturalSensitive    Boolean  @default(false) // Culturally sensitive content
+  traditionalKnowledge Boolean  @default(false) // Traditional knowledge access
+  
+  // Data sovereignty
+  dataClassification   String   @default("PUBLIC") // PUBLIC, INTERNAL, CONFIDENTIAL, RESTRICTED
+  indigenousData       Boolean  @default(false) // Contains Indigenous data
+  dataLocation         String?  // Geographic data location
+  sovereigntyRules     Json?    // Data sovereignty rules applied
+  
+  // Performance metrics
+  cpuUsage             Float?   // CPU usage at log time
+  memoryUsage          Float?   // Memory usage
+  diskUsage            Float?   // Disk usage
+  networkLatency       Float?   // Network latency
+  
+  // Business context
+  businessEvent        String?  // Business event type
+  workflowStep         String?  // Workflow step
+  processId            String?  // Business process ID
+  
+  // Technical metadata
+  hostname             String?  // Server hostname
+  environment          String   @default("production") // dev, staging, production
+  version              String?  // Application version
+  buildNumber          String?  // Build number
+  
+  // Structured data
+  metadata             Json?    // Additional structured data
+  tags                 String[] // Searchable tags
+  labels               Json?    // Key-value labels
+  
+  // Processing information
+  processed            Boolean  @default(false) // Has been processed
+  indexed              Boolean  @default(false) // Has been indexed
+  archived             Boolean  @default(false) // Has been archived
+  
+  // Retention
+  retentionPeriod      Int?     // Days to retain
+  purgeDate            DateTime? // Date to purge
+  
+  // Aggregation
+  aggregationKey       String?  // Key for log aggregation
+  count                Int      @default(1) // Aggregated count
+  
+  createdAt            DateTime @default(now())
+  
+  // Relations
+  alerts               LogAlert[]
+  aggregations         LogAggregation[]
+  
+  @@index([timestamp])
+  @@index([level])
+  @@index([service])
+  @@index([userId])
+  @@index([requestId])
+  @@index([traceId])
+  @@index([correlationId])
+  @@index([indigenousUser])
+  @@index([ceremonialContext])
+  @@index([elderActivity])
+  @@index([environment])
+  @@index([processed])
+  @@index([aggregationKey])
+}
+
+model LogAggregation {
+  id                    String   @id @default(uuid())
+  
+  // Aggregation details
+  aggregationType      String   // HOURLY, DAILY, WEEKLY, MONTHLY
+  aggregationKey       String   // Grouping key
+  periodStart          DateTime
+  periodEnd            DateTime
+  
+  // Metrics
+  totalLogs            Int      @default(0)
+  errorCount           Int      @default(0)
+  warningCount         Int      @default(0)
+  infoCount            Int      @default(0)
+  debugCount           Int      @default(0)
+  
+  // Performance aggregates
+  avgResponseTime      Float?
+  maxResponseTime      Float?
+  minResponseTime      Float?
+  totalRequests        Int      @default(0)
+  
+  // Error rate
+  errorRate            Float    @default(0) // Percentage
+  
+  // Indigenous metrics
+  indigenousLogs       Int      @default(0)
+  ceremonyLogs         Int      @default(0)
+  elderLogs            Int      @default(0)
+  communityLogs        Int      @default(0)
+  
+  // Service breakdown
+  serviceBreakdown     Json?    // Service-wise counts
+  
+  // Geographic breakdown
+  geoBreakdown         Json?    // Geographic distribution
+  
+  // Popular endpoints
+  topEndpoints         Json?    // Most accessed endpoints
+  
+  // Error patterns
+  topErrors            Json?    // Most common errors
+  
+  createdAt            DateTime @default(now())
+  
+  logEntries           LogEntry[]
+  
+  @@index([aggregationType, periodStart])
+  @@index([aggregationKey])
+  @@unique([aggregationType, aggregationKey, periodStart])
+}
+
+model LogAlert {
+  id                    String   @id @default(uuid())
+  
+  logEntryId           String
+  logEntry             LogEntry @relation(fields: [logEntryId], references: [id])
+  
+  // Alert details
+  alertType            String   // ERROR_SPIKE, PERFORMANCE_DEGRADATION, SECURITY_BREACH
+  severity             String   // CRITICAL, HIGH, MEDIUM, LOW
+  alertName            String
+  description          String   @db.Text
+  
+  // Threshold information
+  threshold            Float?
+  actualValue          Float?
+  
+  // Indigenous priority
+  indigenousAlert      Boolean  @default(false)
+  ceremonyImpact       Boolean  @default(false)
+  elderNotification    Boolean  @default(false)
+  communityAlert       Boolean  @default(false)
+  
+  // Response
+  acknowledged         Boolean  @default(false)
+  acknowledgedBy       String?
+  acknowledgedAt       DateTime?
+  resolved             Boolean  @default(false)
+  resolvedBy           String?
+  resolvedAt           DateTime?
+  
+  // Notification
+  notificationsSent    String[] // Channels notified
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([alertType])
+  @@index([severity])
+  @@index([createdAt])
+}
+
+model LogRetentionPolicy {
+  id                    String   @id @default(uuid())
+  
+  // Policy details
+  policyName           String   @unique
+  description          String?
+  
+  // Selection criteria
+  logLevel             String[] // Which log levels
+  services             String[] // Which services
+  environment          String[] // Which environments
+  
+  // Indigenous data handling
+  indigenousData       Boolean  @default(false) // Applies to Indigenous data
+  culturalSensitive    Boolean  @default(false) // Culturally sensitive logs
+  elderData            Boolean  @default(false) // Elder-related logs
+  ceremonyData         Boolean  @default(false) // Ceremony logs
+  
+  // Retention settings
+  retentionDays        Int      // Days to retain
+  archiveAfterDays     Int?     // Days before archiving
+  compressionEnabled   Boolean  @default(true)
+  
+  // Data sovereignty compliance
+  sovereigntyCompliant Boolean  @default(true)
+  dataLocation         String?  // Required data location
+  accessRestrictions   Json?    // Access restrictions
+  
+  // Processing
+  anonymizeAfterDays   Int?     // Days before anonymization
+  aggregateOnly        Boolean  @default(false) // Only keep aggregated data
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model LogQuery {
+  id                    String   @id @default(uuid())
+  
+  // Query details
+  queryName            String
+  description          String?
+  queryText            String   @db.Text // Actual query
+  queryType            String   // SEARCH, AGGREGATE, DASHBOARD
+  
+  // User information
+  userId               String
+  userName             String
+  userRole             String?
+  
+  // Query parameters
+  parameters           Json?    // Query parameters
+  
+  // Performance
+  executionTime        Int?     // Milliseconds
+  resultCount          Int?     // Number of results
+  
+  // Indigenous context
+  indigenousQuery      Boolean  @default(false) // Query for Indigenous data
+  dataAccess           String[] // Types of data accessed
+  
+  // Usage tracking
+  executionCount       Int      @default(1)
+  lastExecuted         DateTime @default(now())
+  
+  // Sharing
+  shared               Boolean  @default(false)
+  sharedWith           String[] // User IDs with access
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([userId])
+  @@index([queryType])
+  @@index([lastExecuted])
+}
+
+model LogDashboard {
+  id                    String   @id @default(uuid())
+  
+  // Dashboard details
+  dashboardName        String   @unique
+  description          String?
+  layout               Json     // Dashboard layout
+  widgets              Json     // Widget configurations
+  
+  // Access control
+  public               Boolean  @default(false)
+  ownerId              String
+  sharedWith           String[] // User IDs with access
+  
+  // Indigenous dashboards
+  indigenousDashboard  Boolean  @default(false)
+  communityDashboard   Boolean  @default(false)
+  elderDashboard       Boolean  @default(false)
+  ceremonyDashboard    Boolean  @default(false)
+  nation               String?  // Nation-specific dashboard
+  
+  // Refresh settings
+  autoRefresh          Boolean  @default(false)
+  refreshInterval      Int      @default(300000) // 5 minutes
+  
+  // Customization
+  theme                String   @default("light")
+  culturalTheme        String?  // Indigenous themes
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  @@index([ownerId])
+  @@index([indigenousDashboard])
+}
+
+model LogExport {
+  id                    String   @id @default(uuid())
+  
+  // Export details
+  exportName           String
+  exportType           String   // CSV, JSON, PDF, EXCEL
+  format               String   // Specific format options
+  
+  // User information
+  userId               String
+  userName             String
+  
+  // Query parameters
+  query                String   @db.Text // Export query
+  filters              Json?    // Applied filters
+  dateRange            Json     // Start and end dates
+  
+  // Indigenous data handling
+  indigenousData       Boolean  @default(false) // Contains Indigenous data
+  dataApprovalRequired Boolean  @default(false) // Requires Elder approval
+  approvedBy           String?  // Elder who approved
+  approvedAt           DateTime? // Approval timestamp
+  
+  // File information
+  fileName             String
+  fileSize             BigInt?  // Bytes
+  downloadUrl          String?
+  
+  // Status
+  status               String   @default("PENDING") // PENDING, PROCESSING, COMPLETED, FAILED
+  progress             Int      @default(0) // Percentage
+  error                String?  @db.Text // Error message if failed
+  
+  // Security
+  encrypted            Boolean  @default(true)
+  accessKey            String?  // Download access key
+  expiresAt            DateTime? // Download expiry
+  
+  // Processing
+  startedAt            DateTime?
+  completedAt          DateTime?
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([userId])
+  @@index([status])
+  @@index([createdAt])
+}

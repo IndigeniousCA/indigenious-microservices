@@ -1,0 +1,597 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Report {
+  id                    String                  @id @default(uuid())
+  reportNumber          String                  @unique
+  title                 String
+  description           String?
+  type                  ReportType
+  category              ReportCategory
+  frequency             ReportFrequency
+  businessId            String?
+  businessName          String?
+  userId                String?
+  userName              String?
+  isIndigenousReport    Boolean                 @default(false)
+  indigenousMetrics     Json?                   // Indigenous-specific metrics
+  bandSpecific          String?                 // Band/Nation specific report
+  dateRange             Json                    // Start and end dates
+  filters               Json?                   // Applied filters
+  parameters            Json?                   // Report parameters
+  data                  Json                    // Report data/results
+  insights              Json?                   // AI-generated insights
+  recommendations       Json?                   // Actionable recommendations
+  visualizations        Json?                   // Chart configurations
+  format                ReportFormat
+  fileUrl               String?                 // Generated file URL
+  fileSize              Int?
+  generatedAt           DateTime                @default(now())
+  executionTime         Int?                    // Milliseconds
+  status                ReportStatus
+  error                 String?
+  viewCount             Int                     @default(0)
+  downloadCount         Int                     @default(0)
+  lastViewedAt          DateTime?
+  shareToken            String?                 @unique
+  isPublic              Boolean                 @default(false)
+  tags                  String[]
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  schedules             ReportSchedule[]
+  distributions         ReportDistribution[]
+  exports               ReportExport[]
+  
+  @@index([businessId])
+  @@index([userId])
+  @@index([type])
+  @@index([category])
+  @@index([isIndigenousReport])
+  @@index([generatedAt])
+}
+
+model Dashboard {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+  type                  DashboardType
+  isIndigenousSpecific  Boolean                 @default(false)
+  indigenousFocus       String?                 // Specific Indigenous focus area
+  layout                Json                    // Dashboard layout configuration
+  widgets               Json                    // Widget configurations
+  filters               Json?                   // Default filters
+  refreshInterval       Int?                    // Auto-refresh in seconds
+  businessId            String?
+  userId                String?
+  isPublic              Boolean                 @default(false)
+  isTemplate            Boolean                 @default(false)
+  templateCategory      String?
+  viewCount             Int                     @default(0)
+  lastViewedAt          DateTime?
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  widgets_              DashboardWidget[]
+  
+  @@index([businessId])
+  @@index([userId])
+  @@index([type])
+  @@index([isIndigenousSpecific])
+}
+
+model DashboardWidget {
+  id                    String                  @id @default(uuid())
+  dashboardId           String
+  widgetType            WidgetType
+  title                 String
+  description           String?
+  dataSource            String                  // Query or API endpoint
+  query                 String?                 @db.Text
+  chartType             ChartType?
+  configuration         Json                    // Widget-specific config
+  position              Json                    // x, y, width, height
+  refreshInterval       Int?                    // Override dashboard refresh
+  indigenousMetric      Boolean                 @default(false)
+  metricType            String?                 // Type of Indigenous metric
+  thresholds            Json?                   // Alert thresholds
+  lastValue             Json?                   // Cached last value
+  lastUpdated           DateTime?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  dashboard             Dashboard               @relation(fields: [dashboardId], references: [id])
+  
+  @@index([dashboardId])
+  @@index([widgetType])
+}
+
+model Metric {
+  id                    String                  @id @default(uuid())
+  metricCode            String                  @unique
+  name                  String
+  description           String?
+  category              MetricCategory
+  unit                  String?                 // %, $, count, etc.
+  calculationType       CalculationType
+  formula               String?                 @db.Text
+  dataSource            String
+  aggregationMethod     AggregationMethod
+  isIndigenousMetric    Boolean                 @default(false)
+  indigenousCategory    String?                 // Indigenous-specific category
+  target                Float?                  // Target value
+  threshold             Json?                   // Warning/critical thresholds
+  trending              TrendDirection?
+  currentValue          Float?
+  previousValue         Float?
+  percentageChange      Float?
+  lastCalculated        DateTime?
+  calculationFrequency  String?                 // Cron expression
+  tags                  String[]
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  values                MetricValue[]
+  
+  @@index([category])
+  @@index([isIndigenousMetric])
+}
+
+model MetricValue {
+  id                    String                  @id @default(uuid())
+  metricId              String
+  value                 Float
+  timestamp             DateTime
+  period                String                  // 2024-01, 2024-W01, 2024-Q1
+  businessId            String?
+  dimension             String?                 // Additional grouping dimension
+  metadata              Json?                   // Additional context
+  
+  metric                Metric                  @relation(fields: [metricId], references: [id])
+  
+  @@index([metricId])
+  @@index([timestamp])
+  @@index([period])
+  @@index([businessId])
+  @@unique([metricId, timestamp, businessId, dimension])
+}
+
+model IndigenousInsight {
+  id                    String                  @id @default(uuid())
+  insightType           InsightType
+  category              String
+  title                 String
+  description           String                  @db.Text
+  significance          SignificanceLevel
+  metrics               Json                    // Related metrics and values
+  affectedBusinesses    Int                     // Number of businesses affected
+  indigenousImpact      Json                    // Specific Indigenous impact
+  bandSpecific          String?                 // Specific to a band/nation
+  region                String?
+  recommendations       String[]
+  actionItems           Json?                   // Suggested actions
+  confidenceScore       Float                   // AI confidence 0-1
+  validFrom             DateTime
+  validUntil            DateTime?
+  status                InsightStatus
+  acknowledgedBy        String[]                // User IDs who acknowledged
+  implementedActions    Json?                   // Actions taken based on insight
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([insightType])
+  @@index([category])
+  @@index([significance])
+  @@index([validFrom])
+}
+
+model ReportSchedule {
+  id                    String                  @id @default(uuid())
+  reportId              String?
+  reportType            ReportType
+  name                  String
+  description           String?
+  schedule              String                  // Cron expression
+  timezone              String                  @default("UTC")
+  parameters            Json                    // Report parameters
+  filters               Json?                   // Report filters
+  recipients            Json                    // Email addresses and roles
+  format                ReportFormat[]
+  includeIndigenous     Boolean                 @default(true) // Include Indigenous metrics
+  indigenousOnly        Boolean                 @default(false) // Indigenous-focused report
+  nextRun               DateTime?
+  lastRun               DateTime?
+  lastStatus            ScheduleStatus?
+  lastError             String?
+  runCount              Int                     @default(0)
+  isActive              Boolean                 @default(true)
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  report                Report?                 @relation(fields: [reportId], references: [id])
+  
+  @@index([reportId])
+  @@index([nextRun])
+  @@index([isActive])
+}
+
+model ReportDistribution {
+  id                    String                  @id @default(uuid())
+  reportId              String
+  recipientEmail        String
+  recipientName         String?
+  recipientType         RecipientType
+  deliveryMethod        DeliveryMethod
+  deliveryStatus        DeliveryStatus
+  sentAt                DateTime                @default(now())
+  openedAt              DateTime?
+  downloadedAt          DateTime?
+  errorMessage          String?
+  
+  report                Report                  @relation(fields: [reportId], references: [id])
+  
+  @@index([reportId])
+  @@index([recipientEmail])
+  @@index([sentAt])
+}
+
+model ReportExport {
+  id                    String                  @id @default(uuid())
+  reportId              String
+  format                ReportFormat
+  fileUrl               String
+  fileSize              Int
+  exportedBy            String
+  exportedAt            DateTime                @default(now())
+  downloadCount         Int                     @default(0)
+  lastDownloadedAt      DateTime?
+  expiresAt             DateTime?
+  
+  report                Report                  @relation(fields: [reportId], references: [id])
+  
+  @@index([reportId])
+  @@index([exportedAt])
+}
+
+model DataSource {
+  id                    String                  @id @default(uuid())
+  name                  String
+  type                  DataSourceType
+  connectionString      String?                 // Encrypted
+  apiEndpoint           String?
+  apiKey                String?                 // Encrypted
+  credentials           Json?                   // Encrypted credentials
+  schema                Json?                   // Data schema
+  refreshSchedule       String?                 // Cron expression
+  lastRefreshed         DateTime?
+  status                DataSourceStatus
+  errorMessage          String?
+  isIndigenousData      Boolean                 @default(false)
+  dataOwner             String?                 // Band/Nation if Indigenous data
+  dataSovereignty       Json?                   // Data sovereignty requirements
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([isIndigenousData])
+}
+
+model AnalyticsEvent {
+  id                    String                  @id @default(uuid())
+  eventType             String
+  eventCategory         String
+  eventAction           String
+  eventLabel            String?
+  eventValue            Float?
+  userId                String?
+  businessId            String?
+  sessionId             String?
+  indigenousContext     Boolean                 @default(false)
+  metadata              Json?
+  timestamp             DateTime                @default(now())
+  
+  @@index([eventType])
+  @@index([eventCategory])
+  @@index([userId])
+  @@index([businessId])
+  @@index([timestamp])
+}
+
+model KPI {
+  id                    String                  @id @default(uuid())
+  kpiCode               String                  @unique
+  name                  String
+  description           String?
+  category              KPICategory
+  formula               String                  @db.Text
+  unit                  String
+  target                Float
+  currentValue          Float?
+  previousValue         Float?
+  trend                 TrendDirection?
+  percentageToTarget    Float?
+  isIndigenousKPI       Boolean                 @default(false)
+  indigenousTarget      Float?                  // Specific Indigenous target
+  indigenousValue       Float?                  // Current Indigenous value
+  frequency             String                  // How often to calculate
+  owner                 String?                 // Responsible party
+  status                KPIStatus
+  lastCalculated        DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([category])
+  @@index([isIndigenousKPI])
+  @@index([status])
+}
+
+model AlertRule {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+  ruleType              AlertRuleType
+  metric                String                  // Metric or KPI to monitor
+  condition             Json                    // Alert condition
+  threshold             Float
+  comparisonOperator    ComparisonOperator
+  indigenousSpecific    Boolean                 @default(false)
+  bandSpecific          String?
+  severity              AlertSeverity
+  recipients            String[]                // Email addresses
+  channels              String[]                // email, sms, webhook
+  cooldownPeriod        Int?                    // Minutes between alerts
+  lastTriggered         DateTime?
+  triggerCount          Int                     @default(0)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([ruleType])
+  @@index([severity])
+  @@index([isActive])
+}
+
+// Enums
+enum ReportType {
+  PROCUREMENT
+  FINANCIAL
+  COMPLIANCE
+  INDIGENOUS_PARTICIPATION
+  SUPPLIER_DIVERSITY
+  CONTRACT_PERFORMANCE
+  SPEND_ANALYSIS
+  RISK_ASSESSMENT
+  AUDIT
+  CUSTOM
+}
+
+enum ReportCategory {
+  OPERATIONAL
+  STRATEGIC
+  COMPLIANCE
+  INDIGENOUS
+  FINANCIAL
+  PERFORMANCE
+  RISK
+  SUSTAINABILITY
+}
+
+enum ReportFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  ON_DEMAND
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+  JSON
+  HTML
+  POWERPOINT
+}
+
+enum ReportStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum DashboardType {
+  EXECUTIVE
+  OPERATIONAL
+  INDIGENOUS_METRICS
+  PROCUREMENT
+  FINANCIAL
+  COMPLIANCE
+  CUSTOM
+}
+
+enum WidgetType {
+  CHART
+  METRIC
+  TABLE
+  MAP
+  TIMELINE
+  SCORECARD
+  ALERT
+  TEXT
+}
+
+enum ChartType {
+  LINE
+  BAR
+  PIE
+  DONUT
+  AREA
+  SCATTER
+  HEATMAP
+  GAUGE
+  FUNNEL
+  TREEMAP
+  SANKEY
+}
+
+enum MetricCategory {
+  PROCUREMENT
+  INDIGENOUS_PARTICIPATION
+  FINANCIAL
+  OPERATIONAL
+  COMPLIANCE
+  QUALITY
+  SUSTAINABILITY
+  DIVERSITY
+}
+
+enum CalculationType {
+  SUM
+  AVERAGE
+  COUNT
+  PERCENTAGE
+  RATIO
+  CUSTOM
+}
+
+enum AggregationMethod {
+  SUM
+  AVG
+  MIN
+  MAX
+  COUNT
+  DISTINCT
+  MEDIAN
+  MODE
+}
+
+enum TrendDirection {
+  UP
+  DOWN
+  STABLE
+}
+
+enum InsightType {
+  OPPORTUNITY
+  RISK
+  TREND
+  ANOMALY
+  PREDICTION
+  RECOMMENDATION
+}
+
+enum SignificanceLevel {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum InsightStatus {
+  NEW
+  ACKNOWLEDGED
+  IN_PROGRESS
+  IMPLEMENTED
+  DISMISSED
+}
+
+enum ScheduleStatus {
+  SUCCESS
+  FAILED
+  RUNNING
+  CANCELLED
+}
+
+enum RecipientType {
+  INTERNAL
+  EXTERNAL
+  STAKEHOLDER
+  INDIGENOUS_PARTNER
+  GOVERNMENT
+}
+
+enum DeliveryMethod {
+  EMAIL
+  PORTAL
+  API
+  WEBHOOK
+  FTP
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  BOUNCED
+}
+
+enum DataSourceType {
+  DATABASE
+  API
+  FILE
+  STREAM
+  WEBHOOK
+}
+
+enum DataSourceStatus {
+  CONNECTED
+  DISCONNECTED
+  ERROR
+  SYNCING
+}
+
+enum KPICategory {
+  STRATEGIC
+  OPERATIONAL
+  INDIGENOUS
+  FINANCIAL
+  COMPLIANCE
+  QUALITY
+}
+
+enum KPIStatus {
+  ON_TARGET
+  AT_RISK
+  OFF_TARGET
+  NOT_MEASURED
+}
+
+enum AlertRuleType {
+  THRESHOLD
+  TREND
+  ANOMALY
+  SLA_BREACH
+  COMPLIANCE
+}
+
+enum ComparisonOperator {
+  GREATER_THAN
+  LESS_THAN
+  EQUAL_TO
+  NOT_EQUAL_TO
+  BETWEEN
+  OUTSIDE_RANGE
+}
+
+enum AlertSeverity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}

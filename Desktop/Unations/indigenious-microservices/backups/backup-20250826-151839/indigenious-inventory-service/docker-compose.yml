@@ -1,0 +1,64 @@
+version: '3.8'
+
+services:
+  inventory-service:
+    build: .
+    ports:
+      - "3032:3032"
+    environment:
+      - NODE_ENV=production
+      - PORT=3032
+      - DATABASE_URL=postgresql://inventory_user:inventory_pass@inventory-db:5432/indigenous_inventory_db
+      - REDIS_URL=redis://inventory-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+    depends_on:
+      - inventory-db
+      - inventory-redis
+    networks:
+      - inventory-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3032/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  inventory-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_inventory_db
+      - POSTGRES_USER=inventory_user
+      - POSTGRES_PASSWORD=inventory_pass
+    volumes:
+      - inventory-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5438:5432"
+    networks:
+      - inventory-network
+    restart: unless-stopped
+
+  inventory-redis:
+    image: redis:7-alpine
+    ports:
+      - "6387:6379"
+    volumes:
+      - inventory-redis-data:/data
+    networks:
+      - inventory-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  inventory-db-data:
+    driver: local
+  inventory-redis-data:
+    driver: local
+
+networks:
+  inventory-network:
+    driver: bridge
+  microservices-network:
+    external: true

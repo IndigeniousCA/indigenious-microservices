@@ -1,0 +1,184 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Certification {
+  id                     String    @id @default(uuid())
+  certificationNumber    String    @unique
+  businessId             String
+  businessName           String
+  businessNumber         String
+  type                   String
+  status                 String    @default("PENDING")
+  issuedBy               String
+  validFrom              DateTime
+  validUntil             DateTime
+  metadata               Json?
+  supportingDocuments    String[]
+  verificationHash       String
+  lastRenewalDate        DateTime?
+  renewalCount           Int       @default(0)
+  expiryNotificationSent Boolean   @default(false)
+  revokedAt              DateTime?
+  revokedBy              String?
+  revocationReason       String?
+  createdAt              DateTime  @default(now())
+  updatedAt              DateTime  @updatedAt
+  
+  renewals               CertificationRenewal[]
+  auditLogs              AuditLog[]
+  complianceChecks       ComplianceCheck[]
+  
+  @@index([businessId])
+  @@index([status])
+  @@index([validUntil])
+}
+
+model CertificationRenewal {
+  id                   String    @id @default(uuid())
+  certificationId      String
+  renewedBy            String
+  previousValidUntil   DateTime
+  newValidUntil        DateTime
+  supportingDocuments  String[]
+  createdAt            DateTime  @default(now())
+  
+  certification        Certification @relation(fields: [certificationId], references: [id])
+  
+  @@index([certificationId])
+}
+
+model AuditLog {
+  id             String    @id @default(uuid())
+  eventType      String
+  severity       String
+  userId         String?
+  businessId     String?
+  entityType     String
+  entityId       String
+  action         String
+  details        String
+  metadata       Json?
+  ipAddress      String?
+  userAgent      String?
+  hash           String
+  archived       Boolean   @default(false)
+  timestamp      DateTime  @default(now())
+  
+  certification  Certification? @relation(fields: [entityId], references: [id])
+  
+  @@index([eventType])
+  @@index([severity])
+  @@index([userId])
+  @@index([businessId])
+  @@index([timestamp])
+  @@index([entityType, entityId])
+}
+
+model ComplianceCheck {
+  id               String    @id @default(uuid())
+  certificationId  String?
+  businessId       String
+  checkType        String
+  status           String
+  result           Json
+  issues           String[]
+  recommendations  String[]
+  nextCheckDate    DateTime?
+  performedBy      String
+  automated        Boolean   @default(false)
+  createdAt        DateTime  @default(now())
+  
+  certification    Certification? @relation(fields: [certificationId], references: [id])
+  
+  @@index([businessId])
+  @@index([checkType])
+  @@index([status])
+}
+
+model RegulatoryRequirement {
+  id              String    @id @default(uuid())
+  code            String    @unique
+  name            String
+  description     String
+  category        String
+  jurisdiction    String
+  applicableTo    String[]
+  requiredDocs    String[]
+  validationRules Json
+  penalties       Json?
+  effectiveDate   DateTime
+  expiryDate      DateTime?
+  active          Boolean   @default(true)
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+  
+  @@index([category])
+  @@index([jurisdiction])
+  @@index([active])
+}
+
+model DocumentValidation {
+  id             String    @id @default(uuid())
+  documentId     String
+  documentType   String
+  fileName       String
+  fileHash       String
+  validationStatus String
+  validationResults Json
+  extractedData  Json?
+  verifiedBy     String?
+  automated      Boolean   @default(true)
+  createdAt      DateTime  @default(now())
+  
+  @@index([documentId])
+  @@index([validationStatus])
+}
+
+model IndigenousRegistry {
+  id               String    @id @default(uuid())
+  bandNumber       String    @unique
+  bandName         String
+  region           String
+  province         String
+  treaty           String?
+  population       Int?
+  chiefName        String?
+  registrationDate DateTime
+  verified         Boolean   @default(false)
+  verifiedDate     DateTime?
+  metadata         Json?
+  active           Boolean   @default(true)
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+  
+  @@index([region])
+  @@index([province])
+  @@index([verified])
+}
+
+model ComplianceReport {
+  id             String    @id @default(uuid())
+  reportType     String
+  businessId     String?
+  startDate      DateTime
+  endDate        DateTime
+  status         String
+  summary        Json
+  details        Json
+  recommendations Json?
+  generatedBy    String
+  reviewedBy     String?
+  reviewedAt     DateTime?
+  fileUrl        String?
+  createdAt      DateTime  @default(now())
+  
+  @@index([reportType])
+  @@index([businessId])
+  @@index([status])
+}

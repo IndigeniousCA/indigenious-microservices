@@ -1,0 +1,509 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Bond {
+  id                    String                  @id @default(uuid())
+  bondNumber            String                  @unique
+  type                  BondType
+  status                BondStatus
+  rfqId                 String?
+  contractId            String?
+  projectName           String
+  businessId            String
+  businessName          String
+  isIndigenousBusiness  Boolean
+  indigenousOwnership   Float?
+  bondAmount            Float
+  contractValue         Float
+  bondPercentage        Float                   // Bond as % of contract
+  premium               Float                   // Cost of bond
+  premiumRate           Float                   // Premium as % of bond amount
+  coverageStartDate     DateTime
+  coverageEndDate       DateTime
+  duration              Int                     // Days
+  providerId            String
+  providerName          String
+  providerType          ProviderType
+  underwriterId         String?
+  underwriterName       String?
+  coSuretyArrangement   Boolean                 @default(false)
+  coSureties            Json?                   // Other surety companies involved
+  indigenousAssistance  Boolean                 @default(false)
+  assistanceType        AssistanceType?
+  assistanceAmount      Float?
+  collateralRequired    Boolean                 @default(false)
+  collateralType        String?
+  collateralValue       Float?
+  personalGuarantee     Boolean                 @default(false)
+  guarantors            Json?
+  creditScore           Int?
+  financialStrength     String?                 // Rating
+  riskAssessment        Json?
+  termsAndConditions    Json?
+  specialConditions     String[]
+  documents             Json?
+  applicationDate       DateTime
+  approvalDate          DateTime?
+  issuanceDate          DateTime?
+  expiryDate            DateTime
+  renewalDate           DateTime?
+  cancelledDate         DateTime?
+  cancellationReason    String?
+  claimsCount           Int                     @default(0)
+  totalClaimAmount      Float                   @default(0)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  applications          BondApplication[]
+  claims                BondClaim[]
+  payments              BondPayment[]
+  renewals              BondRenewal[]
+  
+  @@index([businessId])
+  @@index([status])
+  @@index([type])
+  @@index([providerId])
+}
+
+model BondApplication {
+  id                    String                  @id @default(uuid())
+  applicationNumber     String                  @unique
+  bondId                String?
+  businessId            String
+  businessName          String
+  contactName           String
+  contactEmail          String
+  contactPhone          String
+  bondType              BondType
+  requestedAmount       Float
+  contractValue         Float
+  projectDescription    String
+  projectLocation       String
+  projectDuration       Int                     // Days
+  startDate             DateTime
+  completionDate        DateTime
+  previousBonds         Json?                   // History
+  financialStatements   Json?
+  bankReferences        Json?
+  tradeReferences       Json?
+  workExperience        Json?
+  certifications        String[]
+  indigenousStatus      Json?                   // Verification details
+  bandSupport           Boolean                 @default(false)
+  bandSupportLetter     String?
+  requestedAssistance   Boolean                 @default(false)
+  assistanceNeeded      String?
+  creditCheckConsent    Boolean
+  backgroundCheckConsent Boolean
+  status                ApplicationStatus
+  submittedAt           DateTime
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  approvedBy            String?
+  approvedAt            DateTime?
+  rejectionReason       String?
+  offerAmount           Float?
+  offerPremium          Float?
+  offerTerms            Json?
+  offerExpiryDate       DateTime?
+  counterOffer          Json?
+  finalTermsAccepted    Boolean                 @default(false)
+  documents             Json?
+  notes                 String?
+  riskScore             Float?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  bond                  Bond?                   @relation(fields: [bondId], references: [id])
+  evaluations           BondEvaluation[]
+  
+  @@index([businessId])
+  @@index([status])
+}
+
+model BondProvider {
+  id                    String                  @id @default(uuid())
+  providerCode          String                  @unique
+  name                  String
+  type                  ProviderType
+  specialization        String[]                // Construction, service, supply
+  indigenousFriendly    Boolean                 @default(false)
+  indigenousOwned       Boolean                 @default(false)
+  minimumBond           Float
+  maximumBond           Float
+  standardPremiumRate   Float                   // Base rate
+  indigenousDiscount    Float?                  // Special rate for Indigenous
+  requiredDocuments     String[]
+  turnaroundTime        Int                     // Days
+  creditRequirements    Json?
+  collateralPolicy      Json?
+  coSuretyAccepted      Boolean                 @default(false)
+  assistancePrograms    Json?
+  contactName           String
+  contactEmail          String
+  contactPhone          String
+  website               String?
+  address               String
+  serviceAreas          String[]                // Provinces/territories
+  languages             String[]
+  rating                String?                 // A+, A, B+, etc.
+  licenseNumber         String?
+  regulatedBy           String?
+  establishedYear       Int?
+  totalBondsIssued      Int                     @default(0)
+  totalBondValue        Float                   @default(0)
+  indigenousBondsIssued Int                     @default(0)
+  claimRate             Float?                  // Percentage
+  approvalRate          Float?                  // Percentage
+  averageProcessingTime Float?                  // Days
+  isPreferred           Boolean                 @default(false)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([indigenousFriendly])
+}
+
+model BondAssistance {
+  id                    String                  @id @default(uuid())
+  programName           String
+  programType           AssistanceType
+  description           String
+  eligibilityCriteria   Json
+  provider              String                  // Government, band, organization
+  fundingSource         String
+  totalFunding          Float
+  availableFunding      Float
+  maxAssistanceAmount   Float
+  maxAssistancePercent  Float                   // % of bond premium
+  indigenousRequired    Boolean                 @default(true)
+  minimumOwnership      Float?                  // Indigenous ownership %
+  bandAffiliation       String?
+  region                String?
+  sectors               String[]
+  applicationProcess    Json
+  requiredDocuments     String[]
+  processingTime        Int                     // Days
+  approvalRate          Float?
+  totalAssisted         Int                     @default(0)
+  totalDisbursed        Float                   @default(0)
+  startDate             DateTime
+  endDate               DateTime?
+  contactName           String
+  contactEmail          String
+  contactPhone          String
+  website               String?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([programType])
+  @@index([provider])
+}
+
+model BondClaim {
+  id                    String                  @id @default(uuid())
+  claimNumber           String                  @unique
+  bondId                String
+  claimantId            String
+  claimantName          String
+  claimantType          ClaimantType
+  claimType             ClaimType
+  claimAmount           Float
+  description           String
+  projectDeficiency     String?
+  dateOfDefault         DateTime
+  noticeDate            DateTime
+  filingDate            DateTime
+  dueDate               DateTime
+  status                ClaimStatus
+  investigationNotes    String?
+  investigatorId        String?
+  validityChallenged    Boolean                 @default(false)
+  challengeReason       String?
+  validityConfirmed     Boolean?
+  approvedAmount        Float?
+  denialReason          String?
+  settlementAmount      Float?
+  settlementDate        DateTime?
+  paymentMethod         String?
+  paymentReference      String?
+  legalAction           Boolean                 @default(false)
+  legalStatus           String?
+  recoveryAction        Boolean                 @default(false)
+  recoveredAmount       Float?
+  documents             Json?
+  correspondence        Json?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  bond                  Bond                    @relation(fields: [bondId], references: [id])
+  
+  @@index([bondId])
+  @@index([status])
+  @@index([claimantId])
+}
+
+model BondPayment {
+  id                    String                  @id @default(uuid())
+  paymentNumber         String                  @unique
+  bondId                String
+  type                  PaymentType
+  amount                Float
+  currency              String                  @default("CAD")
+  paymentMethod         String
+  paymentDate           DateTime
+  dueDate               DateTime?
+  status                PaymentStatus
+  reference             String?
+  processor             String?
+  processorFee          Float?
+  description           String?
+  invoiceNumber         String?
+  receiptUrl            String?
+  failureReason         String?
+  retryCount            Int                     @default(0)
+  nextRetryDate         DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  bond                  Bond                    @relation(fields: [bondId], references: [id])
+  
+  @@index([bondId])
+  @@index([status])
+  @@index([type])
+}
+
+model BondRenewal {
+  id                    String                  @id @default(uuid())
+  originalBondId        String
+  newBondId             String?
+  renewalNumber         Int
+  requestDate           DateTime
+  currentExpiryDate     DateTime
+  requestedStartDate    DateTime
+  requestedEndDate      DateTime
+  currentAmount         Float
+  requestedAmount       Float
+  currentPremium        Float
+  quotedPremium         Float
+  premiumChange         Float
+  changeReason          String?
+  projectUpdate         Json?
+  performanceReview     Json?
+  claimHistory          Json?
+  financialUpdate       Json?
+  status                RenewalStatus
+  approvedBy            String?
+  approvedAt            DateTime?
+  rejectionReason       String?
+  newTerms              Json?
+  documentsRequired     String[]
+  documentsReceived     String[]
+  isAutoRenewal         Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  bond                  Bond                    @relation(fields: [originalBondId], references: [id])
+  
+  @@index([originalBondId])
+  @@index([status])
+}
+
+model BondEvaluation {
+  id                    String                  @id @default(uuid())
+  applicationId         String
+  evaluatorId           String
+  evaluatorName         String
+  evaluationType        EvaluationType
+  financialScore        Float?
+  experienceScore       Float?
+  capacityScore         Float?
+  managementScore       Float?
+  overallScore          Float
+  riskLevel             RiskLevel
+  strengths             String[]
+  weaknesses            String[]
+  conditions            String[]
+  recommendations       String[]
+  maxBondRecommended    Float
+  premiumRateRecommended Float
+  collateralRecommended Boolean
+  guaranteeRecommended  Boolean
+  coSuretyRecommended   Boolean
+  notes                 String?
+  evaluatedAt           DateTime
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  application           BondApplication         @relation(fields: [applicationId], references: [id])
+  
+  @@index([applicationId])
+  @@index([evaluatorId])
+}
+
+model BondTemplate {
+  id                    String                  @id @default(uuid())
+  templateCode          String                  @unique
+  name                  String
+  type                  BondType
+  category              String
+  description           String
+  standardClauses       Json
+  optionalClauses       Json
+  indigenousClauses     Json?
+  requiredDocuments     String[]
+  validityPeriod        Int                     // Days
+  renewalTerms          Json?
+  claimProcedure        Json?
+  isStandard            Boolean                 @default(false)
+  isIndigenousFriendly  Boolean                 @default(false)
+  usageCount            Int                     @default(0)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([category])
+}
+
+// Enums
+enum BondType {
+  BID
+  PERFORMANCE
+  PAYMENT
+  MAINTENANCE
+  SUPPLY
+  LICENSE
+  PERMIT
+  CUSTOMS
+  ADVANCE_PAYMENT
+  RETENTION
+  WARRANTY
+}
+
+enum BondStatus {
+  DRAFT
+  PENDING
+  ACTIVE
+  EXPIRED
+  CLAIMED
+  RELEASED
+  CANCELLED
+  RENEWED
+}
+
+enum ProviderType {
+  INSURANCE_COMPANY
+  SURETY_COMPANY
+  BANK
+  CREDIT_UNION
+  GOVERNMENT_PROGRAM
+  INDIGENOUS_FINANCIAL_INSTITUTION
+  ALTERNATIVE_PROVIDER
+}
+
+enum AssistanceType {
+  PREMIUM_SUBSIDY
+  COLLATERAL_SUPPORT
+  GUARANTEE_PROGRAM
+  CAPACITY_BUILDING
+  TECHNICAL_ASSISTANCE
+  CO_SURETY_ARRANGEMENT
+}
+
+enum ApplicationStatus {
+  DRAFT
+  SUBMITTED
+  UNDER_REVIEW
+  ADDITIONAL_INFO_REQUIRED
+  APPROVED
+  CONDITIONALLY_APPROVED
+  REJECTED
+  WITHDRAWN
+  EXPIRED
+}
+
+enum ClaimantType {
+  PROJECT_OWNER
+  SUBCONTRACTOR
+  SUPPLIER
+  EMPLOYEE
+  GOVERNMENT
+  OTHER
+}
+
+enum ClaimType {
+  NON_PERFORMANCE
+  DEFECTIVE_WORK
+  NON_PAYMENT
+  DELAY
+  ABANDONMENT
+  BANKRUPTCY
+  OTHER
+}
+
+enum ClaimStatus {
+  FILED
+  UNDER_INVESTIGATION
+  VALIDATED
+  DISPUTED
+  APPROVED
+  DENIED
+  SETTLED
+  PAID
+  APPEALED
+  CLOSED
+}
+
+enum PaymentType {
+  PREMIUM
+  RENEWAL
+  ADJUSTMENT
+  CLAIM_SETTLEMENT
+  REFUND
+  FEE
+}
+
+enum PaymentStatus {
+  PENDING
+  PROCESSING
+  COMPLETED
+  FAILED
+  REFUNDED
+  CANCELLED
+}
+
+enum RenewalStatus {
+  REQUESTED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  COMPLETED
+  CANCELLED
+}
+
+enum EvaluationType {
+  FINANCIAL
+  TECHNICAL
+  COMPREHENSIVE
+}
+
+enum RiskLevel {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+  UNACCEPTABLE
+}

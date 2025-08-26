@@ -1,0 +1,677 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Nation {
+  id                    String                  @id @default(uuid())
+  name                  String
+  indigenousName        String?
+  confederacy           String?
+  region                String
+  province              String
+  country               String                  @default("Canada")
+  population            Int?
+  languageFamily        String?
+  primaryLanguages      String[]
+  treatyNumber          String?
+  treatyDate            DateTime?
+  traditionalTerritory  Json?                   // GeoJSON
+  currentReserves       Json?                   // GeoJSON
+  website               String?
+  description           String?
+  culturalProtocols     Json?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  bands                 Band[]
+  elders                Elder[]
+  culturalEvents        CulturalEvent[]
+  procurementPreferences ProcurementPreference[]
+  landAcknowledgments   LandAcknowledgment[]
+  treaties              Treaty[]
+  languages             Language[]
+  
+  @@index([region])
+  @@index([province])
+  @@index([treatyNumber])
+}
+
+model Band {
+  id                    String                  @id @default(uuid())
+  nationId              String
+  bandNumber            String                  @unique
+  name                  String
+  indigenousName        String?
+  chiefName             String?
+  chiefEmail            String?
+  chiefPhone            String?
+  councilSize           Int?
+  administratorName     String?
+  administratorEmail    String?
+  administratorPhone    String?
+  population            Int?
+  onReservePopulation   Int?
+  offReservePopulation  Int?
+  numberOfBusinesses    Int                     @default(0)
+  economicDevelopmentOfficer String?
+  edoEmail              String?
+  edoPhone              String?
+  mainOfficeAddress     String?
+  postalCode            String?
+  latitude              Float?
+  longitude             Float?
+  reserveBoundaries     Json?                   // GeoJSON
+  timezone              String?
+  website               String?
+  socialMedia           Json?
+  governanceType        GovernanceType          @default(ELECTED)
+  electionCycle         Int?                    // in years
+  lastElection          DateTime?
+  nextElection          DateTime?
+  fiscalYearEnd         String?
+  annualBudget          Float?
+  procurementBudget     Float?
+  preferredVendorTypes  String[]
+  certificationRequired String[]
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  nation                Nation                  @relation(fields: [nationId], references: [id])
+  councilMembers        CouncilMember[]
+  departments           Department[]
+  procurementPreferences ProcurementPreference[]
+  communityProjects     CommunityProject[]
+  businessRegistry      BusinessRegistration[]
+  culturalProtocols     CulturalProtocol[]
+  communityMetrics      CommunityMetric[]
+  notifications         CommunityNotification[]
+  
+  @@index([nationId])
+  @@index([bandNumber])
+  @@index([postalCode])
+}
+
+model Elder {
+  id                    String                  @id @default(uuid())
+  nationId              String?
+  bandId                String?
+  name                  String
+  indigenousName        String?
+  email                 String?
+  phone                 String?
+  role                  String?                 // Knowledge Keeper, Language Speaker, etc.
+  specializations       String[]                // Traditional medicine, ceremonies, etc.
+  languages             String[]
+  biography             String?
+  isPublic              Boolean                 @default(false)
+  isActive              Boolean                 @default(true)
+  approvalAuthority     Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  nation                Nation?                 @relation(fields: [nationId], references: [id])
+  approvals             ElderApproval[]
+  teachings             Teaching[]
+  
+  @@index([nationId])
+}
+
+model CouncilMember {
+  id                    String                  @id @default(uuid())
+  bandId                String
+  name                  String
+  indigenousName        String?
+  position              String                  // Chief, Councillor, etc.
+  portfolio             String?                 // Economic Development, Education, etc.
+  email                 String?
+  phone                 String?
+  termStart             DateTime
+  termEnd               DateTime?
+  biography             String?
+  photo                 String?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  band                  Band                    @relation(fields: [bandId], references: [id])
+  decisions             CouncilDecision[]
+  
+  @@index([bandId])
+  @@index([position])
+}
+
+model Department {
+  id                    String                  @id @default(uuid())
+  bandId                String
+  name                  String
+  indigenousName        String?
+  type                  DepartmentType
+  director              String?
+  directorEmail         String?
+  directorPhone         String?
+  budget                Float?
+  numberOfEmployees     Int?
+  description           String?
+  responsibilities      String[]
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  band                  Band                    @relation(fields: [bandId], references: [id])
+  projects              CommunityProject[]
+  
+  @@index([bandId])
+  @@index([type])
+}
+
+model ProcurementPreference {
+  id                    String                  @id @default(uuid())
+  nationId              String?
+  bandId                String?
+  category              String
+  weightings            Json                    // {price: 30, indigenous: 40, climate: 20, local: 10}
+  mandatoryRequirements String[]
+  preferredCertifications String[]
+  minimumIndigenousContent Int?                  // percentage
+  localPreference       Int?                    // km radius
+  environmentalStandards String[]
+  socialImpactFactors   String[]
+  excludedVendors       String[]
+  notes                 String?
+  effectiveDate         DateTime
+  expiryDate            DateTime?
+  approvedBy            String?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  nation                Nation?                 @relation(fields: [nationId], references: [id])
+  band                  Band?                   @relation(fields: [bandId], references: [id])
+  
+  @@index([nationId])
+  @@index([bandId])
+  @@index([category])
+}
+
+model CommunityProject {
+  id                    String                  @id @default(uuid())
+  bandId                String
+  departmentId          String?
+  projectNumber         String                  @unique
+  name                  String
+  indigenousName        String?
+  type                  ProjectType
+  category              String
+  description           String
+  objectives            String[]
+  budget                Float
+  fundingSources        Json?
+  startDate             DateTime
+  expectedEndDate       DateTime
+  actualEndDate         DateTime?
+  status                ProjectStatus
+  priority              Priority
+  communityBenefit      String?
+  employmentTargets     Json?                   // {indigenous: 50, local: 30, youth: 20}
+  contractorRequirements String[]
+  environmentalImpact   String?
+  culturalConsiderations String?
+  elderApprovalRequired Boolean                 @default(false)
+  elderApprovalStatus   ApprovalStatus?
+  publicTender          Boolean                 @default(true)
+  documents             Json?
+  milestones            Json?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  band                  Band                    @relation(fields: [bandId], references: [id])
+  department            Department?             @relation(fields: [departmentId], references: [id])
+  
+  @@index([bandId])
+  @@index([departmentId])
+  @@index([status])
+  @@index([type])
+}
+
+model CulturalProtocol {
+  id                    String                  @id @default(uuid())
+  bandId                String
+  type                  ProtocolType
+  name                  String
+  indigenousName        String?
+  description           String
+  requirements          String[]
+  timing                String?                 // When it applies
+  participants          String[]                // Who should be involved
+  offerings             String[]                // Tobacco, sage, etc.
+  language              String?
+  elderInvolvement      Boolean                 @default(true)
+  documentation         Json?
+  isPublic              Boolean                 @default(false)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  band                  Band                    @relation(fields: [bandId], references: [id])
+  
+  @@index([bandId])
+  @@index([type])
+}
+
+model LandAcknowledgment {
+  id                    String                  @id @default(uuid())
+  nationId              String
+  shortForm             String                  // Brief acknowledgment
+  longForm              String                  // Detailed acknowledgment
+  indigenousLanguage    String?                 // In original language
+  audioFile             String?                 // URL to audio pronunciation
+  videoFile             String?                 // URL to video
+  historicalContext     String?
+  currentContext        String?
+  protocolNotes         String?
+  approvedBy            String?
+  approvalDate          DateTime?
+  isOfficial            Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  nation                Nation                  @relation(fields: [nationId], references: [id])
+  
+  @@index([nationId])
+}
+
+model Treaty {
+  id                    String                  @id @default(uuid())
+  nationId              String
+  treatyNumber          String
+  treatyName            String
+  signatureDate         DateTime
+  signatories           Json                    // List of all parties
+  territory             Json?                   // GeoJSON
+  terms                 String
+  benefits              String[]
+  obligations           String[]
+  modernInterpretation  String?
+  documents             Json?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  nation                Nation                  @relation(fields: [nationId], references: [id])
+  
+  @@index([nationId])
+  @@index([treatyNumber])
+}
+
+model Language {
+  id                    String                  @id @default(uuid())
+  nationId              String
+  name                  String
+  indigenousName        String
+  isoCode               String?
+  family                String
+  writingSystem         String?
+  numberOfSpeakers      Int?
+  fluentSpeakers        Int?
+  status                LanguageStatus
+  revitalizationPrograms Json?
+  resources             Json?                   // Dictionaries, courses, etc.
+  isOfficial            Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  nation                Nation                  @relation(fields: [nationId], references: [id])
+  
+  @@index([nationId])
+  @@index([family])
+}
+
+model CulturalEvent {
+  id                    String                  @id @default(uuid())
+  nationId              String
+  name                  String
+  indigenousName        String?
+  type                  EventType
+  description           String
+  startDate             DateTime
+  endDate               DateTime
+  location              String
+  latitude              Float?
+  longitude             Float?
+  isPublic              Boolean                 @default(true)
+  isVirtual             Boolean                 @default(false)
+  virtualLink           String?
+  capacity              Int?
+  registrationRequired  Boolean                 @default(false)
+  registrationLink      String?
+  culturalProtocols     String[]
+  organizer             String
+  organizerContact      String?
+  documents             Json?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  nation                Nation                  @relation(fields: [nationId], references: [id])
+  
+  @@index([nationId])
+  @@index([type])
+  @@index([startDate])
+}
+
+model BusinessRegistration {
+  id                    String                  @id @default(uuid())
+  bandId                String
+  businessId            String
+  businessName          String
+  ownerName             String
+  businessType          String
+  registrationNumber    String?
+  indigenousOwnership   Int                     // percentage
+  bandMemberEmployees   Int?
+  communityBenefit      String?
+  certifications        String[]
+  isVerified            Boolean                 @default(false)
+  verificationDate      DateTime?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  band                  Band                    @relation(fields: [bandId], references: [id])
+  
+  @@index([bandId])
+  @@index([businessId])
+}
+
+model CommunityMetric {
+  id                    String                  @id @default(uuid())
+  bandId                String
+  year                  Int
+  quarter               Int?
+  metricType            MetricType
+  category              String
+  value                 Float
+  unit                  String
+  target                Float?
+  previousValue         Float?
+  trend                 TrendDirection?
+  notes                 String?
+  dataSource            String?
+  verifiedBy            String?
+  verificationDate      DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  band                  Band                    @relation(fields: [bandId], references: [id])
+  
+  @@index([bandId])
+  @@index([year])
+  @@index([metricType])
+}
+
+model ElderApproval {
+  id                    String                  @id @default(uuid())
+  elderId               String
+  requestType           String
+  requestId             String
+  requestDetails        Json
+  status                ApprovalStatus
+  decision              String?
+  conditions            String[]
+  culturalConsiderations String?
+  approvalDate          DateTime?
+  expiryDate            DateTime?
+  notes                 String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  elder                 Elder                   @relation(fields: [elderId], references: [id])
+  
+  @@index([elderId])
+  @@index([requestType])
+  @@index([status])
+}
+
+model Teaching {
+  id                    String                  @id @default(uuid())
+  elderId               String
+  title                 String
+  indigenousTitle       String?
+  type                  TeachingType
+  content               String
+  language              String?
+  audioFile             String?
+  videoFile             String?
+  relatedStories        Json?
+  culturalContext       String?
+  appropriateSharing    String?                 // Guidelines for sharing
+  seasonalRelevance     String?
+  ageAppropriate        String?
+  isPublic              Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  elder                 Elder                   @relation(fields: [elderId], references: [id])
+  
+  @@index([elderId])
+  @@index([type])
+}
+
+model CouncilDecision {
+  id                    String                  @id @default(uuid())
+  councilMemberId       String
+  meetingDate           DateTime
+  resolutionNumber      String                  @unique
+  title                 String
+  category              String
+  description           String
+  motion                String
+  seconder              String?
+  votesFor              Int
+  votesAgainst          Int
+  abstentions           Int
+  outcome               DecisionOutcome
+  implementation        String?
+  followUpRequired      Boolean                 @default(false)
+  followUpDate          DateTime?
+  documents             Json?
+  isPublic              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  councilMember         CouncilMember           @relation(fields: [councilMemberId], references: [id])
+  
+  @@index([councilMemberId])
+  @@index([meetingDate])
+  @@index([outcome])
+}
+
+model CommunityNotification {
+  id                    String                  @id @default(uuid())
+  bandId                String
+  type                  NotificationType
+  priority              Priority
+  title                 String
+  indigenousTitle       String?
+  message               String
+  indigenousMessage     String?
+  targetAudience        String[]                // all, members, businesses, elders
+  channels              String[]                // email, sms, app, website
+  scheduledFor          DateTime?
+  sentAt                DateTime?
+  expiresAt             DateTime?
+  attachments           Json?
+  readCount             Int                     @default(0)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  band                  Band                    @relation(fields: [bandId], references: [id])
+  
+  @@index([bandId])
+  @@index([type])
+  @@index([priority])
+}
+
+// Enums
+enum GovernanceType {
+  ELECTED
+  HEREDITARY
+  CUSTOM
+  HYBRID
+}
+
+enum DepartmentType {
+  ADMINISTRATION
+  ECONOMIC_DEVELOPMENT
+  EDUCATION
+  HEALTH
+  HOUSING
+  SOCIAL_SERVICES
+  LANDS_RESOURCES
+  CULTURE_HERITAGE
+  INFRASTRUCTURE
+  EMERGENCY_SERVICES
+  FINANCE
+  HUMAN_RESOURCES
+  LEGAL
+  COMMUNICATIONS
+  YOUTH
+  ELDERS
+  ENVIRONMENT
+  OTHER
+}
+
+enum ProjectType {
+  INFRASTRUCTURE
+  HOUSING
+  EDUCATION
+  HEALTH
+  ECONOMIC_DEVELOPMENT
+  CULTURAL
+  ENVIRONMENTAL
+  SOCIAL
+  TECHNOLOGY
+  OTHER
+}
+
+enum ProjectStatus {
+  PLANNING
+  APPROVED
+  TENDER
+  AWARDED
+  IN_PROGRESS
+  ON_HOLD
+  COMPLETED
+  CANCELLED
+}
+
+enum Priority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONDITIONAL
+  EXPIRED
+}
+
+enum ProtocolType {
+  OPENING_CEREMONY
+  CLOSING_CEREMONY
+  BLESSING
+  SMUDGING
+  FEAST
+  GIFT_GIVING
+  LAND_ACKNOWLEDGMENT
+  ELDER_CONSULTATION
+  SEASONAL
+  OTHER
+}
+
+enum LanguageStatus {
+  THRIVING
+  VIABLE
+  ENDANGERED
+  SEVERELY_ENDANGERED
+  CRITICALLY_ENDANGERED
+  DORMANT
+  EXTINCT
+}
+
+enum EventType {
+  POWWOW
+  CEREMONY
+  FEAST
+  GATHERING
+  WORKSHOP
+  CONFERENCE
+  CULTURAL_TEACHING
+  LANGUAGE_CLASS
+  CELEBRATION
+  MEMORIAL
+  OTHER
+}
+
+enum MetricType {
+  ECONOMIC
+  SOCIAL
+  HEALTH
+  EDUCATION
+  EMPLOYMENT
+  HOUSING
+  INFRASTRUCTURE
+  CULTURAL
+  ENVIRONMENTAL
+}
+
+enum TrendDirection {
+  UP
+  DOWN
+  STABLE
+}
+
+enum TeachingType {
+  STORY
+  LESSON
+  CEREMONY
+  MEDICINE
+  CRAFT
+  LANGUAGE
+  HISTORY
+  PROTOCOL
+  OTHER
+}
+
+enum DecisionOutcome {
+  PASSED
+  DEFEATED
+  DEFERRED
+  AMENDED
+  WITHDRAWN
+}
+
+enum NotificationType {
+  GENERAL
+  EMERGENCY
+  COUNCIL_MEETING
+  COMMUNITY_EVENT
+  PROJECT_UPDATE
+  TENDER_OPPORTUNITY
+  CULTURAL_EVENT
+  HEALTH_ADVISORY
+  EDUCATION
+  EMPLOYMENT
+}

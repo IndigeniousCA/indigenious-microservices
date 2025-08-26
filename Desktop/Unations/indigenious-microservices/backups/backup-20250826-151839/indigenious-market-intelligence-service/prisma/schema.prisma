@@ -1,0 +1,460 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model MarketTrend {
+  id                    String                  @id @default(uuid())
+  category              String
+  subcategory           String?
+  trendType             TrendType
+  trendDirection        TrendDirection
+  magnitude             Float                   // Percentage change
+  confidence            Float                   // 0-1 confidence score
+  timeframe             String                  // e.g., "Q1 2024", "2024", "30d"
+  region                String?
+  province              String?
+  indigenousRegion      String?
+  dataPoints            Int
+  startDate             DateTime
+  endDate               DateTime
+  description           String
+  insights              Json?                   // Detailed insights
+  impactedBusinessTypes String[]
+  opportunities         Json?                   // Related opportunities
+  risks                 Json?                   // Potential risks
+  recommendations       Json?                   // Action recommendations
+  sources               String[]                // Data sources
+  tags                  String[]
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  alerts                MarketAlert[]
+  reports               MarketReport[]
+  
+  @@index([category])
+  @@index([trendType])
+  @@index([timeframe])
+  @@index([region])
+}
+
+model ProcurementAnalysis {
+  id                    String                  @id @default(uuid())
+  rfqId                 String?
+  contractId            String?
+  category              String
+  subcategory           String?
+  procuringEntity       String
+  entityType            EntityType
+  contractValue         Float
+  awardDate             DateTime
+  startDate             DateTime?
+  endDate               DateTime?
+  duration              Int?                    // in days
+  indigenousContent     Float?                  // percentage
+  winningBusiness       String?
+  winningBusinessType   String?
+  isIndigenousBusiness  Boolean
+  numberOfBidders       Int?
+  averageBidValue       Float?
+  winningBidValue       Float?
+  savingsPercent        Float?
+  evaluationCriteria    Json?
+  scoringBreakdown      Json?
+  region                String?
+  province              String?
+  keywords              String[]
+  naicsCode             String?
+  unspscCode            String?
+  successFactors        String[]
+  challengesFaced       String[]
+  lessonsLearned        String[]
+  isPublic              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  predictions           SuccessPrediction[]
+  opportunities         OpportunityMatch[]
+  
+  @@index([category])
+  @@index([procuringEntity])
+  @@index([awardDate])
+  @@index([contractValue])
+}
+
+model CompetitiveIntelligence {
+  id                    String                  @id @default(uuid())
+  businessId            String
+  businessName          String
+  businessType          String
+  indigenousOwnership   Float?
+  certifications        String[]
+  primaryCategories     String[]
+  secondaryCategories   String[]
+  region                String?
+  province              String?
+  totalContracts        Int
+  totalContractValue    Float
+  averageContractValue  Float
+  winRate               Float                   // percentage
+  growthRate            Float                   // year-over-year
+  marketShare           Float?                  // in their primary category
+  strengthCategories    String[]                // Where they excel
+  weakCategories        String[]                // Where they struggle
+  frequentPartners      Json?                   // Common JV/consortium partners
+  frequentClients       Json?                   // Regular customers
+  pricingStrategy       String?                 // Low-cost, premium, value
+  competitiveAdvantages String[]
+  recentWins            Json?
+  recentLosses          Json?
+  riskFactors           String[]
+  opportunities         String[]
+  threats               String[]
+  lastAnalyzed          DateTime
+  dataQuality           Float                   // 0-1 score
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  benchmarks            Benchmark[]
+  
+  @@index([businessId])
+  @@index([businessName])
+  @@index([marketShare])
+}
+
+model OpportunityMatch {
+  id                    String                  @id @default(uuid())
+  opportunityId         String                  // RFQ or tender ID
+  opportunityType       OpportunityType
+  businessId            String
+  businessName          String
+  matchScore            Float                   // 0-100
+  matchFactors          Json                    // Detailed scoring breakdown
+  strengths             String[]                // Why it's a good match
+  weaknesses            String[]                // Potential challenges
+  recommendations       String[]                // How to improve chances
+  requiredPartnerships  Json?                   // Suggested partners
+  estimatedSuccessRate  Float                   // 0-100
+  estimatedBidCost      Float?
+  estimatedROI          Float?
+  competitorCount       Int?
+  topCompetitors        Json?
+  deadline              DateTime
+  priority              Priority
+  status                MatchStatus
+  actionTaken           String?
+  outcome               String?
+  feedback              String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  analysis              ProcurementAnalysis?    @relation(fields: [opportunityId], references: [rfqId])
+  
+  @@index([businessId])
+  @@index([opportunityId])
+  @@index([matchScore])
+  @@index([deadline])
+}
+
+model SuccessPrediction {
+  id                    String                  @id @default(uuid())
+  rfqId                 String
+  businessId            String
+  businessName          String
+  predictionScore       Float                   // 0-100
+  confidenceLevel       Float                   // 0-1
+  modelVersion          String
+  features              Json                    // Input features used
+  factorsPositive       String[]                // Positive factors
+  factorsNegative       String[]                // Negative factors
+  recommendedBidRange   Json?                   // {min, max, optimal}
+  recommendedStrategy   String[]
+  requiredImprovements  String[]
+  estimatedPreparationTime Int?                 // in hours
+  estimatedCost         Float?
+  historicalWinRate     Float?                  // For similar RFQs
+  competitorAnalysis    Json?
+  riskAssessment        Json?
+  mitigationStrategies  String[]
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  analysis              ProcurementAnalysis?    @relation(fields: [rfqId], references: [rfqId])
+  
+  @@index([rfqId])
+  @@index([businessId])
+  @@index([predictionScore])
+}
+
+model MarketReport {
+  id                    String                  @id @default(uuid())
+  reportType            ReportType
+  title                 String
+  subtitle              String?
+  category              String?
+  timeframe             String
+  startDate             DateTime
+  endDate               DateTime
+  executive             String                  // Executive summary
+  sections              Json                    // Report sections
+  charts                Json?                   // Chart configurations
+  tables                Json?                   // Data tables
+  keyFindings           String[]
+  recommendations       String[]
+  methodology           String?
+  dataSources           String[]
+  limitations           String[]
+  appendices            Json?
+  format                ReportFormat
+  fileUrl               String?
+  recipients            String[]                // Email addresses
+  isPublic              Boolean                 @default(false)
+  viewCount             Int                     @default(0)
+  downloadCount         Int                     @default(0)
+  rating                Float?
+  feedback              Json?
+  generatedBy           String?                 // System or user
+  approvedBy            String?
+  publishedAt           DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  trends                MarketTrend[]
+  alerts                MarketAlert[]
+  
+  @@index([reportType])
+  @@index([category])
+  @@index([publishedAt])
+}
+
+model MarketAlert {
+  id                    String                  @id @default(uuid())
+  alertType             AlertType
+  severity              Severity
+  category              String
+  title                 String
+  message               String
+  details               Json?
+  affectedBusinesses    String[]                // Business IDs
+  affectedRegions       String[]
+  actionRequired        String[]
+  deadline              DateTime?
+  trendId               String?
+  reportId              String?
+  triggerConditions     Json                    // What triggered this alert
+  thresholdValue        Float?
+  actualValue           Float?
+  impactAssessment      String?
+  recommendations       String[]
+  autoSent              Boolean                 @default(false)
+  sentAt                DateTime?
+  recipientCount        Int                     @default(0)
+  acknowledgedBy        String[]
+  resolvedBy            String?
+  resolvedAt            DateTime?
+  status                AlertStatus
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  trend                 MarketTrend?            @relation(fields: [trendId], references: [id])
+  report                MarketReport?           @relation(fields: [reportId], references: [id])
+  
+  @@index([alertType])
+  @@index([severity])
+  @@index([status])
+  @@index([deadline])
+}
+
+model Benchmark {
+  id                    String                  @id @default(uuid())
+  category              String
+  subcategory           String?
+  metricName            String
+  metricType            MetricType
+  period                String                  // e.g., "2024", "Q1 2024"
+  region                String?
+  entityType            String?                 // Business size/type
+  indigenousOnly        Boolean                 @default(false)
+  sampleSize            Int
+  average               Float
+  median                Float
+  percentile25          Float
+  percentile75          Float
+  percentile90          Float
+  minimum               Float
+  maximum               Float
+  standardDeviation     Float
+  topPerformers         Json?                   // Top 10%
+  insights              String[]
+  dataSource            String
+  lastUpdated           DateTime
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  intelligence          CompetitiveIntelligence[]
+  
+  @@index([category])
+  @@index([metricName])
+  @@index([period])
+}
+
+model DataSource {
+  id                    String                  @id @default(uuid())
+  name                  String
+  type                  DataSourceType
+  url                   String?
+  apiEndpoint           String?
+  apiKey                String?                 // Encrypted
+  frequency             String                  // How often to fetch
+  lastFetched           DateTime?
+  nextFetch             DateTime?
+  isActive              Boolean                 @default(true)
+  reliability           Float                   // 0-1 score
+  dataQuality           Float                   // 0-1 score
+  configuration         Json?
+  errorCount            Int                     @default(0)
+  lastError             String?
+  lastErrorAt           DateTime?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([nextFetch])
+}
+
+// Enums
+enum TrendType {
+  DEMAND
+  SUPPLY
+  PRICING
+  COMPETITION
+  REGULATION
+  TECHNOLOGY
+  SEASONAL
+  ECONOMIC
+  SOCIAL
+  ENVIRONMENTAL
+}
+
+enum TrendDirection {
+  INCREASING
+  DECREASING
+  STABLE
+  VOLATILE
+}
+
+enum EntityType {
+  FEDERAL_GOVERNMENT
+  PROVINCIAL_GOVERNMENT
+  MUNICIPAL_GOVERNMENT
+  CROWN_CORPORATION
+  INDIGENOUS_GOVERNMENT
+  PRIVATE_SECTOR
+  NON_PROFIT
+  EDUCATIONAL
+  HEALTHCARE
+}
+
+enum OpportunityType {
+  RFQ
+  RFP
+  RFI
+  TENDER
+  STANDING_OFFER
+  SUPPLY_ARRANGEMENT
+  CONTRACT_AWARD
+}
+
+enum Priority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum MatchStatus {
+  NEW
+  REVIEWED
+  PURSUING
+  SUBMITTED
+  WON
+  LOST
+  DECLINED
+  EXPIRED
+}
+
+enum ReportType {
+  WEEKLY_SUMMARY
+  MONTHLY_ANALYSIS
+  QUARTERLY_REVIEW
+  ANNUAL_REPORT
+  CATEGORY_ANALYSIS
+  REGIONAL_ANALYSIS
+  OPPORTUNITY_FORECAST
+  COMPETITIVE_LANDSCAPE
+  SUCCESS_FACTORS
+  CUSTOM
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  HTML
+  JSON
+  POWERPOINT
+}
+
+enum AlertType {
+  NEW_OPPORTUNITY
+  HIGH_VALUE_CONTRACT
+  COMPETITOR_WIN
+  MARKET_SHIFT
+  PRICE_CHANGE
+  REGULATION_CHANGE
+  DEADLINE_APPROACHING
+  UNUSUAL_ACTIVITY
+  PERFORMANCE_MILESTONE
+}
+
+enum Severity {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+  INFO
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  IN_PROGRESS
+  RESOLVED
+  EXPIRED
+  CANCELLED
+}
+
+enum MetricType {
+  COUNT
+  VALUE
+  PERCENTAGE
+  RATIO
+  SCORE
+  DURATION
+  RATE
+}
+
+enum DataSourceType {
+  API
+  WEB_SCRAPING
+  RSS_FEED
+  EMAIL
+  MANUAL_UPLOAD
+  DATABASE
+  FILE_IMPORT
+}

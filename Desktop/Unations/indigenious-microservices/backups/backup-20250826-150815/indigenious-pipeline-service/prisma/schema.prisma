@@ -1,0 +1,537 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Opportunity {
+  id                    String                  @id @default(uuid())
+  opportunityNumber     String                  @unique
+  title                 String
+  description           String
+  category              OpportunityCategory
+  stage                 PipelineStage
+  source                OpportunitySource
+  sourceDetails         Json?
+  rfqId                 String?
+  tenderId              String?
+  businessId            String
+  businessName          String
+  isIndigenousBusiness  Boolean
+  indigenousOwnership   Float?
+  value                 Float
+  currency              String                  @default("CAD")
+  probability           Float                   // Win probability 0-100
+  weightedValue         Float                   // Value * Probability
+  expectedCloseDate     DateTime
+  actualCloseDate       DateTime?
+  daysInStage           Int                     @default(0)
+  totalCycleDays        Int                     @default(0)
+  competitorCount       Int                     @default(0)
+  knownCompetitors      String[]
+  indigenousCompetitors Int                     @default(0)
+  clientName            String
+  clientType            ClientType
+  clientIndustry        String
+  location              String
+  region                String
+  indigenousTerritory   String?
+  requiresBonding       Boolean                 @default(false)
+  bondingAmount         Float?
+  requiresCertification String[]
+  subcontractingAllowed Boolean                 @default(false)
+  partnershipDesired    Boolean                 @default(false)
+  indigenousPreference  Boolean                 @default(false)
+  indigenousSetAside    Boolean                 @default(false)
+  setAsidePercentage    Float?
+  bidDeadline           DateTime?
+  submissionDate        DateTime?
+  decisionDate          DateTime?
+  startDate             DateTime?
+  completionDate        DateTime?
+  contractDuration      Int?                    // Days
+  renewalOption         Boolean                 @default(false)
+  renewalTerms          String?
+  assignedTo            String?
+  assignedToName        String?
+  teamMembers           String[]
+  priority              OpportunityPriority
+  status                OpportunityStatus
+  outcome               OpportunityOutcome?
+  winLossReason         String?
+  lessonsLearned        String?
+  profitMargin          Float?
+  actualValue           Float?
+  tags                  String[]
+  customFields          Json?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  activities            OpportunityActivity[]
+  qualifications        QualificationCriteria[]
+  partnerships          PartnershipOpportunity[]
+  recommendations       BidRecommendation[]
+  forecasts             ForecastEntry[]
+  
+  @@index([businessId])
+  @@index([stage])
+  @@index([status])
+  @@index([priority])
+  @@index([expectedCloseDate])
+}
+
+model OpportunityActivity {
+  id                    String                  @id @default(uuid())
+  opportunityId         String
+  activityType          ActivityType
+  description           String
+  performedBy           String
+  performedByName       String
+  activityDate          DateTime
+  duration              Int?                    // Minutes
+  outcome               String?
+  nextAction            String?
+  nextActionDate        DateTime?
+  notes                 String?
+  documents             Json?
+  stageChanged          Boolean                 @default(false)
+  previousStage         PipelineStage?
+  newStage              PipelineStage?
+  probabilityChanged    Boolean                 @default(false)
+  previousProbability   Float?
+  newProbability        Float?
+  valueChanged          Boolean                 @default(false)
+  previousValue         Float?
+  newValue              Float?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  opportunity           Opportunity             @relation(fields: [opportunityId], references: [id])
+  
+  @@index([opportunityId])
+  @@index([activityType])
+  @@index([activityDate])
+}
+
+model QualificationCriteria {
+  id                    String                  @id @default(uuid())
+  opportunityId         String
+  criteriaType          String
+  description           String
+  mandatory             Boolean                 @default(true)
+  weight                Float?                  // For scoring
+  requirement           String
+  currentStatus         QualificationStatus
+  evidence              String?
+  gap                   String?
+  actionRequired        String?
+  responsibleParty      String?
+  dueDate               DateTime?
+  completedDate         DateTime?
+  notes                 String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  opportunity           Opportunity             @relation(fields: [opportunityId], references: [id])
+  
+  @@index([opportunityId])
+  @@index([currentStatus])
+}
+
+model PartnershipOpportunity {
+  id                    String                  @id @default(uuid())
+  opportunityId         String
+  partnershipType       PartnershipType
+  roleNeeded            String
+  scopeDescription      String
+  valueShare            Float?                  // Percentage or amount
+  idealPartnerProfile   Json
+  indigenousPreferred   Boolean                 @default(true)
+  bandAffiliation       String?
+  requiredCapabilities  String[]
+  requiredCertifications String[]
+  experienceRequired    String?
+  potentialPartners     Json?                   // List of matches
+  selectedPartnerId     String?
+  selectedPartnerName   String?
+  agreementStatus       String?
+  agreementTerms        Json?
+  status                PartnershipStatus
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  opportunity           Opportunity             @relation(fields: [opportunityId], references: [id])
+  
+  @@index([opportunityId])
+  @@index([status])
+}
+
+model BidRecommendation {
+  id                    String                  @id @default(uuid())
+  opportunityId         String
+  recommendationType    RecommendationType
+  decision              BidDecision
+  confidence            Float                   // 0-100
+  reasoning             Json                    // ML model output
+  factors               Json                    // Key decision factors
+  strengths             String[]
+  weaknesses            String[]
+  risks                 String[]
+  mitigations           String[]
+  competitivePosition   String?
+  pricingStrategy       String?
+  suggestedMargin       Float?
+  suggestedPrice        Float?
+  partnershipAdvised    Boolean                 @default(false)
+  suggestedPartners     Json?
+  resourceRequirements  Json?
+  timelineAnalysis      Json?
+  winStrategyElements   String[]
+  goNoGoScore           Float
+  minimumAcceptablePrice Float?
+  walkAwayPoint         Float?
+  negotiationStrategy   String?
+  generatedBy           String                  // ML model version
+  generatedAt           DateTime
+  humanReview           Boolean                 @default(false)
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  finalDecision         BidDecision?
+  overrideReason        String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  opportunity           Opportunity             @relation(fields: [opportunityId], references: [id])
+  
+  @@index([opportunityId])
+  @@index([decision])
+}
+
+model PipelineForecast {
+  id                    String                  @id @default(uuid())
+  forecastPeriod        String                  // e.g., "2024-Q1"
+  startDate             DateTime
+  endDate               DateTime
+  businessId            String
+  businessName          String
+  isIndigenousBusiness  Boolean
+  totalOpportunities    Int
+  totalValue            Float
+  weightedValue         Float
+  expectedWins          Int
+  expectedRevenue       Float
+  bestCase              Float
+  worstCase             Float
+  mostLikely            Float
+  confidenceLevel       Float
+  byStage               Json                    // Breakdown by stage
+  byCategory            Json                    // Breakdown by category
+  byRegion              Json                    // Breakdown by region
+  indigenousSetAsides   Float                   // Value of set-aside opportunities
+  partnershipValue      Float                   // Value through partnerships
+  averageDealSize       Float
+  averageCycleTime      Float                   // Days
+  winRate               Float
+  indigenousWinRate     Float                   // Win rate for Indigenous preferences
+  topOpportunities      Json                    // Top 10 by value
+  riskFactors           String[]
+  assumptions           String[]
+  accuracy              Float?                  // Historical accuracy
+  previousForecastId    String?
+  variance              Float?                  // From previous forecast
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  entries               ForecastEntry[]
+  
+  @@index([businessId])
+  @@index([forecastPeriod])
+}
+
+model ForecastEntry {
+  id                    String                  @id @default(uuid())
+  forecastId            String
+  opportunityId         String
+  includeInForecast     Boolean                 @default(true)
+  forecastCategory      ForecastCategory
+  originalValue         Float
+  adjustedValue         Float
+  probability           Float
+  weightedValue         Float
+  expectedCloseDate     DateTime
+  confidenceLevel       Float
+  notes                 String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  forecast              PipelineForecast        @relation(fields: [forecastId], references: [id])
+  opportunity           Opportunity             @relation(fields: [opportunityId], references: [id])
+  
+  @@index([forecastId])
+  @@index([opportunityId])
+}
+
+model OpportunityAlert {
+  id                    String                  @id @default(uuid())
+  alertType             AlertType
+  priority              AlertPriority
+  title                 String
+  description           String
+  opportunityId         String?
+  businessId            String
+  isIndigenousSpecific  Boolean                 @default(false)
+  indigenousSetAside    Boolean                 @default(false)
+  value                 Float?
+  deadline              DateTime?
+  actionRequired        String?
+  actionUrl             String?
+  metadata              Json?
+  status                AlertStatus
+  sentAt                DateTime?
+  readAt                DateTime?
+  actionTakenAt         DateTime?
+  actionTaken           String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([businessId])
+  @@index([alertType])
+  @@index([status])
+  @@index([priority])
+}
+
+model WinLossAnalysis {
+  id                    String                  @id @default(uuid())
+  opportunityId         String                  @unique
+  outcome               OpportunityOutcome
+  analysisDate          DateTime
+  wonAgainst            String[]                // Competitors beaten
+  lostTo                String?                 // Winner if lost
+  winnerType            String?                 // Indigenous, non-Indigenous
+  primaryReason         String
+  secondaryReasons      String[]
+  priceCompetitive      Boolean?
+  priceDifference       Float?                  // Percentage difference
+  technicalScore        Float?
+  clientFeedback        String?
+  internalFactors       String[]                // What we controlled
+  externalFactors       String[]                // What we couldn't control
+  improvementAreas      String[]
+  successFactors        String[]
+  wouldBidAgain         Boolean
+  lessonsLearned        Json
+  recommendations       String[]
+  analyzedBy            String
+  reviewedBy            String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([outcome])
+  @@index([analysisDate])
+}
+
+model CompetitorIntelligence {
+  id                    String                  @id @default(uuid())
+  competitorName        String
+  competitorType        String
+  isIndigenousBusiness  Boolean
+  indigenousOwnership   Float?
+  bandAffiliation       String?
+  strengths             String[]
+  weaknesses            String[]
+  typicalMargin         Float?
+  pricingStrategy       String?
+  winRate               Float?
+  preferredSectors      String[]
+  preferredRegions      String[]
+  certifications        String[]
+  keyPersonnel          Json?
+  recentWins            Json?
+  recentLosses          Json?
+  partnerships          String[]
+  subcontractors        String[]
+  estimatedRevenue      Float?
+  employeeCount         Int?
+  yearsInBusiness       Int?
+  lastUpdated           DateTime
+  dataSource            String
+  reliability           String                  // High, Medium, Low
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([competitorName])
+  @@index([isIndigenousBusiness])
+}
+
+// Enums
+enum OpportunityCategory {
+  CONSTRUCTION
+  PROFESSIONAL_SERVICES
+  IT_SERVICES
+  CONSULTING
+  SUPPLIES
+  EQUIPMENT
+  MAINTENANCE
+  TRANSPORTATION
+  FACILITIES
+  ENVIRONMENTAL
+  ENGINEERING
+  HEALTHCARE
+  EDUCATION
+  OTHER
+}
+
+enum PipelineStage {
+  LEAD
+  QUALIFYING
+  QUALIFIED
+  PROPOSAL
+  NEGOTIATION
+  CLOSED_WON
+  CLOSED_LOST
+  ABANDONED
+}
+
+enum OpportunitySource {
+  RFQ_PORTAL
+  TENDER_SITE
+  DIRECT_INVITATION
+  PARTNER_REFERRAL
+  COLD_OUTREACH
+  EXISTING_CLIENT
+  GOVERNMENT_PORTAL
+  INDIGENOUS_NETWORK
+  TRADE_SHOW
+  OTHER
+}
+
+enum ClientType {
+  GOVERNMENT_FEDERAL
+  GOVERNMENT_PROVINCIAL
+  GOVERNMENT_MUNICIPAL
+  CROWN_CORPORATION
+  PRIVATE_LARGE
+  PRIVATE_MEDIUM
+  PRIVATE_SMALL
+  NON_PROFIT
+  INDIGENOUS_GOVERNMENT
+  INDIGENOUS_BUSINESS
+}
+
+enum OpportunityPriority {
+  CRITICAL
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum OpportunityStatus {
+  ACTIVE
+  ON_HOLD
+  CANCELLED
+  COMPLETED
+}
+
+enum OpportunityOutcome {
+  WON
+  LOST
+  ABANDONED
+  CANCELLED
+}
+
+enum ActivityType {
+  INITIAL_REVIEW
+  QUALIFICATION_CALL
+  SITE_VISIT
+  PROPOSAL_SUBMISSION
+  PRESENTATION
+  NEGOTIATION
+  CONTRACT_REVIEW
+  INTERNAL_REVIEW
+  PARTNER_MEETING
+  CLIENT_MEETING
+  FOLLOW_UP
+  DECISION
+}
+
+enum QualificationStatus {
+  MET
+  NOT_MET
+  IN_PROGRESS
+  NOT_APPLICABLE
+}
+
+enum PartnershipType {
+  PRIME_SUB
+  JOINT_VENTURE
+  CONSORTIUM
+  TEAMING_AGREEMENT
+  SUPPLIER
+  CONSULTANT
+}
+
+enum PartnershipStatus {
+  SEARCHING
+  EVALUATING
+  NEGOTIATING
+  AGREED
+  DECLINED
+  CANCELLED
+}
+
+enum RecommendationType {
+  BID_NO_BID
+  PRICING
+  PARTNERSHIP
+  RESOURCE_ALLOCATION
+  RISK_MITIGATION
+  WIN_STRATEGY
+}
+
+enum BidDecision {
+  STRONG_BID
+  BID
+  CONDITIONAL_BID
+  NO_BID
+  PARTNER_ONLY
+}
+
+enum ForecastCategory {
+  COMMITTED
+  BEST_CASE
+  PIPELINE
+  UPSIDE
+  OMITTED
+}
+
+enum AlertType {
+  NEW_OPPORTUNITY
+  INDIGENOUS_SET_ASIDE
+  DEADLINE_APPROACHING
+  STAGE_STALLED
+  HIGH_VALUE_OPPORTUNITY
+  COMPETITOR_ACTIVITY
+  PARTNERSHIP_NEEDED
+  FORECAST_DEVIATION
+  WIN_LOSS_UPDATE
+}
+
+enum AlertPriority {
+  URGENT
+  HIGH
+  MEDIUM
+  LOW
+}
+
+enum AlertStatus {
+  PENDING
+  SENT
+  READ
+  ACTIONED
+  DISMISSED
+}

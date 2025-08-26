@@ -1,0 +1,619 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model UserProfile {
+  id                    String                  @id @default(uuid())
+  userId                String                  @unique
+  
+  // Basic preferences
+  preferences           Json                    // Product categories, brands, etc.
+  interests             String[]
+  
+  // Indigenous profile
+  indigenousUser        Boolean                 @default(false)
+  bandMembership        String?
+  treatyTerritory       String?
+  culturalInterests     String[]
+  
+  // Medicine wheel alignment
+  primaryDirection      MedicineDirection?      // East, South, West, North
+  seasonalPreference    Season?
+  elementAffinity       Element?
+  
+  // Elder wisdom preferences
+  elderGuidance         Boolean                 @default(false)
+  traditionalFocus      Boolean                 @default(false)
+  ceremonyParticipant   Boolean                 @default(false)
+  
+  // Community preferences
+  communityOriented     Boolean                 @default(false)
+  localFirst            Boolean                 @default(false)
+  supportIndigenous     Boolean                 @default(true)
+  
+  // Language preferences
+  primaryLanguage       String                  @default("en")
+  indigenousLanguages   String[]
+  
+  // Behavioral data
+  browsingHistory       BrowsingHistory[]
+  purchaseHistory       PurchaseHistory[]
+  interactions          UserInteraction[]
+  
+  // Recommendations
+  recommendations       Recommendation[]
+  elderRecommendations  ElderRecommendation[]
+  
+  // Seasonal patterns
+  seasonalPatterns      SeasonalPattern[]
+  
+  // Seven generations thinking
+  sevenGenScore         Int?                    // 1-10
+  futureOriented        Boolean                 @default(false)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([userId])
+  @@index([indigenousUser])
+}
+
+model Recommendation {
+  id                    String                  @id @default(uuid())
+  recommendationId      String                  @unique
+  userId                String
+  
+  // Recommendation details
+  type                  RecommendationType
+  productId             String?
+  vendorId              String?
+  categoryId            String?
+  
+  // Scoring
+  score                 Decimal                 @db.Decimal(5, 4) // 0-1 confidence
+  aiScore               Decimal?                @db.Decimal(5, 4)
+  elderScore            Decimal?                @db.Decimal(5, 4)
+  communityScore        Decimal?                @db.Decimal(5, 4)
+  culturalScore         Decimal?                @db.Decimal(5, 4)
+  
+  // Reasoning
+  reason                String
+  explanation           Json?                   // Detailed explanation
+  
+  // Indigenous factors
+  indigenousVendor      Boolean                 @default(false)
+  culturallyRelevant    Boolean                 @default(false)
+  elderApproved         Boolean                 @default(false)
+  ceremonyAppropriate   Boolean                 @default(false)
+  
+  // Seasonal relevance
+  seasonalRecommendation Boolean                @default(false)
+  season                Season?
+  moonPhase             String?
+  
+  // Medicine wheel alignment
+  medicineWheelAligned  Boolean                 @default(false)
+  direction             MedicineDirection?
+  
+  // Community impact
+  communityBenefit      Decimal?                @db.Decimal(5, 2) // Percentage
+  localImpact           String?
+  
+  // Seven generations perspective
+  futureImpact          String?
+  sustainabilityScore   Decimal?                @db.Decimal(5, 2)
+  
+  // Tracking
+  displayed             Boolean                 @default(false)
+  displayedAt           DateTime?
+  clicked               Boolean                 @default(false)
+  clickedAt             DateTime?
+  converted             Boolean                 @default(false)
+  convertedAt           DateTime?
+  
+  // Feedback
+  feedback              RecommendationFeedback?
+  
+  // Status
+  status                RecommendationStatus    @default(ACTIVE)
+  expiresAt             DateTime?
+  
+  user                  UserProfile             @relation(fields: [userId], references: [userId])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([userId])
+  @@index([type])
+  @@index([status])
+  @@index([createdAt])
+}
+
+model ElderRecommendation {
+  id                    String                  @id @default(uuid())
+  recommendationId      String                  @unique
+  userId                String
+  
+  // Elder details
+  elderId               String
+  elderName             String
+  elderNation           String?
+  
+  // Recommendation
+  type                  ElderRecommendationType
+  productId             String?
+  vendorId              String?
+  teaching              String?
+  
+  // Wisdom shared
+  wisdom                String
+  story                 String?
+  
+  // Cultural significance
+  culturalImportance    CulturalImportance
+  ceremonyRelated       Boolean                 @default(false)
+  sacredKnowledge       Boolean                 @default(false)
+  
+  // Traditional knowledge
+  traditionalUse        String?
+  healingProperties     String?
+  spiritualSignificance String?
+  
+  // Seasonal guidance
+  seasonalGuidance      String?
+  moonPhaseGuidance     String?
+  
+  // Medicine wheel teaching
+  medicineWheelTeaching String?
+  direction             MedicineDirection?
+  
+  // Community context
+  communityContext      String?
+  generationalWisdom    String?
+  
+  // Youth guidance
+  youthGuidance         Boolean                 @default(false)
+  ageAppropriate        String?
+  
+  // Validation
+  validatedByElders     Int                     @default(1)
+  consensusReached      Boolean                 @default(false)
+  
+  // Privacy
+  publicSharing         Boolean                 @default(true)
+  restrictedKnowledge   Boolean                 @default(false)
+  
+  // Engagement
+  viewed                Int                     @default(0)
+  helpful               Int                     @default(0)
+  shared                Int                     @default(0)
+  
+  user                  UserProfile             @relation(fields: [userId], references: [userId])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([userId])
+  @@index([elderId])
+  @@index([type])
+}
+
+model BrowsingHistory {
+  id                    String                  @id @default(uuid())
+  userId                String
+  
+  // Item viewed
+  productId             String?
+  categoryId            String?
+  vendorId              String?
+  
+  // Session data
+  sessionId             String
+  pageUrl               String
+  referrer              String?
+  
+  // Behavior
+  viewDuration          Int                     // seconds
+  interactions          Json?                   // Clicks, scrolls, etc.
+  
+  // Context
+  deviceType            String?
+  location              String?
+  
+  user                  UserProfile             @relation(fields: [userId], references: [userId])
+  
+  timestamp             DateTime                @default(now())
+  
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model PurchaseHistory {
+  id                    String                  @id @default(uuid())
+  userId                String
+  
+  // Purchase details
+  orderId               String
+  productId             String
+  productName           String
+  categoryId            String?
+  vendorId              String?
+  
+  // Transaction
+  quantity              Int
+  price                 Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous purchase
+  indigenousVendor      Boolean                 @default(false)
+  culturalItem          Boolean                 @default(false)
+  ceremonyPurchase      Boolean                 @default(false)
+  
+  // Satisfaction
+  rating                Int?                    // 1-5
+  reviewed              Boolean                 @default(false)
+  
+  user                  UserProfile             @relation(fields: [userId], references: [userId])
+  
+  purchaseDate          DateTime
+  
+  @@index([userId])
+  @@index([purchaseDate])
+}
+
+model UserInteraction {
+  id                    String                  @id @default(uuid())
+  userId                String
+  
+  // Interaction type
+  type                  InteractionType
+  targetId              String                  // Product, vendor, recommendation ID
+  targetType            String
+  
+  // Action
+  action                String                  // Like, save, share, etc.
+  
+  // Context
+  context               Json?
+  
+  user                  UserProfile             @relation(fields: [userId], references: [userId])
+  
+  timestamp             DateTime                @default(now())
+  
+  @@index([userId])
+  @@index([type])
+  @@index([timestamp])
+}
+
+model SeasonalPattern {
+  id                    String                  @id @default(uuid())
+  userId                String
+  
+  // Season
+  season                Season
+  year                  Int
+  
+  // Patterns observed
+  topCategories         String[]
+  purchaseFrequency     Int
+  avgOrderValue         Decimal                 @db.Decimal(19, 4)
+  
+  // Cultural patterns
+  ceremonyPurchases     Int                     @default(0)
+  giftingIncreased      Boolean                 @default(false)
+  traditionalItems      Int                     @default(0)
+  
+  user                  UserProfile             @relation(fields: [userId], references: [userId])
+  
+  @@unique([userId, season, year])
+  @@index([userId])
+  @@index([season])
+}
+
+model RecommendationFeedback {
+  id                    String                  @id @default(uuid())
+  recommendationId      String                  @unique
+  
+  // Feedback
+  helpful               Boolean
+  relevant              Boolean
+  culturallyAppropriate Boolean?
+  
+  // Reason
+  reason                String?
+  
+  // Elder validation
+  elderValidated        Boolean                 @default(false)
+  elderFeedback         String?
+  
+  recommendation        Recommendation          @relation(fields: [recommendationId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([recommendationId])
+}
+
+model CollaborativeFilter {
+  id                    String                  @id @default(uuid())
+  
+  // User similarity matrix
+  userId1               String
+  userId2               String
+  similarity            Decimal                 @db.Decimal(5, 4) // 0-1
+  
+  // Calculation method
+  method                FilterMethod
+  
+  // Cultural affinity
+  culturalSimilarity    Decimal?                @db.Decimal(5, 4)
+  communityConnection   Boolean                 @default(false)
+  
+  lastCalculated        DateTime
+  
+  @@unique([userId1, userId2, method])
+  @@index([userId1])
+  @@index([userId2])
+  @@index([similarity])
+}
+
+model ProductEmbedding {
+  id                    String                  @id @default(uuid())
+  productId             String                  @unique
+  
+  // Vector embedding
+  embedding             Json                    // Vector representation
+  
+  // Metadata embeddings
+  culturalEmbedding     Json?
+  traditionalEmbedding  Json?
+  
+  // Dimensions
+  dimensions            Int
+  
+  // Model used
+  model                 String
+  version               String
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([productId])
+}
+
+model RecommendationModel {
+  id                    String                  @id @default(uuid())
+  modelId               String                  @unique
+  
+  // Model details
+  name                  String
+  type                  ModelType
+  version               String
+  
+  // Performance metrics
+  accuracy              Decimal                 @db.Decimal(5, 4)
+  precision             Decimal                 @db.Decimal(5, 4)
+  recall                Decimal                 @db.Decimal(5, 4)
+  
+  // Cultural metrics
+  culturalAccuracy      Decimal?                @db.Decimal(5, 4)
+  elderApprovalRate     Decimal?                @db.Decimal(5, 4)
+  
+  // Training data
+  trainingSize          Int
+  features              Json
+  
+  // Hyperparameters
+  hyperparameters       Json
+  
+  // Status
+  status                ModelStatus
+  deployed              Boolean                 @default(false)
+  
+  // Indigenous AI ethics
+  ethicsReviewed        Boolean                 @default(false)
+  communityApproved     Boolean                 @default(false)
+  biasAssessed          Boolean                 @default(false)
+  
+  trainedAt             DateTime
+  deployedAt            DateTime?
+  
+  @@index([type])
+  @@index([status])
+}
+
+model WisdomRule {
+  id                    String                  @id @default(uuid())
+  ruleId                String                  @unique
+  
+  // Rule details
+  name                  String
+  description           String
+  
+  // Type
+  type                  WisdomType
+  
+  // Conditions
+  conditions            Json                    // When to apply
+  
+  // Actions
+  actions               Json                    // What to recommend
+  
+  // Weight
+  weight                Decimal                 @db.Decimal(3, 2) // Importance
+  
+  // Elder source
+  elderId               String?
+  elderName             String?
+  nation                String?
+  
+  // Cultural context
+  culturalContext       String?
+  ceremonySpecific      Boolean                 @default(false)
+  seasonSpecific        Boolean                 @default(false)
+  
+  // Validation
+  validated             Boolean                 @default(false)
+  validatedBy           String?
+  
+  // Active
+  active                Boolean                 @default(true)
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([type])
+  @@index([active])
+}
+
+model CeremonyCalendar {
+  id                    String                  @id @default(uuid())
+  ceremonyId            String                  @unique
+  
+  // Ceremony details
+  name                  String
+  type                  CeremonyType
+  description           String
+  
+  // Timing
+  date                  DateTime?               // Specific date
+  moonPhase             String?                 // Moon-based timing
+  season                Season?                 // Seasonal ceremony
+  
+  // Products/services needed
+  recommendedProducts   String[]                // Product IDs
+  requiredItems         Json?                   // Required items list
+  
+  // Cultural significance
+  nation                String?
+  region                String?
+  publicCeremony        Boolean                 @default(false)
+  
+  // Preparation time
+  prepDays              Int                     // Days to prepare
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([type])
+  @@index([date])
+  @@index([season])
+}
+
+// Enums
+enum RecommendationType {
+  PRODUCT
+  VENDOR
+  CATEGORY
+  BUNDLE
+  SEASONAL
+  CEREMONY
+  GIFT
+  COMMUNITY
+}
+
+enum ElderRecommendationType {
+  PRODUCT
+  VENDOR
+  TEACHING
+  PRACTICE
+  CEREMONY_PREP
+  SEASONAL_GUIDANCE
+  LIFE_GUIDANCE
+  YOUTH_TEACHING
+}
+
+enum MedicineDirection {
+  EAST
+  SOUTH
+  WEST
+  NORTH
+}
+
+enum Season {
+  SPRING
+  SUMMER
+  FALL
+  WINTER
+}
+
+enum Element {
+  EARTH
+  AIR
+  FIRE
+  WATER
+}
+
+enum CulturalImportance {
+  LOW
+  MEDIUM
+  HIGH
+  SACRED
+  ESSENTIAL
+}
+
+enum RecommendationStatus {
+  ACTIVE
+  EXPIRED
+  ACCEPTED
+  REJECTED
+  CONVERTED
+}
+
+enum InteractionType {
+  VIEW
+  CLICK
+  LIKE
+  SAVE
+  SHARE
+  PURCHASE
+  REVIEW
+  IGNORE
+}
+
+enum FilterMethod {
+  COSINE_SIMILARITY
+  PEARSON_CORRELATION
+  JACCARD_INDEX
+  CULTURAL_AFFINITY
+}
+
+enum ModelType {
+  COLLABORATIVE
+  CONTENT_BASED
+  HYBRID
+  ELDER_WISDOM
+  DEEP_LEARNING
+  GRAPH_BASED
+}
+
+enum ModelStatus {
+  TRAINING
+  VALIDATING
+  READY
+  DEPLOYED
+  RETIRED
+}
+
+enum WisdomType {
+  PRODUCT_SELECTION
+  VENDOR_PREFERENCE
+  SEASONAL_GUIDANCE
+  CEREMONY_PREPARATION
+  GIFT_GIVING
+  YOUTH_GUIDANCE
+  HEALING
+  SPIRITUAL
+}
+
+enum CeremonyType {
+  SMUDGING
+  SWEAT_LODGE
+  SUN_DANCE
+  POTLATCH
+  POWWOW
+  NAMING
+  COMING_OF_AGE
+  SEASONAL
+  HEALING
+  THANKSGIVING
+}

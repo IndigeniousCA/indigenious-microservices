@@ -1,0 +1,71 @@
+version: '3.8'
+
+services:
+  compliance-service:
+    build: .
+    container_name: indigenious-compliance-service
+    ports:
+      - "3008:3008"
+    environment:
+      - NODE_ENV=production
+      - PORT=3008
+      - DATABASE_URL=postgresql://postgres:password@postgres:5432/compliance_db
+      - REDIS_URL=redis://redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - AUDIT_SECRET=${AUDIT_SECRET}
+      - CERTIFICATION_SECRET=${CERTIFICATION_SECRET}
+      - CCAB_API_URL=${CCAB_API_URL}
+      - CCAB_API_KEY=${CCAB_API_KEY}
+      - ISC_API_URL=${ISC_API_URL}
+      - ISC_API_TOKEN=${ISC_API_TOKEN}
+      - GOV_REGISTRY_API_URL=${GOV_REGISTRY_API_URL}
+      - GOV_REGISTRY_API_KEY=${GOV_REGISTRY_API_KEY}
+      - AWS_REGION=${AWS_REGION}
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - S3_BUCKET_NAME=${S3_BUCKET_NAME}
+      - ENABLE_BLOCKCHAIN=${ENABLE_BLOCKCHAIN}
+      - BLOCKCHAIN_URL=${BLOCKCHAIN_URL}
+    depends_on:
+      - postgres
+      - redis
+    networks:
+      - indigenious-network
+    restart: unless-stopped
+    volumes:
+      - ./logs:/app/logs
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: compliance-postgres
+    environment:
+      - POSTGRES_USER=postgres
+      - POSTGRES_PASSWORD=password
+      - POSTGRES_DB=compliance_db
+    ports:
+      - "5437:5432"
+    volumes:
+      - compliance-postgres-data:/var/lib/postgresql/data
+    networks:
+      - indigenious-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    container_name: compliance-redis
+    ports:
+      - "6387:6379"
+    volumes:
+      - compliance-redis-data:/data
+    networks:
+      - indigenious-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  compliance-postgres-data:
+  compliance-redis-data:
+
+networks:
+  indigenious-network:
+    driver: bridge

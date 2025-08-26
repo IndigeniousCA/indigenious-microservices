@@ -1,0 +1,1173 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Warehouse {
+  id                    String                  @id @default(uuid())
+  warehouseId           String                  @unique
+  warehouseCode         String                  @unique
+  
+  // Basic information
+  name                  String
+  type                  WarehouseType
+  description           String?
+  
+  // Location
+  address               Json                    // Street, city, province, postal, country
+  coordinates           Json?                   // Latitude, longitude
+  timeZone              String
+  region                String
+  
+  // Indigenous warehouse details
+  isIndigenousWarehouse Boolean                 @default(false)
+  onReserve             Boolean                 @default(false)
+  bandNumber            String?
+  treatyTerritory       String?
+  traditionalTerritory  String?
+  indigenousOperator    String?
+  
+  // Remote location logistics
+  remoteLocation        Boolean                 @default(false)
+  accessMethod          AccessMethod?
+  winterRoadAccess      Boolean                 @default(false)
+  winterRoadMonths      String[]                // Months when winter road is accessible
+  floatPlaneAccess      Boolean                 @default(false)
+  bargeAccess           Boolean                 @default(false)
+  
+  // Cultural considerations
+  culturalProtocols     Json?
+  elderSupervision      Boolean                 @default(false)
+  ceremonySpace         Boolean                 @default(false)
+  traditionalStorage    Boolean                 @default(false)
+  sacredItemStorage     Boolean                 @default(false)
+  
+  // Capacity
+  totalArea             Decimal                 @db.Decimal(10, 2)
+  areaUnit              String                  @default("sq_m")
+  storageCapacity       Decimal                 @db.Decimal(10, 2)
+  capacityUnit          String                  @default("pallets")
+  currentUtilization    Decimal                 @db.Decimal(5, 2) @default(0)
+  
+  // Zones and locations
+  zones                 WarehouseZone[]
+  locations             StorageLocation[]
+  
+  // Equipment
+  equipmentList         Json?                   // Forklifts, pallet jacks, etc.
+  automationLevel       AutomationLevel
+  wmsIntegrated         Boolean                 @default(false)
+  rfidEnabled           Boolean                 @default(false)
+  
+  // Climate control
+  climateControlled     Boolean                 @default(false)
+  temperatureZones      Json?                   // Different temperature zones
+  humidityControl       Boolean                 @default(false)
+  
+  // Security
+  securityLevel         SecurityLevel
+  accessControl         Boolean                 @default(false)
+  cctv                  Boolean                 @default(false)
+  fireProtection        Boolean                 @default(false)
+  
+  // Operations
+  operatingHours        Json
+  staffCount            Int
+  shiftPatterns         Json?
+  pickingStrategies     String[]                // FIFO, LIFO, FEFO, Zone Picking
+  
+  // Certifications
+  certifications        Json?                   // ISO, GMP, etc.
+  indigenousCertified   Boolean                 @default(false)
+  
+  // Inbound/Outbound
+  receivingDocks        Int                     @default(1)
+  shippingDocks         Int                     @default(1)
+  crossDockCapable      Boolean                 @default(false)
+  
+  // Performance metrics
+  performanceMetrics    WarehousePerformance[]
+  
+  // Status
+  status                WarehouseStatus         @default(ACTIVE)
+  
+  // Key dates
+  establishedDate       DateTime?
+  lastAuditDate         DateTime?
+  nextAuditDate         DateTime?
+  
+  // Metadata
+  tags                  String[]
+  notes                 String?
+  metadata              Json?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([warehouseCode])
+  @@index([type])
+  @@index([region])
+  @@index([isIndigenousWarehouse])
+  @@index([status])
+}
+
+model WarehouseZone {
+  id                    String                  @id @default(uuid())
+  zoneId                String                  @unique
+  warehouseId           String
+  
+  // Zone details
+  zoneName              String
+  zoneCode              String
+  zoneType              ZoneType
+  
+  // Purpose
+  purpose               String?
+  storageType           StorageType
+  
+  // Indigenous zone features
+  indigenousRestricted  Boolean                 @default(false)
+  ceremonyItems         Boolean                 @default(false)
+  elderAccessOnly       Boolean                 @default(false)
+  culturalItems         Boolean                 @default(false)
+  
+  // Physical characteristics
+  area                  Decimal                 @db.Decimal(10, 2)
+  height                Decimal                 @db.Decimal(5, 2)
+  capacity              Decimal                 @db.Decimal(10, 2)
+  currentOccupancy      Decimal                 @db.Decimal(5, 2) @default(0)
+  
+  // Climate control
+  temperatureControlled Boolean                 @default(false)
+  temperatureRange      Json?
+  humidityControlled    Boolean                 @default(false)
+  humidityRange         Json?
+  
+  // Access control
+  restrictedAccess      Boolean                 @default(false)
+  accessList            String[]                // User IDs with access
+  
+  // Storage locations in this zone
+  locations             StorageLocation[]
+  
+  // Picking priority
+  pickingPriority       Int                     @default(1)
+  
+  // Status
+  status                ZoneStatus              @default(ACTIVE)
+  
+  warehouse             Warehouse               @relation(fields: [warehouseId], references: [id])
+  
+  @@index([warehouseId])
+  @@index([zoneCode])
+  @@index([zoneType])
+  @@index([status])
+}
+
+model StorageLocation {
+  id                    String                  @id @default(uuid())
+  locationId            String                  @unique
+  warehouseId           String
+  zoneId                String?
+  
+  // Location identifier
+  locationCode          String                  @unique // e.g., A-01-02-03 (Aisle-Rack-Level-Bin)
+  aisle                 String?
+  rack                  String?
+  level                 String?
+  bin                   String?
+  
+  // Location type
+  locationType          LocationType
+  storageClass          StorageClass
+  
+  // Indigenous storage features
+  traditionalStorage    Boolean                 @default(false)
+  medicineWheel         Boolean                 @default(false) // Organized by medicine wheel
+  seasonalStorage       Boolean                 @default(false)
+  ceremonyReserved      Boolean                 @default(false)
+  
+  // Dimensions
+  width                 Decimal?                @db.Decimal(5, 2)
+  depth                 Decimal?                @db.Decimal(5, 2)
+  height                Decimal?                @db.Decimal(5, 2)
+  weightCapacity        Decimal?                @db.Decimal(10, 2)
+  
+  // Current inventory
+  currentInventory      InventoryLocation[]
+  
+  // Restrictions
+  hazmatApproved        Boolean                 @default(false)
+  foodGradeApproved     Boolean                 @default(false)
+  temperatureControlled Boolean                 @default(false)
+  
+  // Accessibility
+  groundLevel           Boolean                 @default(true)
+  forkliftAccessible    Boolean                 @default(true)
+  handPickAccessible    Boolean                 @default(true)
+  
+  // ABC Classification
+  abcClassification     ABCClassification?
+  velocityClass         VelocityClass?
+  
+  // Status
+  status                LocationStatus          @default(AVAILABLE)
+  blocked               Boolean                 @default(false)
+  blockReason           String?
+  
+  zone                  WarehouseZone?          @relation(fields: [zoneId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([warehouseId])
+  @@index([zoneId])
+  @@index([locationCode])
+  @@index([status])
+  @@index([abcClassification])
+}
+
+model InventoryLocation {
+  id                    String                  @id @default(uuid())
+  inventoryLocationId   String                  @unique
+  
+  // Location reference
+  locationId            String
+  productId             String
+  
+  // Quantities
+  quantity              Decimal                 @db.Decimal(10, 3)
+  reservedQuantity      Decimal                 @db.Decimal(10, 3) @default(0)
+  availableQuantity     Decimal                 @db.Decimal(10, 3)
+  
+  // Batch/Lot tracking
+  batchNumber           String?
+  lotNumber             String?
+  serialNumbers         String[]
+  expiryDate            DateTime?
+  
+  // Indigenous tracking
+  harvestBatch          String?
+  harvestLocation       String?
+  blessedByElder        Boolean                 @default(false)
+  ceremonyPrepared      Boolean                 @default(false)
+  communitySource       String?
+  
+  // FIFO/FEFO tracking
+  receivedDate          DateTime
+  ageInDays             Int                     @default(0)
+  
+  // Quality
+  qualityStatus         QualityStatus
+  quarantined           Boolean                 @default(false)
+  
+  // Pick face
+  isPickFace            Boolean                 @default(false)
+  replenishmentLevel    Decimal?                @db.Decimal(10, 3)
+  
+  location              StorageLocation         @relation(fields: [locationId], references: [id])
+  pickTasks             PickTask[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([locationId])
+  @@index([productId])
+  @@index([batchNumber])
+  @@index([expiryDate])
+}
+
+model InboundShipment {
+  id                    String                  @id @default(uuid())
+  shipmentId            String                  @unique
+  warehouseId           String
+  
+  // Shipment details
+  shipmentNumber        String                  @unique
+  referenceNumber       String?
+  
+  // Type
+  shipmentType          ShipmentType
+  priority              ShipmentPriority
+  
+  // Source
+  supplierId            String?
+  supplierName          String?
+  originLocation        String?
+  
+  // Indigenous shipment tracking
+  indigenousSupplier    Boolean                 @default(false)
+  traditionalGoods      Boolean                 @default(false)
+  ceremonyItems         Boolean                 @default(false)
+  elderEscorted         Boolean                 @default(false)
+  
+  // Remote logistics
+  winterRoadShipment    Boolean                 @default(false)
+  floatPlaneShipment    Boolean                 @default(false)
+  bargeShipment         Boolean                 @default(false)
+  
+  // Expected details
+  expectedArrival       DateTime
+  expectedItems         Json                    // Array of expected items
+  expectedPallets       Int?
+  expectedWeight        Decimal?                @db.Decimal(10, 2)
+  
+  // Actual details
+  actualArrival         DateTime?
+  actualItems           Json?
+  actualPallets         Int?
+  actualWeight          Decimal?                @db.Decimal(10, 2)
+  
+  // Documents
+  documents             Json?                   // BOL, Packing List, etc.
+  
+  // Receiving
+  receivingDock         String?
+  receivingTasks        ReceivingTask[]
+  
+  // Status tracking
+  status                InboundStatus
+  
+  // Quality control
+  qualityCheckRequired  Boolean                 @default(false)
+  qualityCheckCompleted Boolean                 @default(false)
+  
+  // Cultural protocols
+  culturalProtocols     Json?
+  purificationRequired  Boolean                 @default(false)
+  smudgingCompleted     Boolean                 @default(false)
+  
+  // Putaway
+  putawayTasks          PutawayTask[]
+  putawayCompleted      Boolean                 @default(false)
+  
+  // Timestamps
+  createdAt             DateTime                @default(now())
+  receivedAt            DateTime?
+  completedAt           DateTime?
+  
+  createdBy             String
+  
+  @@index([shipmentNumber])
+  @@index([warehouseId])
+  @@index([status])
+  @@index([expectedArrival])
+}
+
+model OutboundShipment {
+  id                    String                  @id @default(uuid())
+  shipmentId            String                  @unique
+  warehouseId           String
+  
+  // Shipment details
+  shipmentNumber        String                  @unique
+  orderNumber           String?
+  
+  // Type
+  shipmentType          ShipmentType
+  priority              ShipmentPriority
+  
+  // Destination
+  customerId            String?
+  customerName          String?
+  destinationAddress    Json
+  
+  // Indigenous delivery
+  indigenousCustomer    Boolean                 @default(false)
+  communityDelivery     Boolean                 @default(false)
+  ceremonyDelivery      Boolean                 @default(false)
+  elderDelivery         Boolean                 @default(false)
+  
+  // Remote delivery logistics
+  remoteDelivery        Boolean                 @default(false)
+  winterRoadDelivery    Boolean                 @default(false)
+  floatPlaneDelivery    Boolean                 @default(false)
+  lastMileMethod        LastMileMethod?
+  
+  // Community considerations
+  communityCoordinator  String?
+  culturalConsiderations Json?
+  deliveryProtocols     Json?
+  
+  // Shipping details
+  carrier               String?
+  trackingNumber        String?
+  shippingMethod        ShippingMethod
+  
+  // Items
+  items                 Json                    // Array of items to ship
+  totalWeight           Decimal?                @db.Decimal(10, 2)
+  totalVolume           Decimal?                @db.Decimal(10, 3)
+  palletCount           Int?
+  
+  // Picking
+  pickWave              PickWave?
+  pickTasks             PickTask[]
+  
+  // Packing
+  packingRequired       Boolean                 @default(true)
+  packingTasks          PackingTask[]
+  packingCompleted      Boolean                 @default(false)
+  
+  // Loading
+  loadingDock           String?
+  loadingSequence       Int?
+  
+  // Status
+  status                OutboundStatus
+  
+  // Dates
+  requestedShipDate     DateTime
+  actualShipDate        DateTime?
+  estimatedDelivery     DateTime?
+  actualDelivery        DateTime?
+  
+  // Cultural delivery
+  ceremonyDate          DateTime?
+  moonPhaseDelivery     String?                 // Some items delivered based on moon phases
+  seasonalDelivery      String?
+  
+  createdAt             DateTime                @default(now())
+  shippedAt             DateTime?
+  deliveredAt           DateTime?
+  
+  createdBy             String
+  
+  @@index([shipmentNumber])
+  @@index([warehouseId])
+  @@index([status])
+  @@index([requestedShipDate])
+}
+
+model ReceivingTask {
+  id                    String                  @id @default(uuid())
+  taskId                String                  @unique
+  shipmentId            String
+  
+  // Task details
+  taskType              TaskType
+  priority              TaskPriority
+  
+  // Item details
+  productId             String
+  expectedQuantity      Decimal                 @db.Decimal(10, 3)
+  receivedQuantity      Decimal?                @db.Decimal(10, 3)
+  
+  // Quality check
+  qualityCheckRequired  Boolean                 @default(false)
+  qualityCheckPassed    Boolean?
+  qualityNotes          String?
+  
+  // Cultural check
+  elderInspection       Boolean                 @default(false)
+  culturalApproval      Boolean?
+  
+  // Location
+  receivingLocation     String?
+  putawayLocation       String?
+  
+  // Status
+  status                TaskStatus
+  
+  // Assignment
+  assignedTo            String?
+  
+  // Timestamps
+  startedAt             DateTime?
+  completedAt           DateTime?
+  
+  shipment              InboundShipment         @relation(fields: [shipmentId], references: [id])
+  
+  @@index([shipmentId])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+model PutawayTask {
+  id                    String                  @id @default(uuid())
+  taskId                String                  @unique
+  shipmentId            String
+  
+  // Task details
+  priority              TaskPriority
+  
+  // Item details
+  productId             String
+  quantity              Decimal                 @db.Decimal(10, 3)
+  
+  // Location
+  fromLocation          String
+  toLocation            String
+  suggestedLocation     String?
+  
+  // Special handling
+  fragile               Boolean                 @default(false)
+  heavyItem             Boolean                 @default(false)
+  ceremonyItem          Boolean                 @default(false)
+  elderHandling         Boolean                 @default(false)
+  
+  // Equipment
+  equipmentRequired     String?
+  
+  // Status
+  status                TaskStatus
+  
+  // Assignment
+  assignedTo            String?
+  
+  // Timestamps
+  startedAt             DateTime?
+  completedAt           DateTime?
+  
+  shipment              InboundShipment         @relation(fields: [shipmentId], references: [id])
+  
+  @@index([shipmentId])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+model PickWave {
+  id                    String                  @id @default(uuid())
+  waveId                String                  @unique
+  warehouseId           String
+  
+  // Wave details
+  waveNumber            String                  @unique
+  waveType              WaveType
+  
+  // Priority
+  priority              WavePriority
+  
+  // Orders in wave
+  orderCount            Int
+  orderIds              String[]
+  
+  // Indigenous considerations
+  indigenousOrders      Int                     @default(0)
+  ceremonyOrders        Int                     @default(0)
+  elderPriority         Boolean                 @default(false)
+  
+  // Optimization
+  optimizationMethod    OptimizationMethod
+  routeOptimized        Boolean                 @default(false)
+  
+  // Tasks
+  pickTasks             PickTask[]
+  totalTasks            Int                     @default(0)
+  completedTasks        Int                     @default(0)
+  
+  // Status
+  status                WaveStatus
+  
+  // Release
+  releasedAt            DateTime?
+  releasedBy            String?
+  
+  // Completion
+  startedAt             DateTime?
+  completedAt           DateTime?
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([waveNumber])
+  @@index([warehouseId])
+  @@index([status])
+  @@index([priority])
+}
+
+model PickTask {
+  id                    String                  @id @default(uuid())
+  taskId                String                  @unique
+  waveId                String?
+  shipmentId            String?
+  
+  // Task details
+  taskNumber            String
+  pickType              PickType
+  priority              TaskPriority
+  
+  // Product and location
+  productId             String
+  quantity              Decimal                 @db.Decimal(10, 3)
+  locationId            String
+  
+  // Special instructions
+  specialInstructions   String?
+  culturalInstructions  String?
+  elderGuidance         String?
+  
+  // Batch/lot
+  batchNumber           String?
+  lotNumber             String?
+  
+  // Indigenous item handling
+  ceremonyItem          Boolean                 @default(false)
+  sacredItem            Boolean                 @default(false)
+  traditionalPackaging  Boolean                 @default(false)
+  
+  // Pick confirmation
+  pickedQuantity        Decimal?                @db.Decimal(10, 3)
+  shortPick             Boolean                 @default(false)
+  shortPickReason       String?
+  
+  // Equipment
+  equipmentRequired     String?
+  
+  // Status
+  status                TaskStatus
+  
+  // Assignment
+  assignedTo            String?
+  zone                  String?
+  
+  // Timestamps
+  startedAt             DateTime?
+  completedAt           DateTime?
+  
+  // Travel distance
+  travelDistance        Decimal?                @db.Decimal(10, 2) // meters
+  
+  wave                  PickWave?               @relation(fields: [waveId], references: [id])
+  shipment              OutboundShipment?       @relation(fields: [shipmentId], references: [id])
+  inventoryLocation     InventoryLocation?      @relation(fields: [locationId], references: [id])
+  
+  @@index([waveId])
+  @@index([shipmentId])
+  @@index([status])
+  @@index([assignedTo])
+  @@index([zone])
+}
+
+model PackingTask {
+  id                    String                  @id @default(uuid())
+  taskId                String                  @unique
+  shipmentId            String
+  
+  // Task details
+  packingStation        String?
+  containerType         ContainerType
+  containerNumber       String?
+  
+  // Items to pack
+  items                 Json                    // Array of items
+  
+  // Special packing
+  fragileItems          Boolean                 @default(false)
+  ceremonyWrapping      Boolean                 @default(false)
+  giftWrapping          Boolean                 @default(false)
+  traditionalPackaging  Boolean                 @default(false)
+  
+  // Cultural protocols
+  smudgingRequired      Boolean                 @default(false)
+  blessingRequired      Boolean                 @default(false)
+  elderSupervision      Boolean                 @default(false)
+  
+  // Packing materials
+  packingMaterials      Json?
+  sustainableMaterials  Boolean                 @default(false)
+  
+  // Documentation
+  packingSlipGenerated  Boolean                 @default(false)
+  labelsGenerated       Boolean                 @default(false)
+  
+  // Status
+  status                TaskStatus
+  
+  // Assignment
+  assignedTo            String?
+  
+  // Timestamps
+  startedAt             DateTime?
+  completedAt           DateTime?
+  
+  shipment              OutboundShipment        @relation(fields: [shipmentId], references: [id])
+  
+  @@index([shipmentId])
+  @@index([status])
+  @@index([assignedTo])
+}
+
+model WarehouseTransfer {
+  id                    String                  @id @default(uuid())
+  transferId            String                  @unique
+  
+  // Transfer details
+  transferNumber        String                  @unique
+  transferType          TransferType
+  
+  // Warehouses
+  fromWarehouseId       String
+  toWarehouseId         String
+  
+  // Items
+  items                 Json                    // Array of items to transfer
+  totalQuantity         Decimal                 @db.Decimal(10, 3)
+  
+  // Indigenous transfer
+  indigenousGoods       Boolean                 @default(false)
+  ceremonyTransfer      Boolean                 @default(false)
+  seasonalTransfer      Boolean                 @default(false)
+  
+  // Remote logistics
+  winterRoadTransfer    Boolean                 @default(false)
+  floatPlaneTransfer    Boolean                 @default(false)
+  
+  // Reason
+  reasonCode            TransferReason
+  reasonDescription     String?
+  
+  // Approval
+  approvalRequired      Boolean                 @default(false)
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Elder approval for cultural items
+  elderApprovalRequired Boolean                 @default(false)
+  elderApprovedBy       String?
+  
+  // Status
+  status                TransferStatus
+  
+  // Dates
+  requestedDate         DateTime
+  shipDate              DateTime?
+  receivedDate          DateTime?
+  
+  // Tracking
+  trackingNumber        String?
+  carrier               String?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([transferNumber])
+  @@index([fromWarehouseId])
+  @@index([toWarehouseId])
+  @@index([status])
+}
+
+model WarehousePerformance {
+  id                    String                  @id @default(uuid())
+  performanceId         String                  @unique
+  warehouseId           String
+  
+  // Performance period
+  periodStart           DateTime
+  periodEnd             DateTime
+  
+  // Receiving metrics
+  receivingEfficiency   Decimal                 @db.Decimal(5, 2)
+  receivingAccuracy     Decimal                 @db.Decimal(5, 2)
+  avgReceivingTime      Decimal                 @db.Decimal(10, 2) // minutes
+  
+  // Putaway metrics
+  putawayEfficiency     Decimal                 @db.Decimal(5, 2)
+  putawayAccuracy       Decimal                 @db.Decimal(5, 2)
+  avgPutawayTime        Decimal                 @db.Decimal(10, 2) // minutes
+  
+  // Picking metrics
+  pickingAccuracy       Decimal                 @db.Decimal(5, 2)
+  pickingProductivity   Decimal                 @db.Decimal(10, 2) // lines per hour
+  avgPickTime           Decimal                 @db.Decimal(10, 2) // minutes
+  
+  // Shipping metrics
+  shippingAccuracy      Decimal                 @db.Decimal(5, 2)
+  onTimeShipment        Decimal                 @db.Decimal(5, 2)
+  avgShipTime           Decimal                 @db.Decimal(10, 2) // minutes
+  
+  // Inventory metrics
+  inventoryAccuracy     Decimal                 @db.Decimal(5, 2)
+  stockoutRate          Decimal                 @db.Decimal(5, 2)
+  inventoryTurnover     Decimal                 @db.Decimal(5, 2)
+  
+  // Space utilization
+  spaceUtilization      Decimal                 @db.Decimal(5, 2)
+  
+  // Indigenous metrics
+  indigenousOrderFill   Decimal?                @db.Decimal(5, 2)
+  ceremonyOrderOnTime   Decimal?                @db.Decimal(5, 2)
+  culturalCompliance    Decimal?                @db.Decimal(5, 2)
+  
+  // Labor metrics
+  laborProductivity     Decimal                 @db.Decimal(10, 2)
+  laborUtilization      Decimal                 @db.Decimal(5, 2)
+  
+  // Cost metrics
+  costPerOrder          Decimal?                @db.Decimal(10, 2)
+  costPerLine           Decimal?                @db.Decimal(10, 2)
+  
+  warehouse             Warehouse               @relation(fields: [warehouseId], references: [id])
+  
+  evaluatedBy           String
+  evaluatedAt           DateTime                @default(now())
+  
+  @@unique([warehouseId, periodStart, periodEnd])
+  @@index([warehouseId])
+  @@index([periodStart])
+}
+
+model CycleCountPlan {
+  id                    String                  @id @default(uuid())
+  planId                String                  @unique
+  warehouseId           String
+  
+  // Plan details
+  planName              String
+  countType             CountType
+  frequency             CountFrequency
+  
+  // Scope
+  zoneIds               String[]
+  productCategories     String[]
+  abcClasses            String[]
+  
+  // Indigenous focus
+  indigenousProducts    Boolean                 @default(false)
+  ceremonyItems         Boolean                 @default(false)
+  traditionalCount      Boolean                 @default(false)
+  
+  // Schedule
+  scheduledDate         DateTime
+  completedDate         DateTime?
+  
+  // Tasks
+  totalLocations        Int
+  countedLocations      Int                     @default(0)
+  
+  // Variance
+  totalVariance         Decimal?                @db.Decimal(10, 3)
+  varianceValue         Decimal?                @db.Decimal(19, 4)
+  
+  // Status
+  status                CountPlanStatus
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([warehouseId])
+  @@index([scheduledDate])
+  @@index([status])
+}
+
+// Enums
+enum WarehouseType {
+  DISTRIBUTION_CENTER
+  FULFILLMENT_CENTER
+  CROSS_DOCK
+  COLD_STORAGE
+  RESERVE_WAREHOUSE
+  COMMUNITY_HUB
+  TRADITIONAL_STORAGE
+}
+
+enum AccessMethod {
+  ROAD
+  WINTER_ROAD
+  FLOAT_PLANE
+  BARGE
+  HELICOPTER
+  ATV_TRAIL
+  BOAT
+}
+
+enum AutomationLevel {
+  MANUAL
+  SEMI_AUTOMATED
+  AUTOMATED
+  HIGHLY_AUTOMATED
+}
+
+enum SecurityLevel {
+  BASIC
+  MEDIUM
+  HIGH
+  MAXIMUM
+}
+
+enum WarehouseStatus {
+  ACTIVE
+  INACTIVE
+  MAINTENANCE
+  SEASONAL_CLOSED
+  PERMANENTLY_CLOSED
+}
+
+enum ZoneType {
+  RECEIVING
+  STORAGE
+  PICKING
+  PACKING
+  SHIPPING
+  RETURNS
+  QUARANTINE
+  HAZMAT
+  COLD_STORAGE
+  CEREMONY_ITEMS
+  SACRED_STORAGE
+}
+
+enum StorageType {
+  PALLET_RACK
+  SHELVING
+  FLOOR_STACK
+  MEZZANINE
+  CAROUSEL
+  TRADITIONAL
+  CEREMONY_SPACE
+}
+
+enum ZoneStatus {
+  ACTIVE
+  INACTIVE
+  RESTRICTED
+  MAINTENANCE
+}
+
+enum LocationType {
+  BULK
+  RACK
+  SHELF
+  BIN
+  FLOOR
+  STAGING
+  DOCK
+  TRADITIONAL_SPACE
+}
+
+enum StorageClass {
+  STANDARD
+  HAZMAT
+  COLD
+  FROZEN
+  SECURE
+  CEREMONIAL
+  SACRED
+}
+
+enum LocationStatus {
+  AVAILABLE
+  OCCUPIED
+  RESERVED
+  BLOCKED
+  MAINTENANCE
+}
+
+enum ABCClassification {
+  A
+  B
+  C
+  CEREMONIAL
+  TRADITIONAL
+}
+
+enum VelocityClass {
+  FAST_MOVING
+  MEDIUM_MOVING
+  SLOW_MOVING
+  SEASONAL
+}
+
+enum QualityStatus {
+  GOOD
+  ACCEPTABLE
+  QUARANTINE
+  REJECTED
+  ELDER_APPROVED
+}
+
+enum ShipmentType {
+  STANDARD
+  EXPRESS
+  BULK
+  LTL
+  FTL
+  INDIGENOUS_PRIORITY
+  CEREMONY_URGENT
+}
+
+enum ShipmentPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  CRITICAL
+  CEREMONY
+  ELDER_REQUEST
+}
+
+enum InboundStatus {
+  SCHEDULED
+  IN_TRANSIT
+  ARRIVED
+  RECEIVING
+  QUALITY_CHECK
+  PUTAWAY
+  COMPLETED
+  CANCELLED
+}
+
+enum OutboundStatus {
+  PENDING
+  WAVE_ASSIGNED
+  PICKING
+  PACKING
+  STAGED
+  LOADING
+  SHIPPED
+  DELIVERED
+  CANCELLED
+}
+
+enum ShippingMethod {
+  GROUND
+  AIR
+  OCEAN
+  RAIL
+  WINTER_ROAD
+  FLOAT_PLANE
+  BARGE
+  LOCAL_DELIVERY
+}
+
+enum LastMileMethod {
+  TRUCK
+  VAN
+  SNOWMOBILE
+  ATV
+  BOAT
+  HELICOPTER
+  COMMUNITY_PICKUP
+}
+
+enum TaskType {
+  RECEIVING
+  PUTAWAY
+  PICKING
+  PACKING
+  LOADING
+  COUNTING
+  TRANSFER
+}
+
+enum TaskPriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum TaskStatus {
+  PENDING
+  ASSIGNED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum WaveType {
+  SINGLE_ORDER
+  MULTI_ORDER
+  BATCH
+  ZONE
+  INDIGENOUS_PRIORITY
+}
+
+enum WavePriority {
+  LOW
+  NORMAL
+  HIGH
+  URGENT
+  CEREMONY
+}
+
+enum OptimizationMethod {
+  SHORTEST_PATH
+  ZONE_PICKING
+  BATCH_OPTIMAL
+  PRIORITY_BASED
+  CULTURAL_PRIORITY
+}
+
+enum WaveStatus {
+  PLANNED
+  RELEASED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+enum PickType {
+  PIECE
+  CASE
+  PALLET
+  EACH
+  CEREMONIAL
+}
+
+enum ContainerType {
+  BOX
+  PALLET
+  TOTE
+  BAG
+  ENVELOPE
+  TRADITIONAL_BUNDLE
+  CEREMONY_CONTAINER
+}
+
+enum TransferType {
+  STANDARD
+  EMERGENCY
+  SEASONAL
+  REBALANCING
+  CEREMONY
+}
+
+enum TransferReason {
+  STOCK_BALANCING
+  SEASONAL_DEMAND
+  EMERGENCY_REPLENISHMENT
+  CEREMONY_PREPARATION
+  COMMUNITY_NEED
+  QUALITY_ISSUE
+}
+
+enum TransferStatus {
+  REQUESTED
+  APPROVED
+  IN_TRANSIT
+  RECEIVED
+  COMPLETED
+  CANCELLED
+}
+
+enum CountType {
+  FULL
+  CYCLE
+  SPOT
+  ABC
+  RANDOM
+  TRADITIONAL
+}
+
+enum CountFrequency {
+  DAILY
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUAL
+  SEASONAL
+}
+
+enum CountPlanStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}

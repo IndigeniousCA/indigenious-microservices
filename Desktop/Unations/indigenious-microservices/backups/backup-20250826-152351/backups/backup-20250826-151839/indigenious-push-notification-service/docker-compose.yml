@@ -1,0 +1,216 @@
+version: '3.8'
+
+services:
+  push-notification-service:
+    build: .
+    ports:
+      - "3046:3046"
+    environment:
+      - NODE_ENV=production
+      - PORT=3046
+      - DATABASE_URL=postgresql://push_user:push_pass@push-db:5432/indigenous_push_db
+      - REDIS_URL=redis://push-redis:6379
+      - REDIS_HOST=push-redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      # Firebase Configuration
+      - FIREBASE_SERVICE_ACCOUNT=${FIREBASE_SERVICE_ACCOUNT}
+      # APNS Configuration
+      - APNS_KEY_PATH=/app/certificates/apns-key.p8
+      - APNS_KEY_ID=${APNS_KEY_ID}
+      - APNS_TEAM_ID=${APNS_TEAM_ID}
+      - APNS_BUNDLE_ID=${APNS_BUNDLE_ID}
+      # Web Push Configuration
+      - VAPID_PUBLIC_KEY=${VAPID_PUBLIC_KEY}
+      - VAPID_PRIVATE_KEY=${VAPID_PRIVATE_KEY}
+      - VAPID_SUBJECT=${VAPID_SUBJECT}
+      # OneSignal Configuration
+      - ONESIGNAL_APP_ID=${ONESIGNAL_APP_ID}
+      - ONESIGNAL_API_KEY=${ONESIGNAL_API_KEY}
+      # CORS
+      - CORS_ORIGIN=${CORS_ORIGIN}
+    depends_on:
+      - push-db
+      - push-redis
+    networks:
+      - push-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3046/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    volumes:
+      - ./logs:/app/logs
+      - ./certificates:/app/certificates:ro
+
+  push-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_push_db
+      - POSTGRES_USER=push_user
+      - POSTGRES_PASSWORD=push_pass
+    volumes:
+      - push-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5452:5432"
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  push-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 512mb --maxmemory-policy allkeys-lru
+    ports:
+      - "6402:6379"
+    volumes:
+      - push-redis-data:/data
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # Push queue monitoring
+  bull-board:
+    image: deadly0/bull-board:latest
+    environment:
+      - REDIS_HOST=push-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    ports:
+      - "3049:3000"
+    depends_on:
+      - push-redis
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # Analytics and monitoring
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource,postgres-datasource
+    ports:
+      - "3050:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - push-db
+      - push-redis
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9093:9090"
+    volumes:
+      - ./prometheus/push-prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # WebSocket server for real-time notifications
+  websocket-server:
+    build: .
+    command: ["node", "dist/websocket-server.js"]
+    ports:
+      - "3051:3051"
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://push_user:push_pass@push-db:5432/indigenous_push_db
+      - REDIS_URL=redis://push-redis:6379
+    depends_on:
+      - push-db
+      - push-redis
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # Notification scheduler
+  scheduler:
+    build: .
+    command: ["node", "dist/scheduler.js"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://push_user:push_pass@push-db:5432/indigenous_push_db
+      - REDIS_URL=redis://push-redis:6379
+    depends_on:
+      - push-db
+      - push-redis
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # Elasticsearch for notification search
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9203:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # Kibana for analytics
+  kibana:
+    image: kibana:8.11.0
+    environment:
+      - ELASTICSEARCH_HOSTS=http://elasticsearch:9200
+    ports:
+      - "5604:5601"
+    depends_on:
+      - elasticsearch
+    networks:
+      - push-network
+    restart: unless-stopped
+
+  # HAProxy for load balancing
+  haproxy:
+    image: haproxy:alpine
+    ports:
+      - "8081:80"
+      - "8405:8404"
+    volumes:
+      - ./haproxy/haproxy-push.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - push-notification-service
+    networks:
+      - push-network
+    restart: unless-stopped
+
+volumes:
+  push-db-data:
+    driver: local
+  push-redis-data:
+    driver: local
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+
+networks:
+  push-network:
+    driver: bridge
+  microservices-network:
+    external: true

@@ -1,0 +1,1143 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Product {
+  id                    String                  @id @default(uuid())
+  productId             String                  @unique
+  sku                   String                  @unique
+  
+  // Basic product information
+  name                  String
+  description           String?                 @db.Text
+  brand                 String?
+  model                 String?
+  category              String
+  subcategory           String?
+  
+  // Product classification
+  productType           ProductType
+  commodityCode         String?
+  unspscCode            String?                 // Universal Standard Products and Services Classification
+  
+  // Indigenous product details
+  isIndigenousProduct   Boolean                 @default(false)
+  indigenousClassification IndigenousClassification?
+  originCommunity       String?
+  bandNumber            String?
+  treatyTerritory       String?
+  
+  // Traditional and cultural aspects
+  traditionalProduct    Boolean                 @default(false)
+  traditionalMethods    Boolean                 @default(false)
+  culturalSignificance  CulturalSignificance?
+  culturalProtocols     Json?                   // Cultural protocols and restrictions
+  elderApprovalRequired Boolean                 @default(false)
+  elderApprovalStatus   ApprovalStatus?
+  
+  // Traditional knowledge
+  incorporatesTraditionalKnowledge Boolean     @default(false)
+  traditionalKnowledgeSource String?
+  knowledgeProtections  Json?                   // IP protections and restrictions
+  
+  // Seasonal and availability
+  seasonalProduct       Boolean                 @default(false)
+  seasonalPattern       Json?                   // Seasonal availability patterns
+  harvestSeason         String?
+  availabilityCalendar  Json?
+  
+  // Physical characteristics
+  weight                Decimal?                @db.Decimal(10, 3)
+  weightUnit            String?                 @default("kg")
+  dimensions            Json?                   // Length, width, height
+  volume                Decimal?                @db.Decimal(10, 3)
+  volumeUnit            String?                 @default("L")
+  color                 String?
+  size                  String?
+  material              String?
+  
+  // Packaging
+  packageType           String?
+  packageSize           String?
+  packagingMaterial     String?
+  sustainablePackaging  Boolean                 @default(false)
+  recyclablePackaging   Boolean                 @default(false)
+  
+  // Pricing
+  basePrice             Decimal?                @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  priceUnit             String?                 @default("EA")
+  costPrice             Decimal?                @db.Decimal(19, 4)
+  marginPercentage      Decimal?                @db.Decimal(5, 2)
+  
+  // Indigenous pricing considerations
+  communityPrice        Decimal?                @db.Decimal(19, 4) // Special pricing for Indigenous communities
+  ceremonyPrice         Decimal?                @db.Decimal(19, 4) // Pricing for ceremonial use
+  
+  // Supplier information
+  primarySupplierId     String?
+  supplierProductCode   String?
+  alternativeSuppliers  Json?                   // Array of supplier IDs
+  
+  // Quality and certifications
+  qualityGrade          QualityGrade?
+  certifications        ProductCertification[]
+  
+  // Sustainability
+  sustainabilityScore   Decimal?                @db.Decimal(5, 2)
+  carbonFootprint       Decimal?                @db.Decimal(10, 4)
+  renewableContent      Decimal?                @db.Decimal(5, 2) // Percentage
+  recycledContent       Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Indigenous sustainability
+  harvestSustainability SustainabilityRating?
+  communityImpact       CommunityImpactRating?
+  traditionalSustainability Boolean             @default(false)
+  
+  // Storage requirements
+  storageRequirements   Json?                   // Temperature, humidity, light conditions
+  shelfLife             Int?                    // Days
+  perishable            Boolean                 @default(false)
+  hazardous             Boolean                 @default(false)
+  hazardClass           String?
+  
+  // Tracking and identification
+  barcodeType           BarcodeType?
+  barcode               String?
+  rfidEnabled           Boolean                 @default(false)
+  rfidTag               String?
+  qrCodeData            String?
+  
+  // Inventory relationship
+  inventoryItems        InventoryItem[]
+  
+  // Transactions
+  stockMovements        StockMovement[]
+  
+  // Status
+  status                ProductStatus           @default(ACTIVE)
+  discontinuedDate      DateTime?
+  replacementProductId  String?
+  
+  // Metadata
+  tags                  String[]
+  customFields          Json?
+  notes                 String?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([productId])
+  @@index([sku])
+  @@index([name])
+  @@index([category])
+  @@index([isIndigenousProduct])
+  @@index([traditionalProduct])
+  @@index([status])
+  @@index([primarySupplierId])
+}
+
+model InventoryItem {
+  id                    String                  @id @default(uuid())
+  inventoryId           String                  @unique
+  productId             String
+  locationId            String
+  
+  // Current stock levels
+  quantityOnHand        Decimal                 @db.Decimal(10, 3) @default(0)
+  quantityReserved      Decimal                 @db.Decimal(10, 3) @default(0)
+  quantityAvailable     Decimal                 @db.Decimal(10, 3) @default(0)
+  quantityInTransit     Decimal                 @db.Decimal(10, 3) @default(0)
+  quantityBackordered   Decimal                 @db.Decimal(10, 3) @default(0)
+  
+  // Stock management
+  unitOfMeasure         String                  @default("EA")
+  reorderPoint          Decimal?                @db.Decimal(10, 3)
+  reorderQuantity       Decimal?                @db.Decimal(10, 3)
+  maximumStock          Decimal?                @db.Decimal(10, 3)
+  minimumStock          Decimal?                @db.Decimal(10, 3)
+  safetyStock           Decimal?                @db.Decimal(10, 3)
+  
+  // Indigenous considerations
+  communityReservedStock Decimal?               @db.Decimal(10, 3) // Stock reserved for Indigenous communities
+  ceremonyReservedStock Decimal?                @db.Decimal(10, 3) // Stock reserved for ceremonial use
+  elderAccessStock      Decimal?                @db.Decimal(10, 3) // Stock accessible only to Elders
+  
+  // Lot/batch tracking
+  lotTracking           Boolean                 @default(false)
+  batchTracking         Boolean                 @default(false)
+  serialTracking        Boolean                 @default(false)
+  
+  // Traditional tracking
+  harvestBatch          String?                 // Traditional harvest batch identifier
+  harvestDate           DateTime?
+  harvestLocation       String?
+  harvestBy             String?                 // Elder/traditional harvester
+  blessedByElder        Boolean                 @default(false)
+  ceremonyPerformed     Boolean                 @default(false)
+  
+  // Valuation
+  averageCost           Decimal?                @db.Decimal(19, 4)
+  totalValue            Decimal?                @db.Decimal(19, 4)
+  lastCostUpdate        DateTime?
+  
+  // ABC Analysis
+  abcClassification     ABCClassification?
+  movementFrequency     MovementFrequency?
+  demandVariability     DemandVariability?
+  
+  // Quality control
+  qualityStatus         QualityStatus           @default(GOOD)
+  lastQualityCheck      DateTime?
+  qualityNotes          String?
+  expiryDate            DateTime?
+  
+  // Location details
+  location              Location                @relation(fields: [locationId], references: [id])
+  product               Product                 @relation(fields: [productId], references: [id])
+  
+  // Stock movements
+  stockMovements        StockMovement[]
+  
+  // Cycle counting
+  cycleCounts           CycleCount[]
+  lastCountDate         DateTime?
+  countVariance         Decimal?                @db.Decimal(10, 3) @default(0)
+  
+  // Forecasting
+  forecastedDemand      Decimal?                @db.Decimal(10, 3)
+  forecastPeriod        String?                 // Weekly, Monthly, Quarterly
+  seasonalFactor        Decimal?                @db.Decimal(5, 2)
+  
+  // Alerts and notifications
+  alerts                InventoryAlert[]
+  
+  // Status
+  status                InventoryStatus         @default(ACTIVE)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([productId])
+  @@index([locationId])
+  @@index([quantityOnHand])
+  @@index([abcClassification])
+  @@index([status])
+}
+
+model Location {
+  id                    String                  @id @default(uuid())
+  locationId            String                  @unique
+  
+  // Basic location information
+  name                  String
+  code                  String                  @unique
+  type                  LocationType
+  description           String?
+  
+  // Address
+  address               Json                    // Street, city, province, postal, country
+  coordinates           Json?                   // Latitude, longitude
+  timeZone              String?
+  
+  // Indigenous location details
+  isIndigenousLocation  Boolean                 @default(false)
+  onReserve             Boolean                 @default(false)
+  bandTerritory         String?
+  treatyNumber          String?
+  traditionalName       String?                 // Traditional Indigenous name
+  
+  // Cultural considerations
+  culturalProtocols     Json?                   // Cultural protocols for the location
+  accessRestrictions    Json?                   // Access restrictions and permissions
+  elderSupervision      Boolean                 @default(false)
+  ceremonySpace         Boolean                 @default(false)
+  sacredSite            Boolean                 @default(false)
+  
+  // Physical characteristics
+  totalArea             Decimal?                @db.Decimal(10, 2)
+  areaUnit              String?                 @default("sq_m")
+  capacity              Decimal?                @db.Decimal(10, 2)
+  capacityUnit          String?
+  
+  // Climate control
+  climateControlled     Boolean                 @default(false)
+  temperatureRange      Json?                   // Min/max temperature
+  humidityRange         Json?                   // Min/max humidity
+  
+  // Security
+  securityLevel         SecurityLevel
+  accessControlled      Boolean                 @default(false)
+  surveillanceSystem    Boolean                 @default(false)
+  
+  // Traditional storage methods
+  traditionalStorage    Boolean                 @default(false)
+  storageMethod         String?                 // Traditional storage method description
+  elderGuidance         Boolean                 @default(false)
+  seasonalAccess        Boolean                 @default(false)
+  
+  // Operational details
+  operatingHours        Json?
+  staffCount            Int?
+  managerName           String?
+  contactInfo           Json?
+  
+  // Hierarchy
+  parentLocationId      String?
+  parentLocation        Location?               @relation("LocationHierarchy", fields: [parentLocationId], references: [id])
+  childLocations        Location[]              @relation("LocationHierarchy")
+  
+  // Equipment and facilities
+  equipment             Json?
+  facilities            Json?
+  loadingDocks          Int?
+  
+  // Inventory items at this location
+  inventoryItems        InventoryItem[]
+  
+  // Stock movements
+  stockMovements        StockMovement[]
+  
+  // Status
+  status                LocationStatus          @default(ACTIVE)
+  
+  // Key dates
+  establishedDate       DateTime?
+  closedDate            DateTime?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([locationId])
+  @@index([code])
+  @@index([type])
+  @@index([isIndigenousLocation])
+  @@index([status])
+}
+
+model StockMovement {
+  id                    String                  @id @default(uuid())
+  movementId            String                  @unique
+  
+  // Movement details
+  productId             String
+  inventoryId           String?
+  locationId            String
+  
+  // Movement type
+  movementType          MovementType
+  direction             MovementDirection       // IN or OUT
+  
+  // Quantities
+  quantity              Decimal                 @db.Decimal(10, 3)
+  unitOfMeasure         String                  @default("EA")
+  
+  // Cost information
+  unitCost              Decimal?                @db.Decimal(19, 4)
+  totalCost             Decimal?                @db.Decimal(19, 4)
+  
+  // Transaction references
+  referenceType         ReferenceType?
+  referenceId           String?                 // Purchase order, sales order, etc.
+  referenceNumber       String?
+  
+  // Indigenous transaction tracking
+  isIndigenousTransaction Boolean               @default(false)
+  communityTransaction  Boolean                 @default(false)
+  ceremonyTransaction   Boolean                 @default(false)
+  elderAuthorized       Boolean                 @default(false)
+  
+  // Batch/lot tracking
+  batchNumber           String?
+  lotNumber             String?
+  serialNumbers         String[]
+  expiryDate            DateTime?
+  
+  // Traditional tracking
+  harvestBatch          String?
+  harvestLocation       String?
+  harvestDate           DateTime?
+  traditionalPreparation String?
+  culturalSignificance  String?
+  
+  // Quality information
+  qualityGrade          QualityGrade?
+  qualityNotes          String?
+  inspectedBy           String?
+  inspectionDate        DateTime?
+  
+  // Source/destination
+  sourceLocationId      String?
+  destinationLocationId String?
+  supplierId            String?
+  customerId            String?
+  
+  // Shipping/receiving
+  shipmentNumber        String?
+  trackingNumber        String?
+  carrier               String?
+  
+  // Movement reason
+  reasonCode            ReasonCode
+  reasonDescription     String?
+  
+  // Authorization
+  authorizedBy          String
+  approvalRequired      Boolean                 @default(false)
+  approvalStatus        ApprovalStatus?
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Elder authorization for traditional products
+  elderApprovalRequired Boolean                 @default(false)
+  elderApprovalStatus   ApprovalStatus?
+  elderApprovedBy       String?
+  
+  // Timing
+  transactionDate       DateTime                @default(now())
+  effectiveDate         DateTime?
+  
+  // Relationships
+  product               Product                 @relation(fields: [productId], references: [id])
+  inventoryItem         InventoryItem?          @relation(fields: [inventoryId], references: [id])
+  location              Location                @relation(fields: [locationId], references: [id])
+  
+  // Related adjustments
+  adjustments           StockAdjustment[]
+  
+  // Status
+  status                MovementStatus          @default(PENDING)
+  
+  // Metadata
+  notes                 String?
+  customFields          Json?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([movementId])
+  @@index([productId])
+  @@index([locationId])
+  @@index([movementType])
+  @@index([transactionDate])
+  @@index([isIndigenousTransaction])
+}
+
+model StockAdjustment {
+  id                    String                  @id @default(uuid())
+  adjustmentId          String                  @unique
+  
+  // Adjustment details
+  productId             String
+  inventoryId           String?
+  locationId            String
+  
+  // Adjustment type
+  adjustmentType        AdjustmentType
+  adjustmentReason      AdjustmentReason
+  
+  // Quantities
+  quantityBefore        Decimal                 @db.Decimal(10, 3)
+  quantityAfter         Decimal                 @db.Decimal(10, 3)
+  adjustmentQuantity    Decimal                 @db.Decimal(10, 3)
+  
+  // Cost impact
+  unitCost              Decimal?                @db.Decimal(19, 4)
+  totalCostImpact       Decimal?                @db.Decimal(19, 4)
+  
+  // Related stock movement
+  stockMovementId       String?
+  stockMovement         StockMovement?          @relation(fields: [stockMovementId], references: [id])
+  
+  // Traditional considerations
+  traditionalReason     String?                 // Traditional/ceremonial reason for adjustment
+  elderGuidance         Boolean                 @default(false)
+  culturalProtocol      String?
+  
+  // Cycle count related
+  cycleCountId          String?
+  
+  // Authorization
+  authorizedBy          String
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Elder approval for traditional products
+  elderApprovalRequired Boolean                 @default(false)
+  elderApprovalStatus   ApprovalStatus?
+  elderApprovedBy       String?
+  
+  // Documentation
+  documentation         Json?                   // Photos, forms, receipts
+  notes                 String?
+  
+  // Timing
+  adjustmentDate        DateTime                @default(now())
+  effectiveDate         DateTime?
+  
+  // Status
+  status                AdjustmentStatus        @default(PENDING)
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([adjustmentId])
+  @@index([productId])
+  @@index([adjustmentType])
+  @@index([adjustmentDate])
+}
+
+model CycleCount {
+  id                    String                  @id @default(uuid())
+  countId               String                  @unique
+  
+  // Count details
+  inventoryId           String
+  locationId            String
+  productId             String
+  
+  // Count information
+  countType             CountType
+  countMethod           CountMethod
+  
+  // Quantities
+  systemQuantity        Decimal                 @db.Decimal(10, 3)
+  countedQuantity       Decimal                 @db.Decimal(10, 3)
+  variance              Decimal                 @db.Decimal(10, 3)
+  variancePercentage    Decimal?                @db.Decimal(5, 2)
+  
+  // Traditional counting methods
+  traditionalCount      Boolean                 @default(false)
+  countingCeremony      Boolean                 @default(false)
+  elderSupervision      Boolean                 @default(false)
+  communityCount        Boolean                 @default(false)
+  
+  // Cost impact
+  unitCost              Decimal?                @db.Decimal(19, 4)
+  varianceCost          Decimal?                @db.Decimal(19, 4)
+  
+  // Count execution
+  countDate             DateTime
+  countedBy             String
+  verifiedBy            String?
+  
+  // Elder verification for traditional products
+  elderVerification     Boolean                 @default(false)
+  elderVerifiedBy       String?
+  elderVerificationDate DateTime?
+  
+  // Count accuracy
+  accuracyScore         Decimal?                @db.Decimal(5, 2)
+  
+  // Adjustment created
+  adjustmentRequired    Boolean                 @default(false)
+  adjustmentCreated     Boolean                 @default(false)
+  adjustmentId          String?
+  
+  // Count schedule
+  scheduledDate         DateTime?
+  frequency             CountFrequency?
+  nextCountDate         DateTime?
+  
+  // Status
+  status                CountStatus
+  
+  // Notes and observations
+  notes                 String?
+  discrepancyNotes      String?
+  
+  // Relationships
+  inventoryItem         InventoryItem           @relation(fields: [inventoryId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([countId])
+  @@index([inventoryId])
+  @@index([countDate])
+  @@index([status])
+}
+
+model InventoryAlert {
+  id                    String                  @id @default(uuid())
+  alertId               String                  @unique
+  
+  // Alert details
+  inventoryId           String?
+  productId             String?
+  locationId            String?
+  
+  // Alert type and severity
+  alertType             AlertType
+  severity              AlertSeverity
+  
+  // Alert content
+  title                 String
+  message               String
+  
+  // Trigger conditions
+  triggerCondition      String
+  triggerValue          String?
+  currentValue          String?
+  
+  // Indigenous specific alerts
+  indigenousAlert       Boolean                 @default(false)
+  communityAlert        Boolean                 @default(false)
+  elderNotification     Boolean                 @default(false)
+  culturalConsideration String?
+  
+  // Alert status
+  status                AlertStatus
+  acknowledgedBy        String?
+  acknowledgedAt        DateTime?
+  resolvedAt            DateTime?
+  
+  // Actions
+  recommendedActions    Json?
+  actionsTaken          Json?
+  
+  // Escalation
+  escalated             Boolean                 @default(false)
+  escalatedTo           String?
+  escalationDate        DateTime?
+  
+  // Notification
+  notificationsSent     Json?
+  lastNotificationAt    DateTime?
+  
+  // Relationships
+  inventoryItem         InventoryItem?          @relation(fields: [inventoryId], references: [id])
+  
+  triggeredAt           DateTime                @default(now())
+  
+  @@index([alertId])
+  @@index([alertType])
+  @@index([severity])
+  @@index([status])
+  @@index([triggeredAt])
+}
+
+model ProductCertification {
+  id                    String                  @id @default(uuid())
+  certificationId       String                  @unique
+  productId             String
+  
+  // Certification details
+  name                  String
+  type                  CertificationType
+  issuingBody           String
+  certificationNumber   String
+  
+  // Indigenous certifications
+  isIndigenousCertification Boolean             @default(false)
+  traditionalAuthentication Boolean            @default(false)
+  elderAuthentication   Boolean                 @default(false)
+  communityAuthentication Boolean               @default(false)
+  
+  // Validity
+  issueDate             DateTime
+  expiryDate            DateTime?
+  isActive              Boolean                 @default(true)
+  
+  // Scope
+  scope                 String?
+  applicableProducts    String[]
+  
+  // Verification
+  verificationNumber    String?
+  verificationUrl       String?
+  
+  // Traditional verification
+  elderVerifier         String?
+  communityVerifier     String?
+  traditionalProcess    String?
+  
+  // Documentation
+  documentUrl           String?
+  
+  product               Product                 @relation(fields: [productId], references: [id])
+  
+  @@index([productId])
+  @@index([type])
+  @@index([expiryDate])
+}
+
+model InventoryReport {
+  id                    String                  @id @default(uuid())
+  reportId              String                  @unique
+  
+  // Report details
+  reportType            ReportType
+  title                 String
+  description           String?
+  
+  // Report parameters
+  parameters            Json                    // Filters, date ranges, locations
+  
+  // Report data
+  data                  Json                    // Generated report data
+  summary               Json?                   // Summary statistics
+  
+  // Indigenous reporting
+  indigenousData        Json?                   // Indigenous-specific data
+  communityBreakdown    Json?                   // Breakdown by community
+  traditionalProducts   Json?                   // Traditional product analysis
+  culturalImpact        Json?                   // Cultural impact metrics
+  
+  // Report generation
+  generatedAt           DateTime                @default(now())
+  generatedBy           String
+  
+  // Report output
+  format                ReportFormat
+  fileUrl               String?
+  fileSize              Int?
+  
+  // Status
+  status                ReportStatus
+  
+  // Schedule
+  scheduled             Boolean                 @default(false)
+  scheduleFrequency     String?
+  nextGenerationDate    DateTime?
+  
+  // Distribution
+  recipients            Json?
+  emailSent             Boolean                 @default(false)
+  
+  @@index([reportType])
+  @@index([generatedAt])
+  @@index([status])
+}
+
+model InventoryForecast {
+  id                    String                  @id @default(uuid())
+  forecastId            String                  @unique
+  
+  // Forecast details
+  productId             String
+  locationId            String?
+  
+  // Forecast period
+  forecastPeriod        ForecastPeriod
+  periodStart           DateTime
+  periodEnd             DateTime
+  
+  // Demand forecast
+  forecastedDemand      Decimal                 @db.Decimal(10, 3)
+  confidenceLevel       Decimal?                @db.Decimal(5, 2)
+  
+  // Indigenous considerations
+  traditionalSeasonal   Boolean                 @default(false)
+  ceremonyDemand        Boolean                 @default(false)
+  communityEvents       Json?                   // Community events affecting demand
+  harvestSeason         String?
+  
+  // Forecast model
+  forecastModel         ForecastModel
+  modelAccuracy         Decimal?                @db.Decimal(5, 2)
+  historicalData        Json?
+  
+  // Seasonal factors
+  seasonalFactors       Json?
+  trendFactors          Json?
+  
+  // Actual vs forecast
+  actualDemand          Decimal?                @db.Decimal(10, 3)
+  variance              Decimal?                @db.Decimal(10, 3)
+  variancePercentage    Decimal?                @db.Decimal(5, 2)
+  
+  // Recommendations
+  recommendedStock      Decimal?                @db.Decimal(10, 3)
+  recommendedOrders     Json?
+  
+  // Status
+  status                ForecastStatus
+  
+  // Generation details
+  generatedAt           DateTime                @default(now())
+  generatedBy           String
+  lastUpdated           DateTime                @updatedAt
+  
+  @@index([forecastId])
+  @@index([productId])
+  @@index([periodStart])
+  @@index([forecastPeriod])
+}
+
+// Enums
+enum ProductType {
+  MANUFACTURED
+  RAW_MATERIAL
+  COMPONENT
+  ASSEMBLY
+  FINISHED_GOOD
+  SERVICE
+  DIGITAL
+  TRADITIONAL_CRAFT
+  CEREMONIAL_ITEM
+}
+
+enum IndigenousClassification {
+  FIRST_NATIONS_MADE
+  METIS_MADE
+  INUIT_MADE
+  TRADITIONAL_CRAFT
+  CEREMONIAL_ITEM
+  TRADITIONAL_MEDICINE
+  CULTURAL_ARTIFACT
+}
+
+enum CulturalSignificance {
+  CEREMONIAL
+  MEDICINAL
+  SPIRITUAL
+  ARTISTIC
+  UTILITARIAN
+  EDUCATIONAL
+  SACRED
+}
+
+enum QualityGrade {
+  PREMIUM
+  STANDARD
+  SECONDS
+  DEFECTIVE
+  TRADITIONAL_GRADE_A
+  TRADITIONAL_GRADE_B
+  ELDER_APPROVED
+}
+
+enum SustainabilityRating {
+  EXCELLENT
+  GOOD
+  FAIR
+  POOR
+  TRADITIONAL_SUSTAINABLE
+}
+
+enum CommunityImpactRating {
+  HIGH_POSITIVE
+  POSITIVE
+  NEUTRAL
+  NEGATIVE
+  HIGH_NEGATIVE
+}
+
+enum BarcodeType {
+  UPC
+  EAN
+  CODE128
+  QR_CODE
+  DATA_MATRIX
+}
+
+enum ProductStatus {
+  ACTIVE
+  INACTIVE
+  DISCONTINUED
+  PENDING_APPROVAL
+  UNDER_REVIEW
+}
+
+enum LocationType {
+  WAREHOUSE
+  STORE
+  DISTRIBUTION_CENTER
+  MANUFACTURING
+  OFFICE
+  RESERVE_LOCATION
+  COMMUNITY_CENTER
+  TRADITIONAL_STORAGE
+  CEREMONY_SPACE
+}
+
+enum SecurityLevel {
+  LOW
+  MEDIUM
+  HIGH
+  MAXIMUM
+  CULTURAL_PROTECTION
+}
+
+enum LocationStatus {
+  ACTIVE
+  INACTIVE
+  UNDER_CONSTRUCTION
+  TEMPORARILY_CLOSED
+  PERMANENTLY_CLOSED
+}
+
+enum MovementType {
+  RECEIPT
+  SHIPMENT
+  TRANSFER
+  ADJUSTMENT
+  CYCLE_COUNT
+  DAMAGE
+  THEFT
+  EXPIRY
+  RETURN
+  ALLOCATION
+  RESERVATION
+  CEREMONY_ALLOCATION
+  COMMUNITY_DISTRIBUTION
+}
+
+enum MovementDirection {
+  IN
+  OUT
+  TRANSFER
+}
+
+enum ReferenceType {
+  PURCHASE_ORDER
+  SALES_ORDER
+  TRANSFER_ORDER
+  WORK_ORDER
+  RETURN_ORDER
+  ADJUSTMENT_ORDER
+  CEREMONY_REQUEST
+  COMMUNITY_ORDER
+}
+
+enum ReasonCode {
+  RECEIPT
+  SALE
+  TRANSFER
+  ADJUSTMENT
+  DAMAGE
+  THEFT
+  EXPIRY
+  RETURN
+  SAMPLE
+  PROMOTION
+  CEREMONY
+  COMMUNITY_DISTRIBUTION
+  ELDER_REQUEST
+  TRADITIONAL_USE
+}
+
+enum MovementStatus {
+  PENDING
+  IN_TRANSIT
+  COMPLETED
+  CANCELLED
+  ON_HOLD
+}
+
+enum AdjustmentType {
+  POSITIVE
+  NEGATIVE
+  RECLASSIFICATION
+  REVALUATION
+}
+
+enum AdjustmentReason {
+  CYCLE_COUNT
+  PHYSICAL_COUNT
+  DAMAGE
+  THEFT
+  EXPIRY
+  FOUND_STOCK
+  SYSTEM_ERROR
+  CEREMONIAL_USE
+  TRADITIONAL_PREPARATION
+  ELDER_ALLOCATION
+}
+
+enum AdjustmentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  COMPLETED
+}
+
+enum CountType {
+  FULL_PHYSICAL
+  CYCLE_COUNT
+  SPOT_CHECK
+  ABC_COUNT
+  TRADITIONAL_COUNT
+  CEREMONY_COUNT
+}
+
+enum CountMethod {
+  MANUAL
+  BARCODE_SCAN
+  RFID_SCAN
+  VISUAL_INSPECTION
+  TRADITIONAL_METHOD
+  ELDER_VERIFICATION
+}
+
+enum CountFrequency {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+  SEASONAL
+  CEREMONY_BASED
+}
+
+enum CountStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+  UNDER_REVIEW
+}
+
+enum AlertType {
+  LOW_STOCK
+  HIGH_STOCK
+  REORDER_POINT
+  EXPIRY_WARNING
+  QUALITY_ISSUE
+  MOVEMENT_ALERT
+  COST_VARIANCE
+  CEREMONY_SHORTAGE
+  COMMUNITY_NEED
+  ELDER_REQUEST
+  TRADITIONAL_SHORTAGE
+}
+
+enum AlertSeverity {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+  CULTURAL_CRITICAL
+}
+
+enum AlertStatus {
+  ACTIVE
+  ACKNOWLEDGED
+  RESOLVED
+  DISMISSED
+  ESCALATED
+}
+
+enum InventoryStatus {
+  ACTIVE
+  INACTIVE
+  QUARANTINE
+  DAMAGED
+  RESERVED
+  CEREMONY_RESERVED
+  ELDER_ONLY
+}
+
+enum ABCClassification {
+  A
+  B
+  C
+  TRADITIONAL_HIGH_VALUE
+  CEREMONIAL_PRIORITY
+}
+
+enum MovementFrequency {
+  HIGH
+  MEDIUM
+  LOW
+  SEASONAL
+  CEREMONIAL_ONLY
+}
+
+enum DemandVariability {
+  LOW
+  MEDIUM
+  HIGH
+  SEASONAL
+  CEREMONIAL
+}
+
+enum QualityStatus {
+  EXCELLENT
+  GOOD
+  ACCEPTABLE
+  POOR
+  QUARANTINE
+  ELDER_BLESSED
+  CEREMONY_READY
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONDITIONAL
+}
+
+enum CertificationType {
+  ORGANIC
+  FAIR_TRADE
+  SUSTAINABLE
+  QUALITY
+  SAFETY
+  INDIGENOUS_AUTHENTIC
+  ELDER_APPROVED
+  TRADITIONAL_METHOD
+  CEREMONIAL_GRADE
+}
+
+enum ReportType {
+  INVENTORY_SUMMARY
+  STOCK_MOVEMENT
+  ABC_ANALYSIS
+  CYCLE_COUNT
+  FORECAST
+  VALUATION
+  AGING
+  TURNOVER
+  INDIGENOUS_PRODUCTS
+  COMMUNITY_IMPACT
+  TRADITIONAL_INVENTORY
+  CEREMONY_TRACKING
+}
+
+enum ReportFormat {
+  PDF
+  EXCEL
+  CSV
+  JSON
+  HTML
+}
+
+enum ReportStatus {
+  PENDING
+  GENERATING
+  COMPLETED
+  FAILED
+  CANCELLED
+}
+
+enum ForecastPeriod {
+  WEEKLY
+  MONTHLY
+  QUARTERLY
+  ANNUALLY
+  SEASONAL
+  CEREMONY_CYCLE
+}
+
+enum ForecastModel {
+  MOVING_AVERAGE
+  EXPONENTIAL_SMOOTHING
+  LINEAR_REGRESSION
+  SEASONAL_DECOMPOSITION
+  TRADITIONAL_PATTERNS
+  CEREMONY_BASED
+}
+
+enum ForecastStatus {
+  ACTIVE
+  SUPERSEDED
+  ARCHIVED
+}

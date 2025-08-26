@@ -1,0 +1,291 @@
+version: '3.8'
+
+services:
+  file-storage-service:
+    build: .
+    ports:
+      - "3047:3047"
+    environment:
+      - NODE_ENV=production
+      - PORT=3047
+      - DATABASE_URL=postgresql://storage_user:storage_pass@storage-db:5432/indigenous_storage_db
+      - REDIS_URL=redis://storage-redis:6379
+      - REDIS_HOST=storage-redis
+      - REDIS_PORT=6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      # AWS S3 Configuration
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=ca-central-1
+      - STORAGE_BUCKET=indigenous-files
+      # Azure Blob Storage Configuration
+      - AZURE_STORAGE_CONNECTION_STRING=${AZURE_STORAGE_CONNECTION_STRING}
+      # Google Cloud Storage Configuration
+      - GCS_PROJECT_ID=${GCS_PROJECT_ID}
+      - GCS_KEY_FILE=/app/credentials/gcs-key.json
+      # MinIO Configuration (Indigenous-owned infrastructure)
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_PORT=9000
+      - MINIO_USE_SSL=true
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+      # CDN Configuration
+      - CDN_URL=${CDN_URL}
+      # Local storage
+      - LOCAL_STORAGE_PATH=/app/storage
+      # CORS
+      - CORS_ORIGIN=${CORS_ORIGIN}
+      - BASE_URL=${BASE_URL}
+    depends_on:
+      - storage-db
+      - storage-redis
+      - minio
+    networks:
+      - storage-network
+      - microservices-network
+    volumes:
+      - ./logs:/app/logs
+      - ./storage:/app/storage
+      - ./credentials:/app/credentials:ro
+      - file-uploads:/app/uploads
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3047/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  storage-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_storage_db
+      - POSTGRES_USER=storage_user
+      - POSTGRES_PASSWORD=storage_pass
+    volumes:
+      - storage-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5453:5432"
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  storage-redis:
+    image: redis:7-alpine
+    command: redis-server --appendonly yes --maxmemory 1gb --maxmemory-policy allkeys-lru
+    ports:
+      - "6403:6379"
+    volumes:
+      - storage-redis-data:/data
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  # MinIO for Indigenous-owned object storage
+  minio:
+    image: minio/minio:latest
+    command: server /data --console-address ":9001"
+    environment:
+      - MINIO_ROOT_USER=${MINIO_ROOT_USER:-admin}
+      - MINIO_ROOT_PASSWORD=${MINIO_ROOT_PASSWORD:-admin123456}
+      - MINIO_REGION_NAME=ca-central-1
+      - MINIO_STORAGE_CLASS_STANDARD=EC:2
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    volumes:
+      - minio-data:/data
+    networks:
+      - storage-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 20s
+      retries: 3
+
+  # Bull Board for queue monitoring
+  bull-board:
+    image: deadly0/bull-board:latest
+    environment:
+      - REDIS_HOST=storage-redis
+      - REDIS_PORT=6379
+      - REDIS_PASSWORD=
+    ports:
+      - "3052:3000"
+    depends_on:
+      - storage-redis
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  # File preview service
+  preview-service:
+    image: thecodingmachine/gotenberg:7
+    ports:
+      - "3053:3000"
+    networks:
+      - storage-network
+    restart: unless-stopped
+    environment:
+      - DEFAULT_WAIT_TIMEOUT=30
+      - LOG_LEVEL=INFO
+
+  # Virus scanning service (ClamAV)
+  clamav:
+    image: clamav/clamav:stable
+    ports:
+      - "3310:3310"
+    volumes:
+      - clamav-data:/var/lib/clamav
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  # Elasticsearch for file search
+  elasticsearch:
+    image: elasticsearch:8.11.0
+    environment:
+      - discovery.type=single-node
+      - xpack.security.enabled=false
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ports:
+      - "9204:9200"
+    volumes:
+      - elasticsearch-data:/usr/share/elasticsearch/data
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  # Grafana for monitoring
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=admin123
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_INSTALL_PLUGINS=redis-datasource,postgres-datasource,elasticsearch-datasource
+    ports:
+      - "3054:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    depends_on:
+      - storage-db
+      - storage-redis
+      - elasticsearch
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  # Prometheus for metrics
+  prometheus:
+    image: prom/prometheus:latest
+    ports:
+      - "9094:9090"
+    volumes:
+      - ./prometheus/storage-prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--storage.tsdb.retention.time=30d'
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  # Image processing worker
+  image-worker:
+    build: .
+    command: ["node", "dist/workers/image-processor.js"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://storage_user:storage_pass@storage-db:5432/indigenous_storage_db
+      - REDIS_URL=redis://storage-redis:6379
+    depends_on:
+      - storage-db
+      - storage-redis
+    networks:
+      - storage-network
+    volumes:
+      - ./storage:/app/storage
+      - file-uploads:/app/uploads
+    restart: unless-stopped
+
+  # Backup worker
+  backup-worker:
+    build: .
+    command: ["node", "dist/workers/backup-worker.js"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://storage_user:storage_pass@storage-db:5432/indigenous_storage_db
+      - REDIS_URL=redis://storage-redis:6379
+      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}
+      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}
+      - AWS_REGION=ca-central-1
+      - MINIO_ENDPOINT=${MINIO_ENDPOINT}
+      - MINIO_ACCESS_KEY=${MINIO_ACCESS_KEY}
+      - MINIO_SECRET_KEY=${MINIO_SECRET_KEY}
+    depends_on:
+      - storage-db
+      - storage-redis
+      - minio
+    networks:
+      - storage-network
+    volumes:
+      - ./storage:/app/storage
+    restart: unless-stopped
+
+  # File indexer for search
+  indexer:
+    build: .
+    command: ["node", "dist/workers/file-indexer.js"]
+    environment:
+      - NODE_ENV=production
+      - DATABASE_URL=postgresql://storage_user:storage_pass@storage-db:5432/indigenous_storage_db
+      - ELASTICSEARCH_URL=http://elasticsearch:9200
+    depends_on:
+      - storage-db
+      - elasticsearch
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+  # HAProxy for load balancing
+  haproxy:
+    image: haproxy:alpine
+    ports:
+      - "8082:80"
+      - "8406:8404"
+    volumes:
+      - ./haproxy/haproxy-storage.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    depends_on:
+      - file-storage-service
+    networks:
+      - storage-network
+    restart: unless-stopped
+
+volumes:
+  storage-db-data:
+    driver: local
+  storage-redis-data:
+    driver: local
+  minio-data:
+    driver: local
+  file-uploads:
+    driver: local
+  clamav-data:
+    driver: local
+  elasticsearch-data:
+    driver: local
+  grafana-data:
+    driver: local
+  prometheus-data:
+    driver: local
+
+networks:
+  storage-network:
+    driver: bridge
+  microservices-network:
+    external: true

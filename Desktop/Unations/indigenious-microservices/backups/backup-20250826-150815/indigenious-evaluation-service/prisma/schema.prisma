@@ -1,0 +1,530 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Evaluation {
+  id                    String                  @id @default(uuid())
+  rfqId                 String
+  rfqTitle              String
+  evaluationType        EvaluationType
+  status                EvaluationStatus
+  stage                 EvaluationStage
+  totalSubmissions      Int
+  evaluatedSubmissions  Int                     @default(0)
+  methodology           String
+  criteriaSetId         String
+  communityWeightings   Json?                   // Band-specific weightings
+  indigenousRequirement Float?                  // Minimum Indigenous content %
+  localPreference       Float?                  // Local preference radius in km
+  blindMode             Boolean                 @default(false)
+  consensusRequired     Boolean                 @default(false)
+  minimumEvaluators     Int                     @default(3)
+  passingScore          Float                   @default(70)
+  startDate             DateTime
+  endDate               DateTime?
+  completedAt           DateTime?
+  finalRankings         Json?
+  winningSubmissionId   String?
+  winningScore          Float?
+  averageScore          Float?
+  metadata              Json?
+  createdBy             String
+  approvedBy            String?
+  approvalDate          DateTime?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  criteriaSet           EvaluationCriteriaSet   @relation(fields: [criteriaSetId], references: [id])
+  submissions           SubmissionEvaluation[]
+  evaluators            Evaluator[]
+  auditLogs             EvaluationAudit[]
+  conflicts             ConflictOfInterest[]
+  consensus             ConsensusRecord[]
+  
+  @@index([rfqId])
+  @@index([status])
+  @@index([stage])
+}
+
+model EvaluationCriteriaSet {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String?
+  category              String
+  version               String                  @default("1.0")
+  isTemplate            Boolean                 @default(false)
+  isDefault             Boolean                 @default(false)
+  totalWeight           Float                   @default(100)
+  mandatoryCriteria     String[]                // Pass/fail criteria
+  scoringMethod         ScoringMethod
+  normalizationMethod   NormalizationMethod?
+  indigenousWeight      Float                   @default(0)
+  sustainabilityWeight  Float                   @default(0)
+  localContentWeight    Float                   @default(0)
+  innovationWeight      Float                   @default(0)
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  criteria              EvaluationCriterion[]
+  evaluations           Evaluation[]
+  
+  @@index([category])
+  @@index([isTemplate])
+}
+
+model EvaluationCriterion {
+  id                    String                  @id @default(uuid())
+  criteriaSetId         String
+  parentId              String?                 // For hierarchical criteria
+  name                  String
+  description           String
+  category              CriterionCategory
+  weight                Float
+  maxScore              Float                   @default(100)
+  scoringType           ScoringType
+  scoringGuidelines     Json?                   // Detailed scoring instructions
+  evidenceRequired      String[]
+  evaluationQuestions   String[]
+  indigenousRelevance   Boolean                 @default(false)
+  communityImpact       Boolean                 @default(false)
+  isMandatory           Boolean                 @default(false)
+  minimumScore          Float?
+  displayOrder          Int
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  criteriaSet           EvaluationCriteriaSet   @relation(fields: [criteriaSetId], references: [id])
+  parent                EvaluationCriterion?    @relation("CriterionHierarchy", fields: [parentId], references: [id])
+  children              EvaluationCriterion[]   @relation("CriterionHierarchy")
+  scores                CriterionScore[]
+  
+  @@index([criteriaSetId])
+  @@index([category])
+}
+
+model SubmissionEvaluation {
+  id                    String                  @id @default(uuid())
+  evaluationId          String
+  submissionId          String
+  vendorId              String
+  vendorName            String
+  submissionDate        DateTime
+  isIndigenousBusiness  Boolean
+  indigenousOwnership   Float?
+  bandAffiliation       String?
+  localDistance         Float?                  // Distance from project location
+  totalScore            Float?
+  normalizedScore       Float?
+  rank                  Int?
+  status                SubmissionStatus
+  mandatoryChecksPassed Boolean                 @default(true)
+  disqualificationReason String?
+  strengths             String[]
+  weaknesses            String[]
+  recommendations       String[]
+  priceScore            Float?
+  technicalScore        Float?
+  indigenousScore       Float?
+  sustainabilityScore   Float?
+  innovationScore       Float?
+  riskScore             Float?
+  consensusReached      Boolean                 @default(false)
+  consensusScore        Float?
+  evaluatorCount        Int                     @default(0)
+  completedEvaluations  Int                     @default(0)
+  lastEvaluatedAt       DateTime?
+  notes                 String?
+  attachments           Json?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  evaluation            Evaluation              @relation(fields: [evaluationId], references: [id])
+  criterionScores       CriterionScore[]
+  evaluatorScores       EvaluatorScore[]
+  
+  @@unique([evaluationId, submissionId])
+  @@index([evaluationId])
+  @@index([vendorId])
+  @@index([status])
+  @@index([rank])
+}
+
+model Evaluator {
+  id                    String                  @id @default(uuid())
+  evaluationId          String
+  userId                String
+  name                  String
+  email                 String
+  role                  EvaluatorRole
+  expertise             String[]
+  department            String?
+  isLead                Boolean                 @default(false)
+  isIndigenous          Boolean                 @default(false)
+  bandAffiliation       String?
+  assignedSubmissions   String[]                // Submission IDs
+  completedSubmissions  String[]
+  averageScoreGiven     Float?
+  evaluationStyle       String?                 // Strict, moderate, lenient
+  conflictsDecl }
+
+model EvaluatorScore {
+  id                    String                  @id @default(uuid())
+  submissionEvalId      String
+  evaluatorId           String
+  overallScore          Float
+  confidence            Float                   // 0-1 confidence level
+  timeSpent             Int?                    // Minutes spent evaluating
+  comments              String?
+  strengths             String[]
+  concerns              String[]
+  recommendations       String[]
+  wouldRecommend        Boolean
+  riskAssessment        RiskLevel?
+  completedAt           DateTime
+  isConsensus           Boolean                 @default(false)
+  isBlind               Boolean                 @default(false)
+  version               Int                     @default(1)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  submission            SubmissionEvaluation    @relation(fields: [submissionEvalId], references: [id])
+  evaluator             Evaluator               @relation(fields: [evaluatorId], references: [id])
+  criterionScores       CriterionScore[]
+  
+  @@unique([submissionEvalId, evaluatorId, version])
+  @@index([submissionEvalId])
+  @@index([evaluatorId])
+}
+
+model CriterionScore {
+  id                    String                  @id @default(uuid())
+  submissionEvalId      String
+  criterionId           String
+  evaluatorScoreId      String?
+  score                 Float
+  maxScore              Float
+  normalizedScore       Float?
+  weight                Float
+  weightedScore         Float?
+  justification         String
+  evidence              String[]
+  strengthsNoted        String[]
+  improvementAreas      String[]
+  isMandatory           Boolean                 @default(false)
+  passed                Boolean                 @default(true)
+  confidenceLevel       Float?                  // 0-1
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  submission            SubmissionEvaluation    @relation(fields: [submissionEvalId], references: [id])
+  criterion             EvaluationCriterion     @relation(fields: [criterionId], references: [id])
+  evaluatorScore        EvaluatorScore?         @relation(fields: [evaluatorScoreId], references: [id])
+  
+  @@index([submissionEvalId])
+  @@index([criterionId])
+  @@index([evaluatorScoreId])
+}
+
+model ConflictOfInterest {
+  id                    String                  @id @default(uuid())
+  evaluationId          String
+  evaluatorId           String
+  vendorId              String
+  conflictType          ConflictType
+  description           String
+  severity              ConflictSeverity
+  declaredBy            String
+  declaredAt            DateTime
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  resolution            ConflictResolution?
+  resolutionNotes       String?
+  mitigationMeasures    String[]
+  isResolved            Boolean                 @default(false)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  evaluation            Evaluation              @relation(fields: [evaluationId], references: [id])
+  evaluator             Evaluator               @relation(fields: [evaluatorId], references: [id])
+  
+  @@index([evaluationId])
+  @@index([evaluatorId])
+  @@index([vendorId])
+}
+
+model ConsensusRecord {
+  id                    String                  @id @default(uuid())
+  evaluationId          String
+  submissionId          String
+  roundNumber           Int
+  participantIds        String[]
+  initialScores         Json                    // Array of initial scores
+  discussionNotes       String?
+  disagreementPoints    String[]
+  resolutionMethod      ConsensusMethod
+  finalScore            Float
+  variance              Float?                  // Score variance
+  unanimousDecision     Boolean                 @default(false)
+  dissenterIds          String[]
+  dissenterReasons      Json?
+  timeTaken             Int?                    // Minutes
+  facilitatorId         String?
+  recordedAt            DateTime
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+
+  evaluation            Evaluation              @relation(fields: [evaluationId], references: [id])
+  
+  @@index([evaluationId])
+  @@index([submissionId])
+}
+
+model EvaluationAudit {
+  id                    String                  @id @default(uuid())
+  evaluationId          String
+  action                AuditAction
+  entityType            String
+  entityId              String
+  userId                String
+  userName              String
+  previousValue         Json?
+  newValue              Json?
+  reason                String?
+  ipAddress             String?
+  userAgent             String?
+  timestamp             DateTime                @default(now())
+  
+  evaluation            Evaluation              @relation(fields: [evaluationId], references: [id])
+  
+  @@index([evaluationId])
+  @@index([action])
+  @@index([userId])
+  @@index([timestamp])
+}
+
+model EvaluationTemplate {
+  id                    String                  @id @default(uuid())
+  name                  String
+  description           String
+  category              String
+  templateType          TemplateType
+  criteriaSetId         String
+  scoringRules          Json
+  weightingProfiles     Json                    // Different weighting scenarios
+  indigenousPreferences Json
+  mandatoryElements     String[]
+  optionalElements      String[]
+  bestPractices         String[]
+  usageCount            Int                     @default(0)
+  rating                Float?
+  tags                  String[]
+  isPublic              Boolean                 @default(true)
+  createdBy             String
+  approvedBy            String?
+  isActive              Boolean                 @default(true)
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([category])
+  @@index([templateType])
+}
+
+model ScoringCalibration {
+  id                    String                  @id @default(uuid())
+  evaluatorId           String
+  calibrationDate       DateTime
+  testSubmissions       Json                    // Test cases evaluated
+  referenceScores       Json                    // Expert/benchmark scores
+  evaluatorScores       Json                    // Evaluator's scores
+  deviationAnalysis     Json                    // Analysis of deviations
+  calibrationScore      Float                   // 0-100 accuracy score
+  recommendations       String[]
+  requiredTraining      String[]
+  nextCalibrationDate   DateTime
+  status                CalibrationStatus
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([evaluatorId])
+  @@index([calibrationDate])
+}
+
+// Enums
+enum EvaluationType {
+  TECHNICAL
+  FINANCIAL
+  COMBINED
+  TWO_ENVELOPE
+  QUALITY_BASED
+  INDIGENOUS_PREFERRED
+  EMERGENCY
+  SIMPLIFIED
+}
+
+enum EvaluationStatus {
+  DRAFT
+  IN_PROGRESS
+  REVIEW
+  CONSENSUS_BUILDING
+  COMPLETED
+  APPROVED
+  CONTESTED
+  CANCELLED
+}
+
+enum EvaluationStage {
+  SETUP
+  PRELIMINARY_REVIEW
+  DETAILED_EVALUATION
+  CONSENSUS
+  FINAL_SCORING
+  RANKING
+  APPROVAL
+  CLOSED
+}
+
+enum ScoringMethod {
+  WEIGHTED_AVERAGE
+  SIMPLE_AVERAGE
+  CONSENSUS
+  MAXIMUM
+  MEDIAN
+  TRIMMED_MEAN
+}
+
+enum NormalizationMethod {
+  MIN_MAX
+  Z_SCORE
+  PERCENTILE
+  LINEAR
+  NONE
+}
+
+enum CriterionCategory {
+  PRICE
+  TECHNICAL
+  EXPERIENCE
+  INDIGENOUS_CONTENT
+  LOCAL_CONTENT
+  SUSTAINABILITY
+  INNOVATION
+  RISK
+  SCHEDULE
+  QUALITY
+  SOCIAL_VALUE
+  CULTURAL_ALIGNMENT
+}
+
+enum ScoringType {
+  NUMERIC
+  PERCENTAGE
+  RATING_SCALE
+  YES_NO
+  QUALITATIVE
+  MATRIX
+}
+
+enum SubmissionStatus {
+  PENDING
+  UNDER_EVALUATION
+  EVALUATED
+  QUALIFIED
+  DISQUALIFIED
+  WINNER
+  RUNNER_UP
+  REJECTED
+}
+
+enum EvaluatorRole {
+  LEAD_EVALUATOR
+  TECHNICAL_EXPERT
+  FINANCIAL_ANALYST
+  INDIGENOUS_REPRESENTATIVE
+  COMMUNITY_MEMBER
+  ELDER
+  SUBJECT_EXPERT
+  PROCUREMENT_OFFICER
+  OBSERVER
+}
+
+enum RiskLevel {
+  VERY_LOW
+  LOW
+  MEDIUM
+  HIGH
+  VERY_HIGH
+}
+
+enum ConflictType {
+  FINANCIAL_INTEREST
+  PERSONAL_RELATIONSHIP
+  PAST_EMPLOYMENT
+  CURRENT_BUSINESS
+  FAMILY_CONNECTION
+  GIFT_RECEIVED
+  OTHER
+}
+
+enum ConflictSeverity {
+  MINOR
+  MODERATE
+  MAJOR
+  SEVERE
+}
+
+enum ConflictResolution {
+  RECUSAL
+  DISCLOSURE_ONLY
+  RESTRICTED_PARTICIPATION
+  MITIGATION_ACCEPTED
+  NO_ACTION_REQUIRED
+}
+
+enum ConsensusMethod {
+  DISCUSSION
+  DELPHI
+  VOTING
+  AVERAGING
+  MEDIATION
+  ARBITRATION
+}
+
+enum AuditAction {
+  CREATE
+  UPDATE
+  DELETE
+  SCORE_CHANGE
+  STATUS_CHANGE
+  ASSIGNMENT
+  CONFLICT_DECLARED
+  CONSENSUS_REACHED
+  APPROVAL
+  REJECTION
+}
+
+enum TemplateType {
+  STANDARD
+  INDIGENOUS_FOCUSED
+  CONSTRUCTION
+  SERVICES
+  GOODS
+  TECHNOLOGY
+  CONSULTING
+  EMERGENCY
+}
+
+enum CalibrationStatus {
+  PASSED
+  NEEDS_IMPROVEMENT
+  FAILED
+  PENDING_REVIEW
+}

@@ -1,0 +1,651 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model TaxCalculation {
+  id                    String                  @id @default(uuid())
+  calculationId         String                  @unique
+  transactionId         String?                 // Invoice, Order, Payment ID
+  transactionType       TransactionType
+  
+  // Tax details
+  subtotal              Decimal                 @db.Decimal(19, 4)
+  taxableAmount         Decimal                 @db.Decimal(19, 4)
+  exemptAmount          Decimal                 @db.Decimal(19, 4)
+  
+  // Federal taxes
+  gstRate               Decimal                 @db.Decimal(5, 4)
+  gstAmount             Decimal                 @db.Decimal(19, 4)
+  
+  // Provincial taxes
+  pstRate               Decimal?                @db.Decimal(5, 4)
+  pstAmount             Decimal?                @db.Decimal(19, 4)
+  hstRate               Decimal?                @db.Decimal(5, 4)
+  hstAmount             Decimal?                @db.Decimal(19, 4)
+  qstRate               Decimal?                @db.Decimal(5, 4)
+  qstAmount             Decimal?                @db.Decimal(19, 4)
+  
+  // Total
+  totalTax              Decimal                 @db.Decimal(19, 4)
+  totalAmount           Decimal                 @db.Decimal(19, 4)
+  
+  // Location
+  province              String
+  postalCode            String?
+  country               String                  @default("CA")
+  
+  // Parties
+  sellerId              String
+  sellerType            PartyType
+  buyerId               String
+  buyerType             PartyType
+  
+  // Indigenous exemptions
+  hasIndigenousExemption Boolean                @default(false)
+  exemptionType         ExemptionType?
+  exemptionNumber       String?
+  bandNumber            String?
+  treatyNumber          String?
+  
+  // Status card exemption
+  statusCardNumber      String?
+  statusCardValid       Boolean                 @default(false)
+  statusCardHolder      String?
+  
+  // Exemption details
+  exemptionReason       String?
+  exemptionAmount       Decimal?                @db.Decimal(19, 4)
+  exemptionPercentage   Decimal?                @db.Decimal(5, 2)
+  
+  // Calculation details
+  calculationMethod     CalculationMethod
+  taxJurisdictions      String[]
+  appliedRules          Json?
+  
+  // Validation
+  isValid               Boolean                 @default(true)
+  validationErrors      String[]
+  
+  // Metadata
+  lineItems             TaxLineItem[]
+  exemptions            TaxExemption[]
+  
+  calculatedAt          DateTime                @default(now())
+  createdBy             String
+  
+  @@index([transactionId])
+  @@index([sellerId])
+  @@index([buyerId])
+  @@index([hasIndigenousExemption])
+  @@index([province])
+  @@index([calculatedAt])
+}
+
+model TaxLineItem {
+  id                    String                  @id @default(uuid())
+  calculationId         String
+  
+  // Item details
+  itemId                String
+  description           String
+  quantity              Int
+  unitPrice             Decimal                 @db.Decimal(19, 4)
+  amount                Decimal                 @db.Decimal(19, 4)
+  
+  // Tax classification
+  taxCode               String?
+  taxCategory           String?
+  isExempt              Boolean                 @default(false)
+  
+  // Calculated taxes
+  gstAmount             Decimal                 @db.Decimal(19, 4)
+  pstAmount             Decimal?                @db.Decimal(19, 4)
+  hstAmount             Decimal?                @db.Decimal(19, 4)
+  totalTax              Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous item tracking
+  indigenousProduct     Boolean                 @default(false)
+  indigenousArtwork     Boolean                 @default(false)
+  traditionalGoods      Boolean                 @default(false)
+  
+  calculation           TaxCalculation          @relation(fields: [calculationId], references: [id])
+  
+  @@index([calculationId])
+  @@index([itemId])
+}
+
+model TaxExemption {
+  id                    String                  @id @default(uuid())
+  exemptionId           String                  @unique
+  
+  // Exemption details
+  type                  ExemptionType
+  status                ExemptionStatus
+  
+  // Entity information
+  entityId              String
+  entityType            PartyType
+  entityName            String
+  
+  // Indigenous exemption details
+  isIndigenous          Boolean                 @default(false)
+  bandNumber            String?
+  bandName              String?
+  treatyNumber          String?
+  reserveName           String?
+  
+  // Status card information
+  statusCardNumber      String?
+  statusCardExpiry      DateTime?
+  cardHolderName        String?
+  cardHolderDOB         DateTime?
+  
+  // Certificate details
+  certificateNumber     String?
+  certificateType       String?
+  issuedBy              String?
+  issuedDate            DateTime?
+  
+  // Validity
+  validFrom             DateTime
+  validUntil            DateTime?
+  isActive              Boolean                 @default(true)
+  
+  // Scope
+  applicableProvinces   String[]
+  applicableTaxes       String[]                // GST, PST, HST, etc.
+  exemptionPercentage   Decimal                 @db.Decimal(5, 2)
+  
+  // Usage tracking
+  usageCount            Int                     @default(0)
+  lastUsedAt            DateTime?
+  totalExempted         Decimal                 @db.Decimal(19, 4)
+  
+  // Verification
+  isVerified            Boolean                 @default(false)
+  verifiedBy            String?
+  verifiedAt            DateTime?
+  verificationMethod    String?
+  
+  // Documentation
+  documents             String[]
+  notes                 String?
+  
+  calculations          TaxCalculation[]
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([entityId])
+  @@index([type])
+  @@index([status])
+  @@index([isIndigenous])
+  @@index([statusCardNumber])
+}
+
+model TaxRate {
+  id                    String                  @id @default(uuid())
+  rateId                String                  @unique
+  
+  // Tax details
+  taxType               TaxType
+  jurisdiction          String                  // Province or territory
+  jurisdictionCode      String                  // Two-letter code
+  
+  // Rates
+  rate                  Decimal                 @db.Decimal(5, 4)
+  effectiveDate         DateTime
+  endDate               DateTime?
+  
+  // Special rates
+  reducedRate           Decimal?                @db.Decimal(5, 4)
+  zeroRated             Boolean                 @default(false)
+  
+  // Categories
+  applicableCategories  String[]
+  exemptCategories      String[]
+  
+  // Indigenous considerations
+  indigenousExempt      Boolean                 @default(false)
+  onReserveExempt       Boolean                 @default(false)
+  treatyExempt          Boolean                 @default(false)
+  
+  isActive              Boolean                 @default(true)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([taxType])
+  @@index([jurisdiction])
+  @@index([effectiveDate])
+}
+
+model TaxJurisdiction {
+  id                    String                  @id @default(uuid())
+  jurisdictionId        String                  @unique
+  
+  // Jurisdiction details
+  name                  String
+  code                  String                  // Province/territory code
+  type                  JurisdictionType
+  country               String                  @default("CA")
+  
+  // Tax configuration
+  hasGST                Boolean                 @default(true)
+  hasPST                Boolean                 @default(false)
+  hasHST                Boolean                 @default(false)
+  hasQST                Boolean                 @default(false)
+  hasRST                Boolean                 @default(false)
+  
+  // Current rates
+  currentGSTRate        Decimal?                @db.Decimal(5, 4)
+  currentPSTRate        Decimal?                @db.Decimal(5, 4)
+  currentHSTRate        Decimal?                @db.Decimal(5, 4)
+  currentQSTRate        Decimal?                @db.Decimal(5, 4)
+  
+  // Indigenous territories
+  indigenousTerritories String[]
+  treatyAreas           String[]
+  
+  // Special rules
+  specialRules          Json?
+  exemptions            Json?
+  
+  isActive              Boolean                 @default(true)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([code])
+  @@index([type])
+}
+
+model TaxReturn {
+  id                    String                  @id @default(uuid())
+  returnId              String                  @unique
+  
+  // Return details
+  type                  ReturnType
+  period                String                  // "2024-Q1", "2024-01", etc.
+  startDate             DateTime
+  endDate               DateTime
+  
+  // Entity
+  entityId              String
+  entityType            PartyType
+  businessNumber        String?
+  gstNumber             String?
+  
+  // Sales summary
+  totalSales            Decimal                 @db.Decimal(19, 4)
+  taxableSales          Decimal                 @db.Decimal(19, 4)
+  exemptSales           Decimal                 @db.Decimal(19, 4)
+  zeroRatedSales        Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous sales tracking
+  indigenousSales       Decimal                 @db.Decimal(19, 4)
+  onReserveSales        Decimal                 @db.Decimal(19, 4)
+  treatyExemptSales     Decimal                 @db.Decimal(19, 4)
+  
+  // Tax collected
+  gstCollected          Decimal                 @db.Decimal(19, 4)
+  pstCollected          Decimal?                @db.Decimal(19, 4)
+  hstCollected          Decimal?                @db.Decimal(19, 4)
+  totalTaxCollected     Decimal                 @db.Decimal(19, 4)
+  
+  // Input tax credits
+  inputTaxCredits       Decimal                 @db.Decimal(19, 4)
+  
+  // Net tax
+  netTaxOwing           Decimal                 @db.Decimal(19, 4)
+  
+  // Filing status
+  status                FilingStatus
+  filedAt               DateTime?
+  dueDate               DateTime
+  
+  // Confirmation
+  confirmationNumber    String?
+  assessmentNumber      String?
+  
+  // Payment
+  paymentStatus         PaymentStatus?
+  paymentAmount         Decimal?                @db.Decimal(19, 4)
+  paymentDate           DateTime?
+  
+  // Audit
+  auditRisk             AuditRisk               @default(LOW)
+  auditNotes            String?
+  
+  // Supporting documents
+  documents             String[]
+  
+  preparedBy            String
+  approvedBy            String?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([entityId])
+  @@index([type])
+  @@index([period])
+  @@index([status])
+  @@index([dueDate])
+}
+
+model TaxRemittance {
+  id                    String                  @id @default(uuid())
+  remittanceId          String                  @unique
+  
+  // Remittance details
+  returnId              String?
+  period                String
+  
+  // Amounts
+  gstAmount             Decimal                 @db.Decimal(19, 4)
+  pstAmount             Decimal?                @db.Decimal(19, 4)
+  hstAmount             Decimal?                @db.Decimal(19, 4)
+  totalAmount           Decimal                 @db.Decimal(19, 4)
+  
+  // Payment details
+  paymentMethod         String
+  paymentReference      String?
+  
+  // Status
+  status                RemittanceStatus
+  remittedAt            DateTime?
+  
+  // Confirmation
+  confirmationNumber    String?
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([returnId])
+  @@index([status])
+  @@index([period])
+}
+
+model TaxCompliance {
+  id                    String                  @id @default(uuid())
+  complianceId          String                  @unique
+  
+  // Entity
+  entityId              String
+  entityType            PartyType
+  
+  // Compliance status
+  overallStatus         ComplianceStatus
+  lastAssessment        DateTime
+  nextReview            DateTime
+  
+  // Registration status
+  gstRegistered         Boolean
+  gstNumber             String?
+  pstRegistered         Boolean?
+  pstNumber             String?
+  
+  // Filing compliance
+  filingCompliant       Boolean
+  outstandingReturns    Int                     @default(0)
+  lastFilingDate        DateTime?
+  
+  // Payment compliance
+  paymentCompliant      Boolean
+  outstandingBalance    Decimal                 @db.Decimal(19, 4)
+  lastPaymentDate       DateTime?
+  
+  // Indigenous business verification
+  indigenousVerified    Boolean                 @default(false)
+  verificationDate      DateTime?
+  certificationNumber   String?
+  
+  // Risk assessment
+  riskLevel             RiskLevel
+  riskFactors           String[]
+  
+  // Actions required
+  requiredActions       Json?
+  deadlines             Json?
+  
+  // Audit history
+  lastAuditDate         DateTime?
+  auditResults          Json?
+  
+  notes                 String?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([entityId])
+  @@index([overallStatus])
+  @@index([riskLevel])
+}
+
+model TaxDocument {
+  id                    String                  @id @default(uuid())
+  documentId            String                  @unique
+  
+  // Document details
+  type                  DocumentType
+  name                  String
+  description           String?
+  
+  // Related entities
+  entityId              String?
+  calculationId         String?
+  returnId              String?
+  
+  // File information
+  fileUrl               String
+  fileSize              Int
+  mimeType              String
+  
+  // Period
+  taxYear               Int?
+  taxPeriod             String?
+  
+  // Status
+  status                DocumentStatus
+  isConfidential        Boolean                 @default(false)
+  
+  // Retention
+  retentionYears        Int                     @default(7)
+  destroyAfter          DateTime?
+  
+  uploadedBy            String
+  uploadedAt            DateTime                @default(now())
+  
+  @@index([entityId])
+  @@index([type])
+  @@index([taxYear])
+}
+
+model IndigenousTaxBenefit {
+  id                    String                  @id @default(uuid())
+  benefitId             String                  @unique
+  
+  // Benefit details
+  name                  String
+  description           String
+  type                  BenefitType
+  
+  // Eligibility
+  eligibilityCriteria   Json
+  requiredDocuments     String[]
+  
+  // Value
+  exemptionPercentage   Decimal?                @db.Decimal(5, 2)
+  maxBenefit            Decimal?                @db.Decimal(19, 4)
+  
+  // Applicable taxes
+  applicableTaxes       String[]                // GST, PST, HST
+  applicableProvinces   String[]
+  
+  // Validity
+  effectiveDate         DateTime
+  expiryDate            DateTime?
+  isActive              Boolean                 @default(true)
+  
+  // Usage
+  usageCount            Int                     @default(0)
+  totalSavings          Decimal                 @db.Decimal(19, 4)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([isActive])
+}
+
+// Enums
+enum TransactionType {
+  INVOICE
+  ORDER
+  PAYMENT
+  REFUND
+  ADJUSTMENT
+  QUOTE
+}
+
+enum PartyType {
+  BUSINESS
+  INDIVIDUAL
+  GOVERNMENT
+  INDIGENOUS_BUSINESS
+  BAND_COUNCIL
+  NON_PROFIT
+}
+
+enum ExemptionType {
+  INDIGENOUS_STATUS
+  BAND_PURCHASE
+  ON_RESERVE_DELIVERY
+  TREATY_RIGHTS
+  GOVERNMENT
+  DIPLOMATIC
+  CHARITABLE
+  RESALE
+  EXPORT
+}
+
+enum ExemptionStatus {
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+  REVOKED
+  PENDING_VERIFICATION
+}
+
+enum CalculationMethod {
+  STANDARD
+  SIMPLIFIED
+  QUICK_METHOD
+  FLAT_RATE
+  CUSTOM
+}
+
+enum TaxType {
+  GST
+  PST
+  HST
+  QST
+  RST
+  CUSTOMS
+  EXCISE
+}
+
+enum JurisdictionType {
+  FEDERAL
+  PROVINCIAL
+  TERRITORIAL
+  MUNICIPAL
+  INDIGENOUS_TERRITORY
+}
+
+enum ReturnType {
+  GST_HST
+  PST
+  QST
+  ANNUAL
+  QUARTERLY
+  MONTHLY
+}
+
+enum FilingStatus {
+  DRAFT
+  READY
+  FILED
+  ACCEPTED
+  REJECTED
+  AMENDED
+}
+
+enum PaymentStatus {
+  PENDING
+  PAID
+  PARTIAL
+  OVERDUE
+  CREDITED
+}
+
+enum AuditRisk {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum RemittanceStatus {
+  PENDING
+  SUBMITTED
+  CONFIRMED
+  FAILED
+  REVERSED
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  PARTIALLY_COMPLIANT
+  UNDER_REVIEW
+  SUSPENDED
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum DocumentType {
+  TAX_RETURN
+  REMITTANCE
+  CERTIFICATE
+  EXEMPTION_CERT
+  STATUS_CARD
+  INVOICE
+  RECEIPT
+  STATEMENT
+  AUDIT_REPORT
+}
+
+enum DocumentStatus {
+  DRAFT
+  FINAL
+  ARCHIVED
+  DELETED
+}
+
+enum BenefitType {
+  FULL_EXEMPTION
+  PARTIAL_EXEMPTION
+  POINT_OF_SALE_RELIEF
+  REFUND
+  CREDIT
+}

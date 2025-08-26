@@ -1,0 +1,366 @@
+# ======================================================================
+# PRODUCTION ENVIRONMENT CONFIGURATION
+# ======================================================================
+
+environment: production
+aws_region: ca-central-1
+aws_account_id: "REPLACE_WITH_ACCOUNT_ID"
+
+# ======================================================================
+# NETWORKING
+# ======================================================================
+
+vpc:
+  cidr: "10.0.0.0/16"
+  availability_zones:
+    - ca-central-1a
+    - ca-central-1b
+  
+  public_subnets:
+    - "10.0.1.0/24"
+    - "10.0.2.0/24"
+  
+  private_subnets:
+    - "10.0.10.0/24"
+    - "10.0.11.0/24"
+  
+  database_subnets:
+    - "10.0.20.0/24"
+    - "10.0.21.0/24"
+
+# ======================================================================
+# ECS CLUSTER
+# ======================================================================
+
+ecs:
+  cluster_name: indigenous-production
+  container_insights: true
+  
+  capacity_providers:
+    - FARGATE
+    - FARGATE_SPOT
+  
+  default_capacity_provider_strategy:
+    - capacity_provider: FARGATE
+      weight: 30
+      base: 2
+    - capacity_provider: FARGATE_SPOT
+      weight: 70
+
+# ======================================================================
+# DATABASE
+# ======================================================================
+
+database:
+  engine: aurora-postgresql
+  engine_version: "15.4"
+  instance_class: db.serverless
+  
+  scaling:
+    min_capacity: 0.5
+    max_capacity: 4
+    
+  backup:
+    retention_days: 30
+    window: "03:00-04:00"
+    
+  maintenance:
+    window: "sun:04:00-sun:05:00"
+    
+  high_availability:
+    multi_az: true
+    read_replicas: 1
+    
+  encryption:
+    enabled: true
+    kms_key_alias: "alias/aws/rds"
+
+# ======================================================================
+# REDIS
+# ======================================================================
+
+redis:
+  node_type: cache.t3.small
+  num_nodes: 2
+  engine_version: "7.0"
+  
+  cluster_mode:
+    enabled: false
+    
+  automatic_failover: true
+  
+  backup:
+    retention_days: 7
+    window: "02:00-03:00"
+    
+  encryption:
+    at_rest: true
+    in_transit: true
+
+# ======================================================================
+# LOAD BALANCER
+# ======================================================================
+
+alb:
+  scheme: internet-facing
+  idle_timeout: 60
+  
+  ssl:
+    policy: ELBSecurityPolicy-TLS-1-2-2017-01
+    certificate_domain: "api.indigenous.ca"
+    
+  waf:
+    enabled: true
+    
+  access_logs:
+    enabled: true
+    bucket: indigenous-alb-logs-production
+
+# ======================================================================
+# CLOUDFRONT
+# ======================================================================
+
+cloudfront:
+  enabled: true
+  price_class: PriceClass_100  # North America and Europe
+  
+  behaviors:
+    default_ttl: 86400
+    max_ttl: 31536000
+    compress: true
+    
+  geo_restriction:
+    restriction_type: none
+    
+  waf:
+    enabled: true
+    
+  ssl:
+    minimum_protocol_version: TLSv1.2_2021
+    ssl_support_method: sni-only
+
+# ======================================================================
+# S3 STORAGE
+# ======================================================================
+
+s3:
+  buckets:
+    documents:
+      name: indigenous-documents-production
+      versioning: true
+      encryption: AES256
+      lifecycle:
+        - id: archive-old-documents
+          status: enabled
+          transition_days: 90
+          storage_class: GLACIER
+          
+    media:
+      name: indigenous-media-production
+      versioning: false
+      encryption: AES256
+      cors: true
+      
+    models:
+      name: indigenous-models-production
+      versioning: true
+      encryption: AES256
+      
+    backups:
+      name: indigenous-backups-production
+      versioning: true
+      encryption: AES256
+      lifecycle:
+        - id: delete-old-backups
+          status: enabled
+          expiration_days: 90
+
+# ======================================================================
+# MONITORING & LOGGING
+# ======================================================================
+
+monitoring:
+  cloudwatch:
+    log_retention_days: 90
+    
+  alarms:
+    enabled: true
+    sns_topic: indigenous-alerts-production
+    email: ops@indigenous.ca
+    
+  xray:
+    enabled: true
+    sampling_rate: 0.1
+    
+  dashboards:
+    - name: indigenous-overview
+      widgets:
+        - ecs-cluster-metrics
+        - database-metrics
+        - api-gateway-metrics
+        - error-rates
+        
+  metrics:
+    namespace: Indigenous/Production
+    detailed_metrics: true
+
+# ======================================================================
+# SECURITY
+# ======================================================================
+
+security:
+  secrets_manager:
+    automatic_rotation: true
+    rotation_days: 30
+    
+  kms:
+    key_rotation: true
+    
+  security_groups:
+    ingress_rules:
+      - protocol: tcp
+        from_port: 443
+        to_port: 443
+        cidr_blocks: ["0.0.0.0/0"]
+        
+  iam:
+    mfa_required: true
+    password_policy:
+      minimum_length: 14
+      require_symbols: true
+      require_numbers: true
+      require_uppercase: true
+      require_lowercase: true
+      
+  compliance:
+    enable_guard_duty: true
+    enable_security_hub: true
+    enable_config: true
+    enable_cloudtrail: true
+
+# ======================================================================
+# AUTO SCALING
+# ======================================================================
+
+autoscaling:
+  default_policy:
+    target_cpu: 70
+    target_memory: 80
+    scale_in_cooldown: 300
+    scale_out_cooldown: 60
+    
+  scheduled_scaling:
+    - name: business-hours-scale-up
+      schedule: "cron(0 8 ? * MON-FRI *)"
+      min_capacity: 2
+      max_capacity: 10
+      
+    - name: business-hours-scale-down
+      schedule: "cron(0 18 ? * MON-FRI *)"
+      min_capacity: 1
+      max_capacity: 5
+      
+    - name: weekend-scale-down
+      schedule: "cron(0 0 ? * SAT *)"
+      min_capacity: 1
+      max_capacity: 3
+
+# ======================================================================
+# DISASTER RECOVERY
+# ======================================================================
+
+disaster_recovery:
+  backup_region: ca-central-1
+  
+  rpo: 4  # Recovery Point Objective in hours
+  rto: 2  # Recovery Time Objective in hours
+  
+  automated_backups:
+    enabled: true
+    frequency: daily
+    retention_days: 30
+    
+  cross_region_replication:
+    enabled: true
+    target_region: us-east-1
+
+# ======================================================================
+# COST OPTIMIZATION
+# ======================================================================
+
+cost_optimization:
+  use_spot_instances: true
+  spot_percentage: 70
+  
+  reserved_instances:
+    enabled: false  # Enable after stable load patterns identified
+    
+  savings_plans:
+    enabled: false  # Enable after 3 months of production
+    
+  rightsizing:
+    review_frequency: monthly
+    
+  unused_resource_cleanup:
+    enabled: true
+    age_threshold_days: 30
+
+# ======================================================================
+# SERVICE DEFAULTS
+# ======================================================================
+
+service_defaults:
+  tier_1:
+    cpu: 512
+    memory: 1024
+    min_instances: 2
+    max_instances: 10
+    health_check_interval: 30
+    health_check_timeout: 5
+    
+  tier_2:
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 5
+    health_check_interval: 30
+    health_check_timeout: 5
+    
+  tier_3:
+    cpu: 512
+    memory: 1024
+    min_instances: 1
+    max_instances: 5
+    health_check_interval: 30
+    health_check_timeout: 5
+    
+  tier_4:
+    cpu: 256
+    memory: 512
+    min_instances: 1
+    max_instances: 3
+    health_check_interval: 60
+    health_check_timeout: 10
+    use_spot: true
+
+# ======================================================================
+# DEPLOYMENT SETTINGS
+# ======================================================================
+
+deployment:
+  strategy: rolling
+  
+  rolling_update:
+    max_batch_size: 2
+    min_instances_in_service: 1
+    
+  health_check_grace_period: 300
+  
+  circuit_breaker:
+    enabled: true
+    rollback_on_failure: true
+    
+  blue_green:
+    enabled: false  # Enable for zero-downtime deployments
+    traffic_shift: linear
+    shift_duration: 10  # minutes

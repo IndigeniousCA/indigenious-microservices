@@ -1,0 +1,834 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Contract {
+  id                    String                  @id @default(uuid())
+  contractId            String                  @unique
+  contractNumber        String                  @unique
+  title                 String
+  type                  ContractType
+  status                ContractStatus
+  
+  // Parties
+  partyA                String
+  partyAType            PartyType
+  partyAName            String
+  partyB                String
+  partyBType            PartyType
+  partyBName            String
+  additionalParties     Json?
+  
+  // Indigenous elements
+  isIndigenousContract  Boolean                 @default(false)
+  indigenousPartyId     String?
+  bandNumber            String?
+  treatyTerritory       String?
+  requiresElderReview   Boolean                 @default(false)
+  elderReviewStatus     ReviewStatus?
+  culturalConsiderations String?
+  
+  // Traditional law elements
+  incorporatesTraditionalLaw Boolean            @default(false)
+  traditionalLawClauses Json?
+  ceremonyRequired      Boolean                 @default(false)
+  ceremonyCompleted     Boolean                 @default(false)
+  
+  // Contract details
+  value                 Decimal                 @db.Decimal(19, 4)
+  currency              String                  @default("CAD")
+  startDate             DateTime
+  endDate               DateTime?
+  autoRenew             Boolean                 @default(false)
+  renewalTerms          Json?
+  
+  // Terms and conditions
+  paymentTerms          String
+  deliveryTerms         String?
+  confidentialityClause Boolean                 @default(true)
+  disputeResolution     DisputeResolution
+  governingLaw          String
+  jurisdiction          String
+  
+  // Indigenous dispute resolution
+  useIndigenousDispute  Boolean                 @default(false)
+  mediationByElders     Boolean                 @default(false)
+  circleProcess         Boolean                 @default(false)
+  
+  // Documents
+  documents             LegalDocument[]
+  amendments            ContractAmendment[]
+  
+  // Signatures
+  signatures            Signature[]
+  witnessSignatures     Signature[]
+  elderSignature        Signature?
+  
+  // Compliance
+  complianceChecks      ComplianceCheck[]
+  mandateCompliant      Boolean                 @default(false) // 5% mandate
+  
+  // Key dates
+  draftedAt             DateTime?
+  reviewedAt            DateTime?
+  approvedAt            DateTime?
+  signedAt              DateTime?
+  effectiveDate         DateTime?
+  terminatedAt          DateTime?
+  
+  // Metadata
+  tags                  String[]
+  metadata              Json?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([contractNumber])
+  @@index([status])
+  @@index([partyA])
+  @@index([partyB])
+  @@index([isIndigenousContract])
+  @@index([startDate])
+}
+
+model LegalDocument {
+  id                    String                  @id @default(uuid())
+  documentId            String                  @unique
+  
+  // Document info
+  title                 String
+  type                  DocumentType
+  category              DocumentCategory
+  
+  // Related entities
+  contractId            String?
+  agreementId           String?
+  caseId                String?
+  
+  // Content
+  content               String?                 @db.Text
+  fileUrl               String?
+  fileSize              Int?
+  mimeType              String?
+  
+  // Version control
+  version               String                  @default("1.0")
+  previousVersionId     String?
+  isLatestVersion       Boolean                 @default(true)
+  
+  // Indigenous elements
+  indigenousContent     Boolean                 @default(false)
+  languageVersions      Json?                   // Translations in Indigenous languages
+  oralTradition         Boolean                 @default(false)
+  audioRecording        String?                 // URL to audio file
+  
+  // Security
+  confidentiality       ConfidentialityLevel
+  accessControl         Json?
+  encryptionKey         String?
+  
+  // Legal validity
+  isLegallyBinding      Boolean                 @default(false)
+  notarized             Boolean                 @default(false)
+  witnessRequired       Boolean                 @default(false)
+  
+  // Review and approval
+  reviewStatus          ReviewStatus
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Elder review for Indigenous documents
+  requiresElderReview   Boolean                 @default(false)
+  elderReviewer         String?
+  elderReviewDate       DateTime?
+  elderApproval         Boolean?
+  
+  // Retention
+  retentionPeriod       Int                     @default(7) // years
+  destructionDate       DateTime?
+  
+  contract              Contract?               @relation(fields: [contractId], references: [id])
+  templates             Template[]
+  clauses               Clause[]
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([category])
+  @@index([contractId])
+  @@index([indigenousContent])
+}
+
+model Agreement {
+  id                    String                  @id @default(uuid())
+  agreementId           String                  @unique
+  
+  // Agreement details
+  title                 String
+  type                  AgreementType
+  status                AgreementStatus
+  
+  // Parties
+  parties               Json                    // Array of party objects
+  
+  // Indigenous partnership
+  isIndigenousAgreement Boolean                 @default(false)
+  partnershipType       PartnershipType?
+  benefitSharing        Json?                   // Revenue sharing details
+  capacityBuilding      Json?                   // Training/employment commitments
+  
+  // Impact Benefit Agreement (IBA) specific
+  isIBA                 Boolean                 @default(false)
+  projectName           String?
+  resourceType          String?                 // Mining, forestry, energy, etc.
+  territoryAffected     String?
+  communityBenefits     Json?
+  environmentalTerms    Json?
+  
+  // Terms
+  terms                 Json
+  obligations           Json?
+  milestones            Json?
+  
+  // Duration
+  effectiveDate         DateTime
+  expiryDate            DateTime?
+  
+  // Signatures
+  signatureRequired     Int
+  signatureReceived     Int                     @default(0)
+  fullyExecuted         Boolean                 @default(false)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([status])
+  @@index([isIndigenousAgreement])
+  @@index([isIBA])
+}
+
+model ContractAmendment {
+  id                    String                  @id @default(uuid())
+  amendmentId           String                  @unique
+  contractId            String
+  
+  // Amendment details
+  amendmentNumber       Int
+  title                 String
+  description           String
+  
+  // Changes
+  clausesModified       Json
+  clausesAdded          Json?
+  clausesRemoved        Json?
+  
+  // Financial impact
+  valueChange           Decimal?                @db.Decimal(19, 4)
+  percentageChange      Decimal?                @db.Decimal(5, 2)
+  
+  // Approval
+  status                AmendmentStatus
+  requestedBy           String
+  requestedAt           DateTime
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Indigenous approval if required
+  requiresElderApproval Boolean                 @default(false)
+  elderApproved         Boolean?
+  
+  effectiveDate         DateTime?
+  
+  contract              Contract                @relation(fields: [contractId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  
+  @@index([contractId])
+  @@index([status])
+}
+
+model Template {
+  id                    String                  @id @default(uuid())
+  templateId            String                  @unique
+  
+  // Template info
+  name                  String
+  description           String
+  category              TemplateCategory
+  type                  DocumentType
+  
+  // Content
+  content               String                  @db.Text
+  variables             Json                    // Placeholder variables
+  
+  // Indigenous templates
+  isIndigenousTemplate  Boolean                 @default(false)
+  indigenousLanguage    String?
+  culturallyApproved    Boolean                 @default(false)
+  
+  // Usage
+  usageCount            Int                     @default(0)
+  lastUsedAt            DateTime?
+  
+  // Approval
+  isApproved            Boolean                 @default(false)
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Versioning
+  version               String                  @default("1.0")
+  isActive              Boolean                 @default(true)
+  
+  documents             LegalDocument[]
+  clauses               TemplateClause[]
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([category])
+  @@index([type])
+  @@index([isIndigenousTemplate])
+}
+
+model Clause {
+  id                    String                  @id @default(uuid())
+  clauseId              String                  @unique
+  
+  // Clause details
+  title                 String
+  category              ClauseCategory
+  text                  String                  @db.Text
+  
+  // Legal references
+  legalBasis            String?
+  precedents            String[]
+  
+  // Indigenous law
+  traditionalLawBasis   String?
+  indigenousContext     String?
+  
+  // Risk assessment
+  riskLevel             RiskLevel
+  riskDescription       String?
+  
+  // Usage
+  isMandatory           Boolean                 @default(false)
+  isStandard            Boolean                 @default(true)
+  
+  // Relationships
+  documentId            String?
+  incompatibleClauses   String[]                // Clause IDs that conflict
+  dependentClauses      String[]                // Required companion clauses
+  
+  document              LegalDocument?          @relation(fields: [documentId], references: [id])
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([category])
+  @@index([documentId])
+}
+
+model TemplateClause {
+  id                    String                  @id @default(uuid())
+  templateId            String
+  clauseId              String
+  
+  // Position and customization
+  position              Int
+  isRequired            Boolean                 @default(true)
+  customText            String?
+  
+  template              Template                @relation(fields: [templateId], references: [id])
+  
+  @@unique([templateId, clauseId])
+  @@index([templateId])
+}
+
+model Signature {
+  id                    String                  @id @default(uuid())
+  signatureId           String                  @unique
+  
+  // Document reference
+  contractId            String?
+  documentId            String?
+  
+  // Signatory
+  signerId              String
+  signerName            String
+  signerTitle           String?
+  signerType            SignerType
+  
+  // Indigenous signatory
+  isIndigenousSigner    Boolean                 @default(false)
+  bandRepresentative    Boolean                 @default(false)
+  elderWitness          Boolean                 @default(false)
+  
+  // Signature details
+  signatureType         SignatureType
+  signatureData         String?                 // Base64 encoded signature image
+  certificateId         String?                 // Digital certificate ID
+  
+  // Verification
+  ipAddress             String?
+  userAgent             String?
+  location              Json?
+  
+  // Timestamp
+  signedAt              DateTime
+  
+  // Witness info
+  isWitness             Boolean                 @default(false)
+  witnessFor            String?                 // SignerId of person being witnessed
+  
+  contract              Contract?               @relation(fields: [contractId], references: [id])
+  
+  @@index([contractId])
+  @@index([signerId])
+  @@index([signedAt])
+}
+
+model ComplianceCheck {
+  id                    String                  @id @default(uuid())
+  checkId               String                  @unique
+  
+  // Target
+  contractId            String?
+  documentId            String?
+  entityId              String?
+  
+  // Check details
+  type                  ComplianceType
+  category              String
+  description           String
+  
+  // Requirements
+  requirements          Json
+  
+  // Results
+  status                ComplianceStatus
+  score                 Decimal?                @db.Decimal(5, 2)
+  findings              Json?
+  
+  // Indigenous compliance
+  indigenousCompliance  Boolean                 @default(false)
+  mandate5Percent       Boolean                 @default(false)
+  treatyCompliance      Boolean                 @default(true)
+  
+  // Actions
+  correctiveActions     Json?
+  deadline              DateTime?
+  
+  // Review
+  reviewedBy            String?
+  reviewDate            DateTime?
+  
+  contract              Contract?               @relation(fields: [contractId], references: [id])
+  
+  performedAt           DateTime                @default(now())
+  
+  @@index([contractId])
+  @@index([type])
+  @@index([status])
+}
+
+model LegalCase {
+  id                    String                  @id @default(uuid())
+  caseId                String                  @unique
+  caseNumber            String                  @unique
+  
+  // Case details
+  title                 String
+  type                  CaseType
+  status                CaseStatus
+  priority              Priority
+  
+  // Parties
+  plaintiff             String
+  defendant             String
+  otherParties          Json?
+  
+  // Indigenous elements
+  involvesIndigenousRights Boolean              @default(false)
+  treatyRights          Boolean                 @default(false)
+  landClaim             Boolean                 @default(false)
+  traditionalTerritory  String?
+  
+  // Case information
+  court                 String?
+  judge                 String?
+  fileDate              DateTime
+  hearingDate           DateTime?
+  
+  // Legal representation
+  legalCounsel          Json
+  indigenousLegalTeam   Json?                   // Specialized Indigenous law team
+  
+  // Documentation
+  documents             Json
+  evidence              Json?
+  
+  // Outcome
+  verdict               String?
+  settlement            Decimal?                @db.Decimal(19, 4)
+  settlementTerms       Json?
+  
+  // Precedent value
+  setsPrecedent         Boolean                 @default(false)
+  precedentDescription  String?
+  
+  closedAt              DateTime?
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([caseNumber])
+  @@index([type])
+  @@index([status])
+  @@index([involvesIndigenousRights])
+}
+
+model IntellectualProperty {
+  id                    String                  @id @default(uuid())
+  ipId                  String                  @unique
+  
+  // IP details
+  type                  IPType
+  title                 String
+  description           String
+  
+  // Ownership
+  ownerId               String
+  ownerType             PartyType
+  coOwners              Json?
+  
+  // Indigenous IP
+  isIndigenousIP        Boolean                 @default(false)
+  traditionalKnowledge  Boolean                 @default(false)
+  culturalExpression    Boolean                 @default(false)
+  communityOwned        Boolean                 @default(false)
+  
+  // Protection
+  protectionStatus      ProtectionStatus
+  registrationNumber    String?
+  registrationDate      DateTime?
+  expiryDate            DateTime?
+  
+  // Geographic scope
+  jurisdictions         String[]
+  
+  // Cultural protocols
+  culturalProtocols     Json?
+  sharingAgreements     Json?
+  accessRestrictions    Json?
+  
+  // Licensing
+  licensable            Boolean                 @default(true)
+  licenses              Json?
+  
+  // Value
+  estimatedValue        Decimal?                @db.Decimal(19, 4)
+  
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([type])
+  @@index([ownerId])
+  @@index([isIndigenousIP])
+}
+
+model LegalNotice {
+  id                    String                  @id @default(uuid())
+  noticeId              String                  @unique
+  
+  // Notice details
+  type                  NoticeType
+  title                 String
+  content               String                  @db.Text
+  
+  // Recipients
+  recipientId           String
+  recipientType         PartyType
+  
+  // Delivery
+  deliveryMethod        DeliveryMethod
+  deliveryStatus        DeliveryStatus
+  deliveredAt           DateTime?
+  
+  // Response required
+  responseRequired      Boolean                 @default(false)
+  responseDeadline      DateTime?
+  responseReceived      Boolean                 @default(false)
+  
+  // Legal requirements
+  legalDeadline         DateTime?
+  statutoryPeriod       Int?                    // Days
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  
+  @@index([type])
+  @@index([recipientId])
+  @@index([deliveryStatus])
+}
+
+// Enums
+enum ContractType {
+  PURCHASE
+  SERVICE
+  EMPLOYMENT
+  NDA
+  LICENSE
+  LEASE
+  PARTNERSHIP
+  JOINT_VENTURE
+  PROCUREMENT
+  INDIGENOUS_PARTNERSHIP
+  IMPACT_BENEFIT
+}
+
+enum ContractStatus {
+  DRAFT
+  UNDER_REVIEW
+  PENDING_APPROVAL
+  APPROVED
+  SIGNED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+  DISPUTED
+}
+
+enum PartyType {
+  INDIVIDUAL
+  BUSINESS
+  INDIGENOUS_BUSINESS
+  BAND_COUNCIL
+  GOVERNMENT
+  NON_PROFIT
+}
+
+enum ReviewStatus {
+  PENDING
+  IN_PROGRESS
+  APPROVED
+  REJECTED
+  REQUIRES_CHANGES
+}
+
+enum DisputeResolution {
+  NEGOTIATION
+  MEDIATION
+  ARBITRATION
+  LITIGATION
+  INDIGENOUS_CIRCLE
+  ELDER_MEDIATION
+}
+
+enum DocumentType {
+  CONTRACT
+  AGREEMENT
+  AMENDMENT
+  NOTICE
+  POLICY
+  REPORT
+  CERTIFICATE
+  PERMIT
+  LICENSE
+}
+
+enum DocumentCategory {
+  LEGAL
+  COMPLIANCE
+  GOVERNANCE
+  INDIGENOUS_LAW
+  TRADITIONAL
+  REGULATORY
+}
+
+enum ConfidentialityLevel {
+  PUBLIC
+  INTERNAL
+  CONFIDENTIAL
+  RESTRICTED
+  SACRED // For Indigenous ceremonial documents
+}
+
+enum AgreementType {
+  PARTNERSHIP
+  JOINT_VENTURE
+  MEMORANDUM
+  LETTER_OF_INTENT
+  IMPACT_BENEFIT
+  REVENUE_SHARING
+  CAPACITY_BUILDING
+}
+
+enum AgreementStatus {
+  DRAFT
+  NEGOTIATING
+  FINAL
+  EXECUTED
+  ACTIVE
+  EXPIRED
+  TERMINATED
+}
+
+enum PartnershipType {
+  EQUITY
+  REVENUE_SHARING
+  JOINT_VENTURE
+  STRATEGIC
+  COMMUNITY_BENEFIT
+}
+
+enum AmendmentStatus {
+  PROPOSED
+  UNDER_REVIEW
+  APPROVED
+  REJECTED
+  IMPLEMENTED
+}
+
+enum TemplateCategory {
+  STANDARD
+  INDIGENOUS
+  GOVERNMENT
+  PROCUREMENT
+  EMPLOYMENT
+  INTELLECTUAL_PROPERTY
+}
+
+enum ClauseCategory {
+  PAYMENT
+  DELIVERY
+  WARRANTY
+  LIABILITY
+  CONFIDENTIALITY
+  TERMINATION
+  DISPUTE_RESOLUTION
+  INDIGENOUS_RIGHTS
+  CULTURAL_PROTOCOLS
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum SignerType {
+  PRIMARY
+  WITNESS
+  NOTARY
+  ELDER
+  CHIEF
+  LEGAL_REP
+}
+
+enum SignatureType {
+  ELECTRONIC
+  DIGITAL
+  WET_INK
+  WITNESSED
+  NOTARIZED
+}
+
+enum ComplianceType {
+  REGULATORY
+  CONTRACTUAL
+  POLICY
+  INDIGENOUS_MANDATE
+  ENVIRONMENTAL
+  SAFETY
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  PARTIALLY_COMPLIANT
+  PENDING_REVIEW
+  REMEDIATION_REQUIRED
+}
+
+enum CaseType {
+  CONTRACT_DISPUTE
+  EMPLOYMENT
+  INTELLECTUAL_PROPERTY
+  REGULATORY
+  INDIGENOUS_RIGHTS
+  LAND_CLAIM
+  TREATY_INTERPRETATION
+}
+
+enum CaseStatus {
+  OPEN
+  IN_PROGRESS
+  ON_HOLD
+  SETTLED
+  CLOSED
+  APPEALED
+}
+
+enum Priority {
+  LOW
+  MEDIUM
+  HIGH
+  URGENT
+  CRITICAL
+}
+
+enum IPType {
+  PATENT
+  TRADEMARK
+  COPYRIGHT
+  TRADE_SECRET
+  TRADITIONAL_KNOWLEDGE
+  CULTURAL_EXPRESSION
+}
+
+enum ProtectionStatus {
+  PENDING
+  REGISTERED
+  PROTECTED
+  EXPIRED
+  ABANDONED
+}
+
+enum NoticeType {
+  LEGAL
+  BREACH
+  TERMINATION
+  COMPLIANCE
+  DEADLINE
+  HEARING
+}
+
+enum DeliveryMethod {
+  EMAIL
+  REGISTERED_MAIL
+  COURIER
+  IN_PERSON
+  PUBLICATION
+}
+
+enum DeliveryStatus {
+  PENDING
+  SENT
+  DELIVERED
+  FAILED
+  RETURNED
+}

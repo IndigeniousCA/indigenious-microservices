@@ -1,0 +1,68 @@
+version: '3.8'
+
+services:
+  returns-service:
+    build: .
+    ports:
+      - "3035:3035"
+    environment:
+      - NODE_ENV=production
+      - PORT=3035
+      - DATABASE_URL=postgresql://returns_user:returns_pass@returns-db:5432/indigenous_returns_db
+      - REDIS_URL=redis://returns-redis:6379
+      - JWT_SECRET=${JWT_SECRET}
+      - ENCRYPTION_KEY=${ENCRYPTION_KEY}
+      - SHIPPING_API_KEY=${SHIPPING_API_KEY}
+      - RECYCLING_API_KEY=${RECYCLING_API_KEY}
+      - INDIGENOUS_NETWORK_API=${INDIGENOUS_NETWORK_API}
+      - ELDER_NOTIFICATION_API=${ELDER_NOTIFICATION_API}
+    depends_on:
+      - returns-db
+      - returns-redis
+    networks:
+      - returns-network
+      - microservices-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3035/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  returns-db:
+    image: postgres:15-alpine
+    environment:
+      - POSTGRES_DB=indigenous_returns_db
+      - POSTGRES_USER=returns_user
+      - POSTGRES_PASSWORD=returns_pass
+    volumes:
+      - returns-db-data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init-db.sql
+    ports:
+      - "5441:5432"
+    networks:
+      - returns-network
+    restart: unless-stopped
+
+  returns-redis:
+    image: redis:7-alpine
+    ports:
+      - "6390:6379"
+    volumes:
+      - returns-redis-data:/data
+    networks:
+      - returns-network
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+volumes:
+  returns-db-data:
+    driver: local
+  returns-redis-data:
+    driver: local
+
+networks:
+  returns-network:
+    driver: bridge
+  microservices-network:
+    external: true

@@ -1,0 +1,906 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Vendor {
+  id                    String                  @id @default(uuid())
+  vendorId              String                  @unique
+  vendorNumber          String                  @unique
+  
+  // Basic information
+  companyName           String
+  legalName             String
+  businessNumber        String?                 // CRA Business Number
+  gstNumber             String?
+  
+  // Contact details
+  primaryContact        Json                    // Contact person details
+  email                 String
+  phone                 String
+  website               String?
+  
+  // Address
+  address               Json                    // Street, city, province, postal, country
+  headOfficeAddress     Json?
+  billingAddress        Json?
+  
+  // Business classification
+  businessType          BusinessType
+  industryCode          String
+  businessSize          BusinessSize
+  foundedYear           Int?
+  
+  // Indigenous business details
+  isIndigenousBusiness  Boolean                 @default(false)
+  indigenousClassification IndigenousClassification?
+  bandNumber            String?
+  treatyNumber          String?
+  statusCardValidated   Boolean                 @default(false)
+  statusCardNumber      String?
+  statusCardExpiry      DateTime?
+  
+  // Ownership structure
+  indigenousOwnership   Decimal?                @db.Decimal(5, 2) // Percentage
+  womenOwnership        Decimal?                @db.Decimal(5, 2) // Percentage
+  youthOwnership        Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Business registration
+  incorporationNumber   String?
+  incorporationDate     DateTime?
+  incorporationProvince String?
+  businessLicenses      Json?
+  
+  // Banking and financial
+  bankingInfo           Json?
+  creditRating          CreditRating?
+  creditScore           Decimal?                @db.Decimal(5, 2)
+  paymentTermsPreferred String                  @default("Net 30")
+  
+  // Capabilities
+  capabilities          VendorCapability[]
+  certifications        Certification[]
+  
+  // Products and services
+  productsServices      Json
+  commodityCodes        String[]
+  
+  // Geographic reach
+  serviceAreas          Json                    // Cities, provinces, territories served
+  remoteCapable         Boolean                 @default(false)
+  
+  // Performance metrics
+  performanceMetrics    VendorPerformance[]
+  
+  // Compliance and verification
+  verificationStatus    VerificationStatus
+  verifiedDate          DateTime?
+  verifiedBy            String?
+  complianceChecks      VendorCompliance[]
+  
+  // Documents
+  documents             VendorDocument[]
+  
+  // Relationships
+  contracts             Json?                   // Related contract IDs
+  partnerships          VendorPartnership[]
+  subcontractors        VendorRelationship[]    @relation("PrimaryVendor")
+  primaryVendors        VendorRelationship[]    @relation("SubcontractorVendor")
+  
+  // Indigenous program participation
+  mandateContributions  MandateContribution[]
+  indigenousProcurement IndigenousProcurement[]
+  communityBenefits     CommunityBenefit[]
+  
+  // Quality and standards
+  qualityRating         Decimal?                @db.Decimal(5, 2)
+  qualityStandards      String[]
+  
+  // Environmental and social
+  environmentalRating   Decimal?                @db.Decimal(5, 2)
+  socialResponsibility  Json?
+  sustainability        Json?
+  
+  // Technology
+  ecommerceCapable      Boolean                 @default(false)
+  ediCapable            Boolean                 @default(false)
+  
+  // Status and flags
+  status                VendorStatus
+  isActive              Boolean                 @default(true)
+  isPreferred           Boolean                 @default(false)
+  isStrategic           Boolean                 @default(false)
+  riskLevel             RiskLevel               @default(LOW)
+  
+  // Approval workflow
+  approvalStatus        ApprovalStatus          @default(PENDING)
+  approvedBy            String?
+  approvalDate          DateTime?
+  
+  // Key dates
+  onboardedAt           DateTime?
+  lastReviewDate        DateTime?
+  nextReviewDate        DateTime?
+  contractExpiryDate    DateTime?
+  
+  // Metadata
+  tags                  String[]
+  notes                 String?
+  metadata              Json?
+  
+  createdBy             String
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  
+  @@index([vendorNumber])
+  @@index([companyName])
+  @@index([businessType])
+  @@index([isIndigenousBusiness])
+  @@index([status])
+  @@index([verificationStatus])
+  @@index([approvalStatus])
+  @@index([bandNumber])
+}
+
+model VendorCapability {
+  id                    String                  @id @default(uuid())
+  vendorId              String
+  
+  // Capability details
+  category              CapabilityCategory
+  subcategory           String
+  description           String
+  
+  // Competency level
+  proficiencyLevel      ProficiencyLevel
+  experience            String?                 // Years of experience
+  
+  // Indigenous specialization
+  indigenousSpecialization Boolean              @default(false)
+  traditionalMethods    Boolean                 @default(false)
+  
+  // Certification
+  certified             Boolean                 @default(false)
+  certificationBody     String?
+  certificationDate     DateTime?
+  expiryDate            DateTime?
+  
+  // Capacity
+  capacity              Json?                   // Volume, scale details
+  availability          Json?                   // Timeline, schedule
+  
+  // Geographic
+  serviceRegions        String[]
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@index([vendorId])
+  @@index([category])
+}
+
+model Certification {
+  id                    String                  @id @default(uuid())
+  certificationId       String                  @unique
+  vendorId              String
+  
+  // Certification details
+  name                  String
+  type                  CertificationType
+  issuingBody           String
+  
+  // Validity
+  issueDate             DateTime
+  expiryDate            DateTime?
+  isActive              Boolean                 @default(true)
+  
+  // Indigenous certifications
+  isIndigenousCertification Boolean             @default(false)
+  recognizedBy          String[]                // Bodies that recognize this cert
+  
+  // Verification
+  verificationNumber    String
+  verificationUrl       String?
+  
+  // Document
+  documentUrl           String?
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@index([vendorId])
+  @@index([type])
+  @@index([expiryDate])
+}
+
+model VendorPerformance {
+  id                    String                  @id @default(uuid())
+  vendorId              String
+  
+  // Performance period
+  periodStart           DateTime
+  periodEnd             DateTime
+  
+  // Overall scores
+  overallScore          Decimal                 @db.Decimal(5, 2)
+  qualityScore          Decimal                 @db.Decimal(5, 2)
+  deliveryScore         Decimal                 @db.Decimal(5, 2)
+  serviceScore          Decimal                 @db.Decimal(5, 2)
+  complianceScore       Decimal                 @db.Decimal(5, 2)
+  
+  // Indigenous specific metrics
+  indigenousEmployment  Decimal?                @db.Decimal(5, 2) // Percentage
+  localProcurement      Decimal?                @db.Decimal(5, 2) // Percentage
+  communityBenefit      Decimal?                @db.Decimal(5, 2) // Score
+  culturalSensitivity   Decimal?                @db.Decimal(5, 2) // Score
+  
+  // Contract performance
+  contractsCompleted    Int                     @default(0)
+  contractsOnTime       Int                     @default(0)
+  contractsOnBudget     Int                     @default(0)
+  
+  // Quality metrics
+  defectRate            Decimal?                @db.Decimal(5, 4)
+  customerSatisfaction  Decimal?                @db.Decimal(5, 2)
+  
+  // Financial metrics
+  totalSpend            Decimal                 @db.Decimal(19, 4) @default(0)
+  savings               Decimal?                @db.Decimal(19, 4)
+  
+  // Issues and improvements
+  issuesReported        Int                     @default(0)
+  improvementActions    Json?
+  
+  // Evaluator
+  evaluatedBy           String
+  evaluationDate        DateTime                @default(now())
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@unique([vendorId, periodStart, periodEnd])
+  @@index([vendorId])
+  @@index([overallScore])
+}
+
+model VendorCompliance {
+  id                    String                  @id @default(uuid())
+  complianceId          String                  @unique
+  vendorId              String
+  
+  // Compliance check details
+  checkType             ComplianceType
+  category              String
+  description           String
+  
+  // Requirements
+  requirements          Json
+  
+  // Results
+  status                ComplianceStatus
+  score                 Decimal?                @db.Decimal(5, 2)
+  findings              Json?
+  
+  // Indigenous compliance
+  indigenousCompliance  Boolean                 @default(false)
+  statusCardValid       Boolean?
+  bandMembershipValid   Boolean?
+  ownershipVerified     Boolean?
+  
+  // Corrective actions
+  actionsRequired       Boolean                 @default(false)
+  correctiveActions     Json?
+  deadline              DateTime?
+  
+  // Review details
+  performedBy           String
+  performedAt           DateTime                @default(now())
+  reviewedBy            String?
+  reviewedAt            DateTime?
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@index([vendorId])
+  @@index([checkType])
+  @@index([status])
+}
+
+model VendorDocument {
+  id                    String                  @id @default(uuid())
+  documentId            String                  @unique
+  vendorId              String
+  
+  // Document details
+  name                  String
+  type                  DocumentType
+  category              String
+  
+  // File info
+  fileUrl               String
+  fileSize              Int
+  mimeType              String
+  
+  // Version control
+  version               String                  @default("1.0")
+  isLatest              Boolean                 @default(true)
+  
+  // Validity
+  issueDate             DateTime?
+  expiryDate            DateTime?
+  isValid               Boolean                 @default(true)
+  
+  // Verification
+  verified              Boolean                 @default(false)
+  verifiedBy            String?
+  verificationDate      DateTime?
+  
+  // Indigenous documents
+  isIndigenousDocument  Boolean                 @default(false)
+  statusCardCopy        Boolean                 @default(false)
+  bandMembershipProof   Boolean                 @default(false)
+  
+  // Security
+  confidential          Boolean                 @default(false)
+  accessRestricted      Boolean                 @default(false)
+  
+  uploadedBy            String
+  uploadedAt            DateTime                @default(now())
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@index([vendorId])
+  @@index([type])
+  @@index([expiryDate])
+}
+
+model VendorPartnership {
+  id                    String                  @id @default(uuid())
+  partnershipId         String                  @unique
+  
+  // Partner vendors
+  primaryVendorId       String
+  partnerVendorId       String
+  
+  // Partnership details
+  type                  PartnershipType
+  title                 String
+  description           String
+  
+  // Terms
+  revenueSharing        Json?
+  responsibilities      Json
+  
+  // Duration
+  startDate             DateTime
+  endDate               DateTime?
+  
+  // Indigenous partnership benefits
+  isIndigenousPartnership Boolean               @default(false)
+  indigenousBenefits    Json?
+  capacityBuilding      Json?
+  
+  // Status
+  status                PartnershipStatus
+  
+  primaryVendor         Vendor                  @relation(fields: [primaryVendorId], references: [id])
+  
+  @@index([primaryVendorId])
+  @@index([type])
+  @@index([status])
+}
+
+model VendorRelationship {
+  id                    String                  @id @default(uuid())
+  relationshipId        String                  @unique
+  
+  // Relationship parties
+  primaryVendorId       String
+  subcontractorVendorId String
+  
+  // Relationship type
+  type                  RelationshipType
+  description           String?
+  
+  // Terms
+  terms                 Json?
+  
+  // Duration
+  effectiveDate         DateTime
+  expiryDate            DateTime?
+  
+  // Status
+  isActive              Boolean                 @default(true)
+  
+  primaryVendor         Vendor                  @relation("PrimaryVendor", fields: [primaryVendorId], references: [id])
+  subcontractorVendor   Vendor                  @relation("SubcontractorVendor", fields: [subcontractorVendorId], references: [id])
+  
+  @@unique([primaryVendorId, subcontractorVendorId])
+  @@index([primaryVendorId])
+  @@index([type])
+}
+
+model MandateContribution {
+  id                    String                  @id @default(uuid())
+  contributionId        String                  @unique
+  vendorId              String
+  
+  // Contribution details
+  year                  Int
+  quarter               String?
+  
+  // Contract values
+  totalContracts        Decimal                 @db.Decimal(19, 4)
+  contractCount         Int
+  
+  // 5% mandate calculation
+  mandateContribution   Decimal                 @db.Decimal(19, 4)
+  mandatePercentage     Decimal                 @db.Decimal(5, 2)
+  
+  // Sub-categories
+  goodsValue            Decimal?                @db.Decimal(19, 4)
+  servicesValue         Decimal?                @db.Decimal(19, 4)
+  constructionValue     Decimal?                @db.Decimal(19, 4)
+  
+  // Geographic breakdown
+  regionalBreakdown     Json?
+  
+  // Verification
+  verified              Boolean                 @default(false)
+  verifiedBy            String?
+  verificationDate      DateTime?
+  
+  // Reporting
+  reportedBy            String
+  reportedAt            DateTime                @default(now())
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@unique([vendorId, year, quarter])
+  @@index([vendorId])
+  @@index([year])
+}
+
+model IndigenousProcurement {
+  id                    String                  @id @default(uuid())
+  procurementId         String                  @unique
+  vendorId              String
+  
+  // Procurement details
+  contractNumber        String
+  description           String
+  category              ProcurementCategory
+  
+  // Value
+  contractValue         Decimal                 @db.Decimal(19, 4)
+  
+  // Indigenous elements
+  indigenousContent     Decimal?                @db.Decimal(5, 2) // Percentage
+  indigenousEmployment  Decimal?                @db.Decimal(5, 2) // Percentage
+  
+  // Set-aside contract
+  setAsideContract      Boolean                 @default(false)
+  setAsideType          SetAsideType?
+  
+  // Timeline
+  awardDate             DateTime
+  startDate             DateTime
+  completionDate        DateTime?
+  
+  // Performance
+  onTimeCompletion      Boolean?
+  onBudgetCompletion    Boolean?
+  qualityRating         Decimal?                @db.Decimal(5, 2)
+  
+  // Community benefits
+  jobsCreated           Int?
+  trainingProvided      Int?                    // Hours
+  localSpend            Decimal?                @db.Decimal(19, 4)
+  
+  // Compliance
+  complianceScore       Decimal?                @db.Decimal(5, 2)
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@index([vendorId])
+  @@index([category])
+  @@index([awardDate])
+}
+
+model CommunityBenefit {
+  id                    String                  @id @default(uuid())
+  benefitId             String                  @unique
+  vendorId              String
+  
+  // Benefit details
+  type                  BenefitType
+  title                 String
+  description           String
+  
+  // Value and impact
+  monetaryValue         Decimal?                @db.Decimal(19, 4)
+  beneficiaryCount      Int?
+  
+  // Community
+  communityName         String
+  bandNumber            String?
+  territory             String?
+  
+  // Timeline
+  startDate             DateTime
+  endDate               DateTime?
+  
+  // Measurement
+  metrics               Json?
+  impactMeasurement     Json?
+  
+  // Verification
+  verified              Boolean                 @default(false)
+  verifiedBy            String?
+  
+  // Reporting
+  reportingFrequency    String                  @default("Quarterly")
+  lastReported          DateTime?
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id])
+  
+  @@index([vendorId])
+  @@index([type])
+  @@index([communityName])
+}
+
+model VendorInvitation {
+  id                    String                  @id @default(uuid())
+  invitationId          String                  @unique
+  
+  // Invitation details
+  companyName           String
+  contactEmail          String
+  contactName           String?
+  
+  // Invitation type
+  type                  InvitationType
+  targetClassification  IndigenousClassification?
+  
+  // RFP/Opportunity
+  opportunityId         String?
+  opportunityTitle      String?
+  
+  // Status
+  status                InvitationStatus
+  sentAt                DateTime                @default(now())
+  respondedAt           DateTime?
+  
+  // Response
+  accepted              Boolean?
+  declineReason         String?
+  
+  // Follow-up
+  remindersSent         Int                     @default(0)
+  lastReminderAt        DateTime?
+  
+  // Tracking
+  emailOpened           Boolean                 @default(false)
+  linksClicked          Boolean                 @default(false)
+  
+  sentBy                String
+  
+  @@index([contactEmail])
+  @@index([type])
+  @@index([status])
+}
+
+model VendorAssessment {
+  id                    String                  @id @default(uuid())
+  assessmentId          String                  @unique
+  vendorId              String
+  
+  // Assessment details
+  type                  AssessmentType
+  title                 String
+  description           String
+  
+  // Scoring
+  totalScore            Decimal                 @db.Decimal(5, 2)
+  maxScore              Decimal                 @db.Decimal(5, 2)
+  percentage            Decimal                 @db.Decimal(5, 2)
+  
+  // Categories
+  technicalScore        Decimal?                @db.Decimal(5, 2)
+  financialScore        Decimal?                @db.Decimal(5, 2)
+  managementScore       Decimal?                @db.Decimal(5, 2)
+  
+  // Indigenous assessment
+  indigenousScore       Decimal?                @db.Decimal(5, 2)
+  culturalFit           Decimal?                @db.Decimal(5, 2)
+  communityBenefit      Decimal?                @db.Decimal(5, 2)
+  
+  // Results
+  recommendation        AssessmentResult
+  comments              String?
+  improvementAreas      Json?
+  
+  // Timeline
+  assessmentDate        DateTime
+  validUntil            DateTime?
+  
+  // Assessor
+  assessorId            String
+  assessorName          String
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id], name: "VendorAssessments")
+  
+  @@index([vendorId])
+  @@index([type])
+  @@index([assessmentDate])
+}
+
+model VendorFeedback {
+  id                    String                  @id @default(uuid())
+  feedbackId            String                  @unique
+  vendorId              String
+  
+  // Feedback source
+  sourceType            FeedbackSource
+  sourceId              String                  // Contract ID, user ID, etc.
+  sourceName            String
+  
+  // Feedback content
+  rating                Decimal                 @db.Decimal(3, 2)
+  category              FeedbackCategory
+  comments              String?
+  
+  // Specific ratings
+  qualityRating         Decimal?                @db.Decimal(3, 2)
+  timelinessRating      Decimal?                @db.Decimal(3, 2)
+  communicationRating   Decimal?                @db.Decimal(3, 2)
+  valueRating           Decimal?                @db.Decimal(3, 2)
+  
+  // Indigenous specific feedback
+  culturalSensitivity   Decimal?                @db.Decimal(3, 2)
+  communityEngagement   Decimal?                @db.Decimal(3, 2)
+  
+  // Response
+  vendorResponse        String?
+  respondedAt           DateTime?
+  
+  // Visibility
+  isPublic              Boolean                 @default(false)
+  approved              Boolean                 @default(false)
+  
+  submittedAt           DateTime                @default(now())
+  
+  vendor                Vendor                  @relation(fields: [vendorId], references: [id], name: "VendorFeedback")
+  
+  @@index([vendorId])
+  @@index([rating])
+  @@index([category])
+}
+
+// Enums
+enum BusinessType {
+  SOLE_PROPRIETORSHIP
+  PARTNERSHIP
+  CORPORATION
+  COOPERATIVE
+  NON_PROFIT
+  BAND_OWNED
+  INDIGENOUS_CORPORATION
+}
+
+enum IndigenousClassification {
+  FIRST_NATIONS
+  METIS
+  INUIT
+  NATIVE_AMERICAN
+  ABORIGINAL
+  STATUS_INDIAN
+  NON_STATUS_INDIAN
+}
+
+enum BusinessSize {
+  MICRO          // < 5 employees
+  SMALL          // 5-99 employees
+  MEDIUM         // 100-499 employees
+  LARGE          // 500+ employees
+}
+
+enum CreditRating {
+  AAA
+  AA
+  A
+  BBB
+  BB
+  B
+  CCC
+  CC
+  C
+  D
+}
+
+enum VerificationStatus {
+  PENDING
+  IN_PROGRESS
+  VERIFIED
+  REJECTED
+  EXPIRED
+  SUSPENDED
+}
+
+enum VendorStatus {
+  ACTIVE
+  INACTIVE
+  SUSPENDED
+  BLACKLISTED
+  UNDER_REVIEW
+}
+
+enum ApprovalStatus {
+  PENDING
+  APPROVED
+  REJECTED
+  CONDITIONAL
+}
+
+enum RiskLevel {
+  LOW
+  MEDIUM
+  HIGH
+  CRITICAL
+}
+
+enum CapabilityCategory {
+  GOODS
+  SERVICES
+  CONSTRUCTION
+  CONSULTING
+  MAINTENANCE
+  TECHNOLOGY
+  PROFESSIONAL_SERVICES
+}
+
+enum ProficiencyLevel {
+  BEGINNER
+  INTERMEDIATE
+  ADVANCED
+  EXPERT
+}
+
+enum CertificationType {
+  QUALITY
+  SAFETY
+  ENVIRONMENTAL
+  SECURITY
+  INDIGENOUS_BUSINESS
+  PROFESSIONAL
+  TECHNICAL
+}
+
+enum ComplianceType {
+  REGULATORY
+  BUSINESS_LICENSE
+  INSURANCE
+  INDIGENOUS_STATUS
+  TAX_COMPLIANCE
+  SAFETY
+  ENVIRONMENTAL
+}
+
+enum ComplianceStatus {
+  COMPLIANT
+  NON_COMPLIANT
+  PARTIALLY_COMPLIANT
+  UNDER_REVIEW
+  EXPIRED
+}
+
+enum DocumentType {
+  BUSINESS_LICENSE
+  INSURANCE_CERTIFICATE
+  TAX_CERTIFICATE
+  FINANCIAL_STATEMENT
+  REFERENCE_LETTER
+  CAPABILITY_STATEMENT
+  STATUS_CARD
+  BAND_MEMBERSHIP
+  INCORPORATION_DOCS
+  CERTIFICATIONS
+}
+
+enum PartnershipType {
+  JOINT_VENTURE
+  SUBCONTRACTING
+  STRATEGIC_ALLIANCE
+  MENTORSHIP
+  CAPACITY_BUILDING
+}
+
+enum PartnershipStatus {
+  ACTIVE
+  INACTIVE
+  TERMINATED
+  SUSPENDED
+}
+
+enum RelationshipType {
+  SUBCONTRACTOR
+  SUPPLIER
+  JOINT_VENTURE_PARTNER
+  MENTOR
+  MENTEE
+}
+
+enum ProcurementCategory {
+  GOODS
+  SERVICES
+  CONSTRUCTION
+  PROFESSIONAL_SERVICES
+  MAINTENANCE
+  TECHNOLOGY
+}
+
+enum SetAsideType {
+  INDIGENOUS_SET_ASIDE
+  SMALL_BUSINESS_SET_ASIDE
+  WOMEN_OWNED_SET_ASIDE
+  SOCIAL_ENTERPRISE_SET_ASIDE
+}
+
+enum BenefitType {
+  EMPLOYMENT
+  TRAINING
+  PROCUREMENT
+  SPONSORSHIP
+  COMMUNITY_INVESTMENT
+  CULTURAL_SUPPORT
+}
+
+enum InvitationType {
+  RFP
+  RFQ
+  GENERAL
+  INDIGENOUS_SPECIFIC
+  CAPACITY_BUILDING
+}
+
+enum InvitationStatus {
+  SENT
+  DELIVERED
+  OPENED
+  RESPONDED
+  EXPIRED
+  CANCELLED
+}
+
+enum AssessmentType {
+  PRE_QUALIFICATION
+  CAPABILITY_ASSESSMENT
+  FINANCIAL_ASSESSMENT
+  COMPLIANCE_AUDIT
+  PERFORMANCE_REVIEW
+}
+
+enum AssessmentResult {
+  APPROVED
+  CONDITIONALLY_APPROVED
+  REJECTED
+  REQUIRES_IMPROVEMENT
+}
+
+enum FeedbackSource {
+  CLIENT
+  PROJECT_MANAGER
+  END_USER
+  PARTNER
+  INTERNAL_REVIEW
+}
+
+enum FeedbackCategory {
+  GENERAL
+  QUALITY
+  DELIVERY
+  COMMUNICATION
+  VALUE
+  INNOVATION
+  CULTURAL_SENSITIVITY
+}

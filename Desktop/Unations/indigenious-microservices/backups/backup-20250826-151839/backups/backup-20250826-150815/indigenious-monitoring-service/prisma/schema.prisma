@@ -1,0 +1,493 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Service health monitoring
+model Service {
+  id                    String   @id @default(uuid())
+  serviceName          String   @unique
+  displayName          String
+  description          String?
+  
+  // Service details
+  serviceType          String   // MICROSERVICE, DATABASE, CACHE, QUEUE, EXTERNAL
+  endpoint             String   // Health check endpoint
+  port                 Int
+  protocol             String   @default("HTTP") // HTTP, HTTPS, TCP, GRPC
+  
+  // Health check configuration
+  healthCheckInterval  Int      @default(30000) // milliseconds
+  healthCheckTimeout   Int      @default(5000)
+  retryAttempts        Int      @default(3)
+  
+  // Indigenous service classification
+  indigenousService    Boolean  @default(false)
+  criticalForCeremony  Boolean  @default(false) // Critical for ceremony operations
+  communityEssential   Boolean  @default(false) // Essential for community
+  elderPriority        Boolean  @default(false) // Elder services get priority monitoring
+  
+  // Status
+  status               String   @default("UNKNOWN") // HEALTHY, DEGRADED, UNHEALTHY, UNKNOWN
+  lastCheckAt          DateTime?
+  lastHealthyAt        DateTime?
+  uptime               BigInt   @default(0) // seconds
+  
+  // Thresholds
+  cpuThreshold         Float    @default(80) // percentage
+  memoryThreshold      Float    @default(85)
+  diskThreshold        Float    @default(90)
+  responseTimeThreshold Int     @default(1000) // milliseconds
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  healthChecks         HealthCheck[]
+  metrics              Metric[]
+  alerts               Alert[]
+  incidents            Incident[]
+}
+
+model HealthCheck {
+  id                    String   @id @default(uuid())
+  
+  serviceId            String
+  service              Service  @relation(fields: [serviceId], references: [id])
+  
+  // Check details
+  checkType            String   // PING, HTTP, TCP, DATABASE, CUSTOM
+  status               String   // SUCCESS, FAILURE, TIMEOUT
+  responseTime         Int?     // milliseconds
+  statusCode           Int?     // HTTP status code
+  
+  // Resource metrics at check time
+  cpuUsage             Float?   // percentage
+  memoryUsage          Float?   // percentage
+  diskUsage            Float?   // percentage
+  networkLatency       Float?   // milliseconds
+  
+  // Error information
+  error                String?
+  errorDetails         Json?
+  
+  // Indigenous tracking
+  ceremonyImpact       Boolean  @default(false) // Affects ceremony operations
+  communityNotified    Boolean  @default(false)
+  elderAlerted         Boolean  @default(false)
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([serviceId, timestamp])
+}
+
+model Metric {
+  id                    String   @id @default(uuid())
+  
+  serviceId            String?
+  service              Service? @relation(fields: [serviceId], references: [id])
+  
+  // Metric details
+  metricName           String
+  metricType           String   // GAUGE, COUNTER, HISTOGRAM, SUMMARY
+  value                Float
+  unit                 String?  // bytes, percentage, requests, etc.
+  
+  // Labels/tags
+  labels               Json?    // Key-value pairs for filtering
+  
+  // Resource type
+  resourceType         String   // CPU, MEMORY, DISK, NETWORK, CUSTOM
+  resourceName         String?  // Specific resource identifier
+  
+  // Indigenous metrics
+  indigenousMetric     Boolean  @default(false)
+  communityMetrics     Json?    // Community-specific metrics
+  ceremonyMetrics      Json?    // Ceremony-related metrics
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([serviceId, metricName, timestamp])
+  @@index([timestamp])
+}
+
+model Alert {
+  id                    String   @id @default(uuid())
+  alertId              String   @unique
+  
+  serviceId            String?
+  service              Service? @relation(fields: [serviceId], references: [id])
+  
+  // Alert details
+  alertName            String
+  severity             String   // CRITICAL, HIGH, MEDIUM, LOW, INFO
+  status               String   @default("ACTIVE") // ACTIVE, ACKNOWLEDGED, RESOLVED
+  
+  // Alert content
+  title                String
+  description          String   @db.Text
+  metadata             Json?
+  
+  // Thresholds
+  threshold            Float?
+  actualValue          Float?
+  condition            String?  // GREATER_THAN, LESS_THAN, EQUALS, etc.
+  
+  // Indigenous alert priority
+  indigenousAlert      Boolean  @default(false)
+  elderAlert           Boolean  @default(false) // Alert for Elders
+  ceremonyAlert        Boolean  @default(false) // Ceremony-impacting alert
+  communityWide        Boolean  @default(false) // Affects entire community
+  nation               String?  // Specific nation affected
+  territory            String?  // Specific territory affected
+  
+  // Response
+  acknowledgedBy       String?
+  acknowledgedAt       DateTime?
+  resolvedBy           String?
+  resolvedAt           DateTime?
+  
+  // Escalation
+  escalationLevel      Int      @default(1)
+  escalatedTo          String[] // User IDs or roles
+  
+  // Notifications
+  notificationsSent    String[] // Notification channel IDs
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  incident             Incident? @relation(fields: [incidentId], references: [id])
+  incidentId           String?
+  
+  alertRules           AlertRule[]
+  
+  @@index([severity, status])
+  @@index([createdAt])
+}
+
+model AlertRule {
+  id                    String   @id @default(uuid())
+  ruleName             String   @unique
+  description          String?
+  
+  // Rule configuration
+  metricName           String
+  condition            String   // GREATER_THAN, LESS_THAN, EQUALS, CONTAINS
+  threshold            Float
+  duration             Int      @default(60000) // milliseconds - how long condition must be true
+  
+  // Alert settings
+  severity             String   // CRITICAL, HIGH, MEDIUM, LOW, INFO
+  alertChannels        String[] // EMAIL, SMS, SLACK, DISCORD, WEBHOOK
+  
+  // Indigenous-specific rules
+  indigenousRule       Boolean  @default(false)
+  ceremonyRule         Boolean  @default(false) // Ceremony-specific monitoring
+  elderNotification    Boolean  @default(false) // Notify Elders
+  communityBroadcast   Boolean  @default(false) // Broadcast to community
+  
+  // Schedule
+  activeHours          Json?    // Time windows when rule is active
+  ceremonialCalendar   Boolean  @default(false) // Follow ceremony calendar
+  
+  // Notification templates
+  alertTemplate        String?  @db.Text
+  indigenousTemplate   String?  @db.Text // Template in Indigenous languages
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  alerts               Alert[]
+}
+
+model Incident {
+  id                    String   @id @default(uuid())
+  incidentId           String   @unique
+  
+  // Incident details
+  title                String
+  description          String   @db.Text
+  severity             String   // CRITICAL, HIGH, MEDIUM, LOW
+  status               String   @default("OPEN") // OPEN, INVESTIGATING, RESOLVED, CLOSED
+  
+  // Impact
+  servicesAffected     String[] // Service IDs
+  usersAffected        Int      @default(0)
+  
+  // Indigenous impact assessment
+  indigenousImpact     Boolean  @default(false)
+  ceremoniesAffected   String[] // Ceremony types affected
+  nationsAffected      String[] // Nations affected
+  communitiesAffected  String[] // Communities affected
+  elderServicesDown    Boolean  @default(false)
+  culturalImpact       String?  // HIGH, MEDIUM, LOW
+  
+  // Timeline
+  detectedAt           DateTime @default(now())
+  acknowledgedAt       DateTime?
+  mitigatedAt          DateTime?
+  resolvedAt           DateTime?
+  closedAt             DateTime?
+  
+  // Response team
+  incidentCommander    String?
+  responseTeam         String[] // User IDs
+  elderAdvisors        String[] // Elder IDs consulted
+  
+  // Root cause
+  rootCause            String?  @db.Text
+  resolution           String?  @db.Text
+  lessonsLearned       String?  @db.Text
+  
+  // Post-mortem
+  postMortemRequired   Boolean  @default(false)
+  postMortemCompleted  Boolean  @default(false)
+  postMortemUrl        String?
+  
+  alerts               Alert[]
+  updates              IncidentUpdate[]
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model IncidentUpdate {
+  id                    String   @id @default(uuid())
+  
+  incidentId           String
+  incident             Incident @relation(fields: [incidentId], references: [id])
+  
+  // Update details
+  updateType           String   // STATUS_CHANGE, COMMENT, ESCALATION, RESOLUTION
+  message              String   @db.Text
+  
+  // Author
+  authorId             String
+  authorName           String
+  authorRole           String?
+  
+  // Indigenous communication
+  indigenousUpdate     Boolean  @default(false)
+  translatedMessage    Json?    // Translations in Indigenous languages
+  communityBroadcast   Boolean  @default(false)
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([incidentId, timestamp])
+}
+
+model Dashboard {
+  id                    String   @id @default(uuid())
+  dashboardName        String   @unique
+  description          String?
+  
+  // Dashboard configuration
+  layout               Json     // Grid layout configuration
+  widgets              Json     // Widget configurations
+  refreshInterval      Int      @default(30000) // milliseconds
+  
+  // Access control
+  public               Boolean  @default(false)
+  ownerRole            String?
+  allowedRoles         String[]
+  
+  // Indigenous dashboards
+  indigenousDashboard  Boolean  @default(false)
+  communityDashboard   Boolean  @default(false)
+  elderView            Boolean  @default(false) // Simplified view for Elders
+  ceremonyDashboard    Boolean  @default(false) // Ceremony operations
+  nation               String?  // Nation-specific dashboard
+  
+  // Customization
+  theme                String   @default("light")
+  culturalTheme        String?  // Indigenous art themes
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model NotificationChannel {
+  id                    String   @id @default(uuid())
+  channelName          String   @unique
+  channelType          String   // EMAIL, SMS, SLACK, DISCORD, WEBHOOK, TRADITIONAL
+  
+  // Channel configuration
+  configuration        Json     // Channel-specific config (URLs, tokens, etc.)
+  
+  // Recipients
+  recipients           String[] // Email addresses, phone numbers, etc.
+  
+  // Indigenous channels
+  indigenousChannel    Boolean  @default(false)
+  elderChannel         Boolean  @default(false) // Direct to Elders
+  communityChannel     Boolean  @default(false) // Community broadcast
+  traditionalMethod    String?  // DRUM, RUNNER, SMOKE_SIGNAL (symbolic)
+  
+  // Filtering
+  severityFilter       String[] // Which severities trigger this channel
+  serviceFilter        String[] // Which services trigger this channel
+  
+  // Rate limiting
+  maxPerHour           Int      @default(10)
+  maxPerDay            Int      @default(100)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model SLA {
+  id                    String   @id @default(uuid())
+  slaName              String   @unique
+  description          String?
+  
+  // SLA targets
+  uptimeTarget         Float    @default(99.9) // percentage
+  responseTimeTarget   Int      @default(1000) // milliseconds
+  resolutionTimeTarget Int      @default(14400000) // 4 hours in milliseconds
+  
+  // Service scope
+  serviceIds           String[] // Services covered by this SLA
+  
+  // Indigenous SLA priorities
+  indigenousSLA        Boolean  @default(false)
+  elderServiceSLA      Boolean  @default(false) // Enhanced SLA for Elder services
+  ceremonyGuarantee    Boolean  @default(false) // 100% uptime during ceremonies
+  
+  // Measurement period
+  measurementPeriod    String   @default("MONTHLY") // DAILY, WEEKLY, MONTHLY, QUARTERLY
+  
+  // Penalties/credits
+  creditPercentage     Float?   // Credit for SLA breach
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  reports              SLAReport[]
+}
+
+model SLAReport {
+  id                    String   @id @default(uuid())
+  
+  slaId                String
+  sla                  SLA      @relation(fields: [slaId], references: [id])
+  
+  // Report period
+  periodStart          DateTime
+  periodEnd            DateTime
+  
+  // Metrics
+  actualUptime         Float    // percentage
+  actualResponseTime   Float    // average in milliseconds
+  incidentCount        Int      @default(0)
+  
+  // SLA compliance
+  uptimeMet            Boolean
+  responseTimeMet      Boolean
+  resolutionTimeMet    Boolean
+  overallMet           Boolean
+  
+  // Indigenous metrics
+  ceremonyUptime       Float?   // Uptime during ceremonies
+  elderServiceUptime   Float?   // Elder service availability
+  communityImpact      String?  // Impact assessment
+  
+  // Credits
+  creditsOwed          Float    @default(0)
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([slaId, periodStart])
+}
+
+model LogEntry {
+  id                    String   @id @default(uuid())
+  
+  // Log details
+  level                String   // ERROR, WARN, INFO, DEBUG
+  message              String   @db.Text
+  source               String   // Service or component name
+  
+  // Context
+  traceId              String?  // Distributed tracing ID
+  spanId               String?
+  userId               String?
+  
+  // Metadata
+  metadata             Json?
+  
+  // Indigenous tracking
+  indigenousActivity   Boolean  @default(false)
+  ceremonyLog          Boolean  @default(false)
+  elderActivity        Boolean  @default(false)
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([timestamp])
+  @@index([level])
+  @@index([source])
+}
+
+model SystemResource {
+  id                    String   @id @default(uuid())
+  
+  // Resource identification
+  hostname             String
+  resourceType         String   // CPU, MEMORY, DISK, NETWORK
+  
+  // Metrics
+  totalCapacity        BigInt   // bytes or percentage
+  usedCapacity         BigInt
+  availableCapacity    BigInt
+  utilizationPercent   Float
+  
+  // Additional metrics
+  temperature          Float?   // Celsius for hardware monitoring
+  
+  // Thresholds
+  warningThreshold     Float    @default(75)
+  criticalThreshold    Float    @default(90)
+  
+  timestamp            DateTime @default(now())
+  
+  @@index([hostname, resourceType, timestamp])
+}
+
+model TraceSpan {
+  id                    String   @id @default(uuid())
+  
+  traceId              String
+  spanId               String   @unique
+  parentSpanId         String?
+  
+  // Span details
+  serviceName          String
+  operationName        String
+  
+  // Timing
+  startTime            DateTime
+  endTime              DateTime?
+  duration             BigInt?  // microseconds
+  
+  // Status
+  status               String   @default("OK") // OK, ERROR, CANCELLED
+  error                String?
+  
+  // Tags and metadata
+  tags                 Json?
+  
+  // Indigenous tracing
+  indigenousOperation  Boolean  @default(false)
+  ceremonyTrace        Boolean  @default(false)
+  
+  @@index([traceId])
+  @@index([startTime])
+}

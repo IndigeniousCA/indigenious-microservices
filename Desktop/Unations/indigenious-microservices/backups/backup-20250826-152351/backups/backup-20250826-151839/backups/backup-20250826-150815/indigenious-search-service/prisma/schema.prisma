@@ -1,0 +1,463 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Search index models
+model SearchIndex {
+  id                    String   @id @default(uuid())
+  indexId              String   @unique
+  name                 String
+  language             String   // en, fr, cree, ojibwe, inuktitut, mi'kmaq
+  type                 String   // PRODUCT, VENDOR, SERVICE, KNOWLEDGE, CEREMONY
+  description          String?
+  
+  // Index configuration
+  analyzer             String   @default("standard")
+  tokenizer            String   @default("standard")
+  stopWords            String[] // Language-specific stop words
+  stemming             Boolean  @default(true)
+  fuzzyEnabled         Boolean  @default(true)
+  phoneticEnabled      Boolean  @default(false)
+  synonymsEnabled      Boolean  @default(true)
+  
+  // Indigenous language settings
+  syllabicsEnabled     Boolean  @default(false)
+  dialectVariations    String[] // Different dialect spellings
+  traditionalSpellings String[] // Traditional vs modern spellings
+  audioSearch          Boolean  @default(false)
+  oralIndexing         Boolean  @default(false)
+  
+  // Cultural settings
+  culturalContext      Boolean  @default(true)
+  ceremonyAware        Boolean  @default(false)
+  seasonalAware        Boolean  @default(false)
+  medicineWheelAware   Boolean  @default(false)
+  elderApproved        Boolean  @default(false)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  documents            SearchDocument[]
+  synonyms             Synonym[]
+  culturalTerms        CulturalTerm[]
+  searchQueries        SearchQuery[]
+}
+
+model SearchDocument {
+  id                    String   @id @default(uuid())
+  documentId           String   @unique
+  indexId              String
+  index                SearchIndex @relation(fields: [indexId], references: [indexId])
+  
+  // Document content
+  title                String
+  titleTranslations    Json?    // {cree: "...", ojibwe: "...", ...}
+  content              String   @db.Text
+  contentTranslations  Json?    // Multilingual content
+  summary              String?
+  summaryTranslations  Json?
+  
+  // Metadata
+  type                 String   // PRODUCT, VENDOR, SERVICE, etc.
+  entityId             String   // Reference to actual entity
+  entityType           String
+  
+  // Search fields
+  keywords             String[]
+  tags                 String[]
+  categories           String[]
+  
+  // Indigenous metadata
+  indigenousKeywords   String[] // Keywords in Indigenous languages
+  culturalTags         String[] // Cultural relevance tags
+  ceremonyTags         String[] // Ceremony-specific tags
+  traditionalNames     String[] // Traditional names/terms
+  
+  // Syllabics content
+  syllabicsTitle       String?
+  syllabicsContent     String?  @db.Text
+  
+  // Cultural context
+  nation               String?
+  territory            String?
+  community            String?
+  dialect              String?
+  
+  // Search scoring
+  baseScore            Float    @default(1.0)
+  indigenousBoost      Float    @default(1.5)
+  elderBoost           Float    @default(2.0)
+  culturalRelevance    Float    @default(1.0)
+  
+  // Temporal relevance
+  seasonalRelevance    Json?    // {spring: 1.5, summer: 1.0, ...}
+  ceremonyRelevance    Json?    // {"powwow": 2.0, "sundance": 1.5, ...}
+  moonPhaseRelevance   Json?    // {"fullMoon": 1.5, "newMoon": 1.0, ...}
+  
+  // Access control
+  publicAccess         Boolean  @default(true)
+  elderOnly            Boolean  @default(false)
+  ceremonyRestricted   Boolean  @default(false)
+  sacredKnowledge      Boolean  @default(false)
+  youthAppropriate     Boolean  @default(true)
+  
+  // Indexing metadata
+  indexed              Boolean  @default(false)
+  indexedAt            DateTime?
+  lastModified         DateTime @updatedAt
+  version              Int      @default(1)
+  
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+  
+  searchResults        SearchResult[]
+}
+
+model SearchQuery {
+  id                    String   @id @default(uuid())
+  queryId              String   @unique
+  
+  // Query details
+  query                String
+  normalizedQuery      String   // Normalized/cleaned query
+  language             String   // Detected language
+  translatedQueries    Json?    // Translations to other languages
+  
+  // Query parsing
+  terms                String[] // Individual search terms
+  phrases              String[] // Quoted phrases
+  operators            Json?    // AND, OR, NOT operations
+  filters              Json?    // Applied filters
+  
+  // Indigenous language processing
+  syllabicsQuery       String?
+  indigenousTerms      String[] // Detected Indigenous terms
+  dialectVariations    String[] // Alternative dialect spellings
+  phoneticVariations   String[] // Phonetic alternatives
+  
+  // Cultural enhancements
+  culturalContext      String?
+  ceremonyContext      String?
+  seasonContext        String?
+  medicineWheelContext String?
+  
+  // Search context
+  userId               String?
+  sessionId            String?
+  indexId              String?
+  index                SearchIndex? @relation(fields: [indexId], references: [indexId])
+  
+  // Search parameters
+  searchType           String   @default("FULL_TEXT") // FULL_TEXT, SEMANTIC, PHONETIC, VISUAL
+  fuzzyEnabled         Boolean  @default(true)
+  synonymsUsed         Boolean  @default(true)
+  culturalSearch       Boolean  @default(false)
+  elderWisdomSearch    Boolean  @default(false)
+  
+  // Results
+  resultCount          Int      @default(0)
+  topResults           Json?    // Top result IDs and scores
+  executionTime        Int?     // milliseconds
+  
+  // User feedback
+  successful           Boolean?
+  clickedResults       String[] // Result IDs clicked
+  purchasedProducts    String[] // Products purchased from results
+  userSatisfaction     Int?     // 1-5 rating
+  
+  timestamp            DateTime @default(now())
+  
+  results              SearchResult[]
+  analytics            SearchAnalytics[]
+}
+
+model SearchResult {
+  id                    String   @id @default(uuid())
+  
+  queryId              String
+  query                SearchQuery @relation(fields: [queryId], references: [queryId])
+  
+  documentId           String
+  document             SearchDocument @relation(fields: [documentId], references: [documentId])
+  
+  // Scoring
+  score                Float
+  relevanceScore       Float    // Text relevance
+  culturalScore        Float    @default(0) // Cultural relevance
+  elderScore           Float    @default(0) // Elder recommendation score
+  seasonalScore        Float    @default(0) // Seasonal relevance
+  personalScore        Float    @default(0) // Personalization score
+  finalScore           Float    // Combined score
+  
+  // Match details
+  matchedTerms         String[] // Terms that matched
+  matchedFields        String[] // Fields where matches occurred
+  highlights           Json?    // Highlighted snippets
+  explanation          Json?    // Score explanation
+  
+  // User interaction
+  position             Int      // Position in results
+  displayed            Boolean  @default(false)
+  clicked              Boolean  @default(false)
+  dwellTime            Int?     // Seconds spent on result
+  converted            Boolean  @default(false) // Led to purchase/action
+  
+  timestamp            DateTime @default(now())
+}
+
+model Synonym {
+  id                    String   @id @default(uuid())
+  
+  term                 String
+  synonyms             String[]
+  
+  // Language and context
+  language             String
+  indexId              String?
+  index                SearchIndex? @relation(fields: [indexId], references: [indexId])
+  
+  // Cultural synonyms
+  culturalContext      String?
+  ceremonySpecific     Boolean  @default(false)
+  seasonSpecific       Boolean  @default(false)
+  nationSpecific       String?  // Specific to a nation
+  
+  // Types
+  type                 String   @default("GENERAL") // GENERAL, CULTURAL, CEREMONY, TRADITIONAL
+  bidirectional        Boolean  @default(true)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model CulturalTerm {
+  id                    String   @id @default(uuid())
+  
+  term                 String
+  language             String
+  
+  // Translations
+  englishTranslation   String?
+  frenchTranslation    String?
+  creeTranslation      String?
+  ojibweTranslation    String?
+  inuktitutTranslation String?
+  mikmaqTranslation    String?
+  
+  // Syllabics
+  creeSyllabics        String?
+  ojibweSyllabics      String?
+  inuktitutSyllabics   String?
+  
+  // Cultural context
+  meaning              String   @db.Text
+  culturalSignificance String?  @db.Text
+  usage                String?  @db.Text
+  nation               String?
+  ceremony             String?
+  
+  // Phonetics
+  phonetic             String?  // IPA or simplified phonetic
+  audioUrl             String?  // Audio pronunciation
+  
+  // Elder knowledge
+  elderApproved        Boolean  @default(false)
+  elderNotes           String?  @db.Text
+  story                String?  @db.Text
+  teaching             String?  @db.Text
+  
+  // Search relevance
+  indexId              String?
+  index                SearchIndex? @relation(fields: [indexId], references: [indexId])
+  searchBoost          Float    @default(1.5)
+  
+  // Access
+  publicKnowledge      Boolean  @default(true)
+  sacredTerm           Boolean  @default(false)
+  ceremonyOnly         Boolean  @default(false)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model LanguageModel {
+  id                    String   @id @default(uuid())
+  
+  language             String   @unique
+  name                 String
+  nativeName           String?  // Name in the language itself
+  
+  // Language processing
+  tokenizer            String   // Tokenizer type/config
+  stemmer              String?  // Stemmer algorithm
+  stopWords            String[] // Stop words list
+  
+  // Special characters
+  specialCharacters    String[] // Special chars in language
+  syllabics            Boolean  @default(false)
+  rtl                  Boolean  @default(false) // Right-to-left
+  
+  // Dictionaries
+  dictionaryUrl        String?  // External dictionary API
+  spellCheckEnabled    Boolean  @default(false)
+  
+  // Phonetics
+  phoneticEnabled      Boolean  @default(false)
+  phoneticAlgorithm    String?  // soundex, metaphone, etc.
+  
+  // Cultural context
+  indigenousLanguage   Boolean  @default(false)
+  nation               String?
+  territory            String?
+  speakers             Int?     // Estimated speakers
+  endangered           Boolean  @default(false)
+  
+  active               Boolean  @default(true)
+  createdAt            DateTime @default(now())
+  updatedAt            DateTime @updatedAt
+}
+
+model SearchAnalytics {
+  id                    String   @id @default(uuid())
+  
+  queryId              String?
+  query                SearchQuery? @relation(fields: [queryId], references: [queryId])
+  
+  // Metrics
+  date                 DateTime @default(now())
+  hour                 Int      // 0-23
+  
+  // Query metrics
+  totalQueries         Int      @default(0)
+  uniqueUsers          Int      @default(0)
+  avgResultCount       Float    @default(0)
+  avgExecutionTime     Float    @default(0) // ms
+  
+  // Language breakdown
+  englishQueries       Int      @default(0)
+  frenchQueries        Int      @default(0)
+  creeQueries          Int      @default(0)
+  ojibweQueries        Int      @default(0)
+  inuktitutQueries     Int      @default(0)
+  mixedLanguageQueries Int      @default(0)
+  
+  // Search type breakdown
+  textSearches         Int      @default(0)
+  voiceSearches        Int      @default(0)
+  imageSearches        Int      @default(0)
+  semanticSearches     Int      @default(0)
+  
+  // Result metrics
+  clickThroughRate     Float    @default(0) // CTR percentage
+  avgClickPosition     Float    @default(0) // Average position of clicked results
+  conversionRate       Float    @default(0) // Led to purchase/action
+  bounceRate           Float    @default(0) // No clicks
+  
+  // Cultural metrics
+  culturalSearches     Int      @default(0)
+  ceremonySearches     Int      @default(0)
+  elderSearches        Int      @default(0)
+  traditionalSearches  Int      @default(0)
+  
+  // User satisfaction
+  avgSatisfaction      Float?   // 1-5 rating
+  satisfactionCount    Int      @default(0)
+  
+  // Performance
+  cacheHitRate         Float    @default(0)
+  errorRate            Float    @default(0)
+  timeouts             Int      @default(0)
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([date, hour])
+}
+
+model SearchCache {
+  id                    String   @id @default(uuid())
+  
+  cacheKey             String   @unique // Hash of query + filters
+  query                String
+  language             String
+  filters              Json?
+  
+  // Cached results
+  results              Json     // Cached search results
+  resultCount          Int
+  executionTime        Int      // Original execution time
+  
+  // Cache metadata
+  hits                 Int      @default(0) // Cache hit count
+  lastHit              DateTime?
+  expiresAt            DateTime
+  
+  createdAt            DateTime @default(now())
+  
+  @@index([expiresAt])
+}
+
+model VoiceSearch {
+  id                    String   @id @default(uuid())
+  
+  // Audio input
+  audioUrl             String?  // Stored audio file
+  duration             Int      // Seconds
+  language             String?  // Detected language
+  
+  // Transcription
+  transcription        String?
+  confidence           Float?   // Transcription confidence
+  alternatives         Json?    // Alternative transcriptions
+  
+  // Indigenous language support
+  indigenousLanguage   String?
+  dialectDetected      String?
+  elderSpeaker         Boolean  @default(false)
+  
+  // Processing
+  processedQuery       String?  // Final search query
+  queryId              String?  // Related search query
+  
+  userId               String?
+  successful           Boolean  @default(false)
+  errorMessage         String?
+  
+  timestamp            DateTime @default(now())
+}
+
+model VisualSearch {
+  id                    String   @id @default(uuid())
+  
+  // Image input
+  imageUrl             String   // Stored image file
+  mimeType             String
+  
+  // Image analysis
+  labels               String[] // Detected labels
+  objects              Json?    // Detected objects with confidence
+  text                 String?  // OCR text
+  colors               String[] // Dominant colors
+  
+  // Cultural detection
+  culturalElements     Json?    // Detected cultural elements
+  artStyle             String?  // Traditional art style detected
+  symbols              String[] // Cultural symbols detected
+  patterns             String[] // Traditional patterns detected
+  
+  // Search conversion
+  generatedQuery       String?  // Query generated from image
+  queryId              String?  // Related search query
+  
+  userId               String?
+  successful           Boolean  @default(false)
+  
+  timestamp            DateTime @default(now())
+}
